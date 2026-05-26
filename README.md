@@ -160,6 +160,15 @@ Works on shared hosting (LiteSpeed/Apache read the bundled `.htaccess`). On plai
 **Nginx**, replicate the deny rules for `config.local.php`, `/data/`, `/cache/` and the
 `.json/.md/.log` files in your server block (Nginx ignores `.htaccess`).
 
+### 💡 Recommended hosting
+
+This project runs great on inexpensive shared hosting. I personally recommend
+**[Hostinger](https://www.hostinger.com/ae?REFERRALCODE=1SALAH83)** — it runs LiteSpeed,
+reads the bundled `.htaccess` out of the box, includes free SSL, and supports PHP 8 + MySQL,
+so the whole site works with zero extra setup.
+
+> ℹ️ The Hostinger link above is a referral link — using it supports this project at no extra cost to you. 🙏
+
 ---
 
 ## 📁 Project structure / البنية
