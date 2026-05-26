@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & Discussions
+    url: https://github.com/<your-user>/worldcup2026/discussions
+    about: Ask questions and discuss ideas here instead of opening an issue.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/<your-user>/worldcup2026/security/advisories/new
+    about: Please report security issues privately (see SECURITY.md).

@@ -1,0 +1,135 @@
+/* ============================================================
+   leagues.css — "المجلس": الدوريات الخاصّة
+   يعتمد متغيّرات style.css (داكن، Cairo، RTL/LTR). أنماط إضافية فقط.
+   ============================================================ */
+
+/* بطاقات الإنشاء/الانضمام */
+.lg-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 18px 0 26px;
+}
+@media (max-width: 640px) { .lg-grid { grid-template-columns: 1fr; } }
+
+.lg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.lg-card h2 {
+  font-size: 1.05rem;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.lg-needname {
+  text-align: center;
+  margin: 20px 0;
+}
+.lg-needname p { color: var(--text-dim); margin-bottom: 14px; }
+
+.lg-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.lg-form input {
+  flex: 1 1 auto;
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: .98rem;
+}
+.lg-form input:focus {
+  outline: none;
+  border-color: var(--accent-2);
+}
+.lg-error {
+  color: var(--accent-3);
+  font-size: .9rem;
+  margin-top: 8px;
+}
+
+/* قائمة دورياتي */
+.lg-mine-title {
+  font-size: 1.1rem;
+  margin: 6px 0 12px;
+  color: var(--text);
+}
+.lg-list { display: grid; gap: 10px; }
+.lg-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s, transform .15s;
+}
+.lg-item:hover { border-color: var(--accent-2); transform: translateY(-1px); }
+.lg-item-name { font-weight: 700; }
+.lg-item-meta { color: var(--text-dim); font-size: .88rem; }
+.lg-item-code {
+  font-family: var(--font-display), monospace;
+  letter-spacing: 1px;
+  color: var(--accent-2);
+}
+.lg-badge {
+  display: inline-block;
+  background: var(--surface-2);
+  color: var(--accent-2);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: .78rem;
+}
+
+/* صندوق الدعوة (league.php) */
+.lg-invite {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin: 16px 0;
+  box-shadow: var(--shadow-sm);
+}
+.lg-invite-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.lg-invite-head strong { font-size: 1.02rem; color: var(--text); }
+.lg-invite-head .muted { font-size: .86rem; }
+.lg-invite-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.lg-invite-input {
+  flex: 1 1 240px;
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: .9rem;
+  direction: ltr;
+  text-align: left;
+}
+.lg-copy, .lg-wa { white-space: nowrap; }
+.lg-wa { text-decoration: none; }
+
+.lg-code-inline {
+  font-family: var(--font-display), monospace;
+  letter-spacing: 2px;
+  color: var(--accent-2);
+}
+.lg-sponsor { color: var(--text-dim); font-size: .9rem; margin-top: 4px; }
+
+/* أزرار الإجراءات */
+.lg-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+.lg-action-status { color: var(--text-dim); font-size: .9rem; }

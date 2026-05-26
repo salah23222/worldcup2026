@@ -1,0 +1,1192 @@
+[
+    {
+        "name": "AL JASSIM Abdulrahman",
+        "country_ar": "قطر",
+        "country_en": "Qatar",
+        "flag": "qa",
+        "role": "referee"
+    },
+    {
+        "name": "AL TURAIS Khalid",
+        "country_ar": "السعودية",
+        "country_en": "Saudi Arabia",
+        "flag": "sa",
+        "role": "referee"
+    },
+    {
+        "name": "ARAKI Yusuke",
+        "country_ar": "اليابان",
+        "country_en": "Japan",
+        "flag": "jp",
+        "role": "referee"
+    },
+    {
+        "name": "ARTAN Omar Abdulkadir",
+        "country_ar": "الصومال",
+        "country_en": "Somalia",
+        "flag": "so",
+        "role": "referee"
+    },
+    {
+        "name": "ATCHO Pierre",
+        "country_ar": "الغابون",
+        "country_en": "Gabon",
+        "flag": "ga",
+        "role": "referee"
+    },
+    {
+        "name": "BARTON Ivan",
+        "country_ar": "السلفادور",
+        "country_en": "El Salvador",
+        "flag": "sv",
+        "role": "referee"
+    },
+    {
+        "name": "BEIDA Dahane",
+        "country_ar": "موريتانيا",
+        "country_en": "Mauritania",
+        "flag": "mr",
+        "role": "referee"
+    },
+    {
+        "name": "BENITEZ Juan Gabriel",
+        "country_ar": "باراغواي",
+        "country_en": "Paraguay",
+        "flag": "py",
+        "role": "referee"
+    },
+    {
+        "name": "CALDERON Juan",
+        "country_ar": "كوستاريكا",
+        "country_en": "Costa Rica",
+        "flag": "cr",
+        "role": "referee"
+    },
+    {
+        "name": "CLAUS Raphael",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "referee"
+    },
+    {
+        "name": "ELFATH Ismail",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "referee"
+    },
+    {
+        "name": "ESKAS Espen",
+        "country_ar": "النرويج",
+        "country_en": "Norway",
+        "flag": "no",
+        "role": "referee"
+    },
+    {
+        "name": "FAGHANI Alireza",
+        "country_ar": "أستراليا",
+        "country_en": "Australia",
+        "flag": "au",
+        "role": "referee"
+    },
+    {
+        "name": "FALCON PEREZ Yael",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "referee"
+    },
+    {
+        "name": "FISCHER Drew",
+        "country_ar": "كندا",
+        "country_en": "Canada",
+        "flag": "ca",
+        "role": "referee"
+    },
+    {
+        "name": "GARAY Cristian",
+        "country_ar": "تشيلي",
+        "country_en": "Chile",
+        "flag": "cl",
+        "role": "referee"
+    },
+    {
+        "name": "GARCIA Katia",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "referee"
+    },
+    {
+        "name": "GHORBAL Mustapha",
+        "country_ar": "الجزائر",
+        "country_en": "Algeria",
+        "flag": "dz",
+        "role": "referee"
+    },
+    {
+        "name": "HERNANDEZ Alejandro",
+        "country_ar": "إسبانيا",
+        "country_en": "Spain",
+        "flag": "es",
+        "role": "referee"
+    },
+    {
+        "name": "HERRERA Dario",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "referee"
+    },
+    {
+        "name": "JAYED Jalal",
+        "country_ar": "المغرب",
+        "country_en": "Morocco",
+        "flag": "ma",
+        "role": "referee"
+    },
+    {
+        "name": "KAWANA-WAUGH Campbell-Kirk",
+        "country_ar": "نيوزيلندا",
+        "country_en": "New Zealand",
+        "flag": "nz",
+        "role": "referee"
+    },
+    {
+        "name": "KOVACS Istvan",
+        "country_ar": "رومانيا",
+        "country_en": "Romania",
+        "flag": "ro",
+        "role": "referee"
+    },
+    {
+        "name": "LETEXIER Francois",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "referee"
+    },
+    {
+        "name": "MA Ning",
+        "country_ar": "الصين",
+        "country_en": "China",
+        "flag": "cn",
+        "role": "referee"
+    },
+    {
+        "name": "MAKHADMEH Adham",
+        "country_ar": "الأردن",
+        "country_en": "Jordan",
+        "flag": "jo",
+        "role": "referee"
+    },
+    {
+        "name": "MAKKELIE Danny",
+        "country_ar": "هولندا",
+        "country_en": "Netherlands",
+        "flag": "nl",
+        "role": "referee"
+    },
+    {
+        "name": "MARCINIAK Szymon",
+        "country_ar": "بولندا",
+        "country_en": "Poland",
+        "flag": "pl",
+        "role": "referee"
+    },
+    {
+        "name": "MARIANI Maurizio",
+        "country_ar": "إيطاليا",
+        "country_en": "Italy",
+        "flag": "it",
+        "role": "referee"
+    },
+    {
+        "name": "MARTINEZ Hector Said",
+        "country_ar": "هندوراس",
+        "country_en": "Honduras",
+        "flag": "hn",
+        "role": "referee"
+    },
+    {
+        "name": "MOHAMED Amin",
+        "country_ar": "مصر",
+        "country_en": "Egypt",
+        "flag": "eg",
+        "role": "referee"
+    },
+    {
+        "name": "NATION Oshane",
+        "country_ar": "جامايكا",
+        "country_en": "Jamaica",
+        "flag": "jm",
+        "role": "referee"
+    },
+    {
+        "name": "NYBERG Glenn",
+        "country_ar": "السويد",
+        "country_en": "Sweden",
+        "flag": "se",
+        "role": "referee"
+    },
+    {
+        "name": "OLIVER Michael",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "referee"
+    },
+    {
+        "name": "OMAR AL ALI",
+        "country_ar": "الإمارات",
+        "country_en": "UAE",
+        "flag": "ae",
+        "role": "referee"
+    },
+    {
+        "name": "ORTEGA Kevin",
+        "country_ar": "بيرو",
+        "country_en": "Peru",
+        "flag": "pe",
+        "role": "referee"
+    },
+    {
+        "name": "PENSO Tori",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "referee"
+    },
+    {
+        "name": "PINHEIRO Joao",
+        "country_ar": "البرتغال",
+        "country_en": "Portugal",
+        "flag": "pt",
+        "role": "referee"
+    },
+    {
+        "name": "RAMON ABATTI",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "referee"
+    },
+    {
+        "name": "RAMOS Cesar",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "referee"
+    },
+    {
+        "name": "ROJAS Andres",
+        "country_ar": "كولومبيا",
+        "country_en": "Colombia",
+        "flag": "co",
+        "role": "referee"
+    },
+    {
+        "name": "SCHAERER Sandro",
+        "country_ar": "سويسرا",
+        "country_en": "Switzerland",
+        "flag": "ch",
+        "role": "referee"
+    },
+    {
+        "name": "TANTASHEV Ilgiz",
+        "country_ar": "أوزبكستان",
+        "country_en": "Uzbekistan",
+        "flag": "uz",
+        "role": "referee"
+    },
+    {
+        "name": "TAYLOR Anthony",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "referee"
+    },
+    {
+        "name": "TEJERA Gustavo",
+        "country_ar": "الأوروغواي",
+        "country_en": "Uruguay",
+        "flag": "uy",
+        "role": "referee"
+    },
+    {
+        "name": "TELLO Facundo",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "referee"
+    },
+    {
+        "name": "TOM Abongile",
+        "country_ar": "جنوب أفريقيا",
+        "country_en": "South Africa",
+        "flag": "za",
+        "role": "referee"
+    },
+    {
+        "name": "TURPIN Clement",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "referee"
+    },
+    {
+        "name": "VALENZUELA Jesus",
+        "country_ar": "فنزويلا",
+        "country_en": "Venezuela",
+        "flag": "ve",
+        "role": "referee"
+    },
+    {
+        "name": "VINCIC Slavko",
+        "country_ar": "سلوفينيا",
+        "country_en": "Slovenia",
+        "flag": "si",
+        "role": "referee"
+    },
+    {
+        "name": "WILTON SAMPAIO",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "referee"
+    },
+    {
+        "name": "ZWAYER Felix",
+        "country_ar": "ألمانيا",
+        "country_en": "Germany",
+        "flag": "de",
+        "role": "referee"
+    },
+    {
+        "name": "ABEIGNE Amos",
+        "country_ar": "الغابون",
+        "country_en": "Gabon",
+        "flag": "ga",
+        "role": "assistant"
+    },
+    {
+        "name": "ABOUELREGAL Mahmoud",
+        "country_ar": "مصر",
+        "country_en": "Egypt",
+        "flag": "eg",
+        "role": "assistant"
+    },
+    {
+        "name": "AKARKAD Mostafa",
+        "country_ar": "المغرب",
+        "country_en": "Morocco",
+        "flag": "ma",
+        "role": "assistant"
+    },
+    {
+        "name": "AL ABAKRY Mohammed",
+        "country_ar": "السعودية",
+        "country_en": "Saudi Arabia",
+        "flag": "sa",
+        "role": "assistant"
+    },
+    {
+        "name": "AL HAMMADI Mohamed",
+        "country_ar": "الإمارات",
+        "country_en": "UAE",
+        "flag": "ae",
+        "role": "assistant"
+    },
+    {
+        "name": "AL KALAF Mohammad",
+        "country_ar": "الأردن",
+        "country_en": "Jordan",
+        "flag": "jo",
+        "role": "assistant"
+    },
+    {
+        "name": "AL MAQALEH Saoud",
+        "country_ar": "قطر",
+        "country_en": "Qatar",
+        "flag": "qa",
+        "role": "assistant"
+    },
+    {
+        "name": "AL MARRI Taleb",
+        "country_ar": "قطر",
+        "country_en": "Qatar",
+        "flag": "qa",
+        "role": "assistant"
+    },
+    {
+        "name": "AL ROALLE Ahmad",
+        "country_ar": "الأردن",
+        "country_en": "Jordan",
+        "flag": "jo",
+        "role": "assistant"
+    },
+    {
+        "name": "ARFA Lyes",
+        "country_ar": "كندا",
+        "country_en": "Canada",
+        "flag": "ca",
+        "role": "assistant"
+    },
+    {
+        "name": "ATKINS Kyle",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "assistant"
+    },
+    {
+        "name": "BARREIRO Carlos",
+        "country_ar": "الأوروغواي",
+        "country_en": "Uruguay",
+        "flag": "uy",
+        "role": "assistant"
+    },
+    {
+        "name": "BARWEGEN Micheal",
+        "country_ar": "كندا",
+        "country_en": "Canada",
+        "flag": "ca",
+        "role": "assistant"
+    },
+    {
+        "name": "BASHEVKIN Isaak",
+        "country_ar": "النرويج",
+        "country_en": "Norway",
+        "flag": "no",
+        "role": "assistant"
+    },
+    {
+        "name": "KUPSIK Adam",
+        "country_ar": "بولندا",
+        "country_en": "Poland",
+        "flag": "pl",
+        "role": "assistant"
+    },
+    {
+        "name": "BEIGI Mahbod",
+        "country_ar": "السويد",
+        "country_en": "Sweden",
+        "flag": "se",
+        "role": "assistant"
+    },
+    {
+        "name": "BELATTI Juan Pablo",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "assistant"
+    },
+    {
+        "name": "BESWICK Gary",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "assistant"
+    },
+    {
+        "name": "BINDONI Daniele",
+        "country_ar": "إيطاليا",
+        "country_en": "Italy",
+        "flag": "it",
+        "role": "assistant"
+    },
+    {
+        "name": "BISGUERRA Marco",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "assistant"
+    },
+    {
+        "name": "BRINSI Zakaria",
+        "country_ar": "المغرب",
+        "country_en": "Morocco",
+        "flag": "ma",
+        "role": "assistant"
+    },
+    {
+        "name": "BRUNO BOSCHILIA",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "assistant"
+    },
+    {
+        "name": "BRUNO PIRES",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "assistant"
+    },
+    {
+        "name": "BURT Stuart",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "assistant"
+    },
+    {
+        "name": "CARDOZO Eduardo",
+        "country_ar": "باراغواي",
+        "country_en": "Paraguay",
+        "flag": "py",
+        "role": "assistant"
+    },
+    {
+        "name": "CHADE Gabriel",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "assistant"
+    },
+    {
+        "name": "DANILO MANIS",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "assistant"
+    },
+    {
+        "name": "DANOS Nicolas",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "assistant"
+    },
+    {
+        "name": "DE ALMEIDA Stephane",
+        "country_ar": "سويسرا",
+        "country_en": "Switzerland",
+        "flag": "ch",
+        "role": "assistant"
+    },
+    {
+        "name": "DE VRIES Jan",
+        "country_ar": "هولندا",
+        "country_en": "Netherlands",
+        "flag": "nl",
+        "role": "assistant"
+    },
+    {
+        "name": "DEL YESSO Maximiliano",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "assistant"
+    },
+    {
+        "name": "DIETZ Christian",
+        "country_ar": "ألمانيا",
+        "country_en": "Germany",
+        "flag": "de",
+        "role": "assistant"
+    },
+    {
+        "name": "DITSOGA Boris",
+        "country_ar": "الغابون",
+        "country_en": "Gabon",
+        "flag": "ga",
+        "role": "assistant"
+    },
+    {
+        "name": "ENGAN Jan Erik",
+        "country_ar": "النرويج",
+        "country_en": "Norway",
+        "flag": "no",
+        "role": "assistant"
+    },
+    {
+        "name": "FIGUEIREDO Rodrigo",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "assistant"
+    },
+    {
+        "name": "GAYNULLIN Timur",
+        "country_ar": "أوزبكستان",
+        "country_en": "Uzbekistan",
+        "flag": "uz",
+        "role": "assistant"
+    },
+    {
+        "name": "GOURARI Mokrane",
+        "country_ar": "الجزائر",
+        "country_en": "Algeria",
+        "flag": "dz",
+        "role": "assistant"
+    },
+    {
+        "name": "GUZMAN Alexander",
+        "country_ar": "كولومبيا",
+        "country_en": "Colombia",
+        "flag": "co",
+        "role": "assistant"
+    },
+    {
+        "name": "HOSSAM TAHA Ahmed",
+        "country_ar": "مصر",
+        "country_en": "Egypt",
+        "flag": "eg",
+        "role": "assistant"
+    },
+    {
+        "name": "JERSON SANTOS",
+        "country_ar": "أنغولا",
+        "country_en": "Angola",
+        "flag": "ao",
+        "role": "assistant"
+    },
+    {
+        "name": "JESUS Bruno",
+        "country_ar": "البرتغال",
+        "country_en": "Portugal",
+        "flag": "pt",
+        "role": "assistant"
+    },
+    {
+        "name": "KEMPTER Robert",
+        "country_ar": "ألمانيا",
+        "country_en": "Germany",
+        "flag": "de",
+        "role": "assistant"
+    },
+    {
+        "name": "KLANCNIK Tomaz",
+        "country_ar": "سلوفينيا",
+        "country_en": "Slovenia",
+        "flag": "si",
+        "role": "assistant"
+    },
+    {
+        "name": "KOVACIC Andraz",
+        "country_ar": "سلوفينيا",
+        "country_en": "Slovenia",
+        "flag": "si",
+        "role": "assistant"
+    },
+    {
+        "name": "LAKRINDIS George",
+        "country_ar": "أستراليا",
+        "country_en": "Australia",
+        "flag": "au",
+        "role": "assistant"
+    },
+    {
+        "name": "LINDSAY James",
+        "country_ar": "أستراليا",
+        "country_en": "Australia",
+        "flag": "au",
+        "role": "assistant"
+    },
+    {
+        "name": "LISTKIEWICZ Tomasz",
+        "country_ar": "بولندا",
+        "country_en": "Poland",
+        "flag": "pl",
+        "role": "assistant"
+    },
+    {
+        "name": "LOPEZ Walter",
+        "country_ar": "هندوراس",
+        "country_en": "Honduras",
+        "flag": "hn",
+        "role": "assistant"
+    },
+    {
+        "name": "MAIA Luciano",
+        "country_ar": "البرتغال",
+        "country_en": "Portugal",
+        "flag": "pt",
+        "role": "assistant"
+    },
+    {
+        "name": "MAINWARING James",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "assistant"
+    },
+    {
+        "name": "MARICA Mihai",
+        "country_ar": "رومانيا",
+        "country_en": "Romania",
+        "flag": "ro",
+        "role": "assistant"
+    },
+    {
+        "name": "MAYO Brooke",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "assistant"
+    },
+    {
+        "name": "MIHARA Jun",
+        "country_ar": "اليابان",
+        "country_en": "Japan",
+        "flag": "jp",
+        "role": "assistant"
+    },
+    {
+        "name": "MORA Juan Carlos",
+        "country_ar": "كوستاريكا",
+        "country_en": "Costa Rica",
+        "flag": "cr",
+        "role": "assistant"
+    },
+    {
+        "name": "MORAN David",
+        "country_ar": "السلفادور",
+        "country_en": "El Salvador",
+        "flag": "sv",
+        "role": "assistant"
+    },
+    {
+        "name": "MORENO Tulio",
+        "country_ar": "فنزويلا",
+        "country_en": "Venezuela",
+        "flag": "ve",
+        "role": "assistant"
+    },
+    {
+        "name": "MORIN Alberto",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "assistant"
+    },
+    {
+        "name": "MUGNIER Cyril",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "assistant"
+    },
+    {
+        "name": "NARANJO PEREZ Jose Enrique",
+        "country_ar": "إسبانيا",
+        "country_en": "Spain",
+        "flag": "es",
+        "role": "assistant"
+    },
+    {
+        "name": "NAVARRO Cristian",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "assistant"
+    },
+    {
+        "name": "NESBITT Kathryn",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "assistant"
+    },
+    {
+        "name": "NOUPUE Elvis",
+        "country_ar": "الكاميرون",
+        "country_en": "Cameroon",
+        "flag": "cm",
+        "role": "assistant"
+    },
+    {
+        "name": "NUNN Adam",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "assistant"
+    },
+    {
+        "name": "ORUE Michael",
+        "country_ar": "بيرو",
+        "country_en": "Peru",
+        "flag": "pe",
+        "role": "assistant"
+    },
+    {
+        "name": "PAGES Benjamin",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "assistant"
+    },
+    {
+        "name": "PARKER Corey",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "assistant"
+    },
+    {
+        "name": "PUPIRO Antonio",
+        "country_ar": "نيكاراغوا",
+        "country_en": "Nicaragua",
+        "flag": "ni",
+        "role": "assistant"
+    },
+    {
+        "name": "RAFAEL ALVES",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "assistant"
+    },
+    {
+        "name": "RAHMOUNI Mehdi",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "assistant"
+    },
+    {
+        "name": "RAMIREZ Christian",
+        "country_ar": "هندوراس",
+        "country_en": "Honduras",
+        "flag": "hn",
+        "role": "assistant"
+    },
+    {
+        "name": "RAMIREZ Sandra",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "assistant"
+    },
+    {
+        "name": "RETAMAL Jose",
+        "country_ar": "تشيلي",
+        "country_en": "Chile",
+        "flag": "cl",
+        "role": "assistant"
+    },
+    {
+        "name": "ROCHA Miguel",
+        "country_ar": "تشيلي",
+        "country_en": "Chile",
+        "flag": "cl",
+        "role": "assistant"
+    },
+    {
+        "name": "RODRIGUEZ Facundo",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "assistant"
+    },
+    {
+        "name": "SALDIVAR Milciades",
+        "country_ar": "باراغواي",
+        "country_en": "Paraguay",
+        "flag": "py",
+        "role": "assistant"
+    },
+    {
+        "name": "SANCHEZ Diego",
+        "country_ar": "إسبانيا",
+        "country_en": "Spain",
+        "flag": "es",
+        "role": "assistant"
+    },
+    {
+        "name": "SIWELA Zakhele",
+        "country_ar": "جنوب أفريقيا",
+        "country_en": "South Africa",
+        "flag": "za",
+        "role": "assistant"
+    },
+    {
+        "name": "SODERKVIST Andreas",
+        "country_ar": "السويد",
+        "country_en": "Sweden",
+        "flag": "se",
+        "role": "assistant"
+    },
+    {
+        "name": "STEEGSTRA Hessel",
+        "country_ar": "هولندا",
+        "country_en": "Netherlands",
+        "flag": "nl",
+        "role": "assistant"
+    },
+    {
+        "name": "TARAN Nicolas",
+        "country_ar": "الأوروغواي",
+        "country_en": "Uruguay",
+        "flag": "uy",
+        "role": "assistant"
+    },
+    {
+        "name": "TEGONI Alberto",
+        "country_ar": "إيطاليا",
+        "country_en": "Italy",
+        "flag": "it",
+        "role": "assistant"
+    },
+    {
+        "name": "TREVIS Isaac",
+        "country_ar": "نيوزيلندا",
+        "country_en": "New Zealand",
+        "flag": "nz",
+        "role": "assistant"
+    },
+    {
+        "name": "TSAPENKO Andrey",
+        "country_ar": "أوزبكستان",
+        "country_en": "Uzbekistan",
+        "flag": "uz",
+        "role": "assistant"
+    },
+    {
+        "name": "TUNYOGI Ferencz",
+        "country_ar": "رومانيا",
+        "country_en": "Romania",
+        "flag": "ro",
+        "role": "assistant"
+    },
+    {
+        "name": "URREGO Jorge",
+        "country_ar": "فنزويلا",
+        "country_en": "Venezuela",
+        "flag": "ve",
+        "role": "assistant"
+    },
+    {
+        "name": "WALES Caleb",
+        "country_ar": "ترينيداد وتوباغو",
+        "country_en": "Trinidad and Tobago",
+        "flag": "tt",
+        "role": "assistant"
+    },
+    {
+        "name": "ZERHOUNI Abbes Akram",
+        "country_ar": "الجزائر",
+        "country_en": "Algeria",
+        "flag": "dz",
+        "role": "assistant"
+    },
+    {
+        "name": "ZHOU Fei",
+        "country_ar": "الصين",
+        "country_en": "China",
+        "flag": "cn",
+        "role": "assistant"
+    },
+    {
+        "name": "AL-MARRI Khamis",
+        "country_ar": "قطر",
+        "country_en": "Qatar",
+        "flag": "qa",
+        "role": "var"
+    },
+    {
+        "name": "ALSHEHRI Abdullah",
+        "country_ar": "السعودية",
+        "country_en": "Saudi Arabia",
+        "flag": "sa",
+        "role": "var"
+    },
+    {
+        "name": "ASHOUR Mahmoud",
+        "country_ar": "مصر",
+        "country_en": "Egypt",
+        "flag": "eg",
+        "role": "var"
+    },
+    {
+        "name": "BEBEK Ivan",
+        "country_ar": "كرواتيا",
+        "country_en": "Croatia",
+        "flag": "hr",
+        "role": "var"
+    },
+    {
+        "name": "BRISARD Jerome",
+        "country_ar": "فرنسا",
+        "country_en": "France",
+        "flag": "fr",
+        "role": "var"
+    },
+    {
+        "name": "DANKERT Bastian",
+        "country_ar": "ألمانيا",
+        "country_en": "Germany",
+        "flag": "de",
+        "role": "var"
+    },
+    {
+        "name": "DEL CERRO GRANDE Carlos",
+        "country_ar": "إسبانيا",
+        "country_en": "Spain",
+        "flag": "es",
+        "role": "var"
+    },
+    {
+        "name": "DI BELLO Marco",
+        "country_ar": "إيطاليا",
+        "country_en": "Italy",
+        "flag": "it",
+        "role": "var"
+    },
+    {
+        "name": "DICKERSON Joe",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "var"
+    },
+    {
+        "name": "DIEPERINK Rob",
+        "country_ar": "هولندا",
+        "country_en": "Netherlands",
+        "flag": "nl",
+        "role": "var"
+    },
+    {
+        "name": "EL FARIQ Hamza",
+        "country_ar": "المغرب",
+        "country_en": "Morocco",
+        "flag": "ma",
+        "role": "var"
+    },
+    {
+        "name": "EVANS Shaun",
+        "country_ar": "أستراليا",
+        "country_en": "Australia",
+        "flag": "au",
+        "role": "var"
+    },
+    {
+        "name": "FU Ming",
+        "country_ar": "الصين",
+        "country_en": "China",
+        "flag": "cn",
+        "role": "var"
+    },
+    {
+        "name": "GALLO Nicolas",
+        "country_ar": "كولومبيا",
+        "country_en": "Colombia",
+        "flag": "co",
+        "role": "var"
+    },
+    {
+        "name": "GARCIA Antonio",
+        "country_ar": "الأوروغواي",
+        "country_en": "Uruguay",
+        "flag": "uy",
+        "role": "var"
+    },
+    {
+        "name": "GILLETT Jarred",
+        "country_ar": "إنجلترا",
+        "country_en": "England",
+        "flag": "gb-eng",
+        "role": "var"
+    },
+    {
+        "name": "GONZALEZ Leodan",
+        "country_ar": "الأوروغواي",
+        "country_en": "Uruguay",
+        "flag": "uy",
+        "role": "var"
+    },
+    {
+        "name": "GUZMAN Tatiana",
+        "country_ar": "نيكاراغوا",
+        "country_en": "Nicaragua",
+        "flag": "ni",
+        "role": "var"
+    },
+    {
+        "name": "HIGLER Dennis",
+        "country_ar": "هولندا",
+        "country_en": "Netherlands",
+        "flag": "nl",
+        "role": "var"
+    },
+    {
+        "name": "KWIATKOWSKI Tomasz",
+        "country_ar": "بولندا",
+        "country_en": "Poland",
+        "flag": "pl",
+        "role": "var"
+    },
+    {
+        "name": "LARA Juan",
+        "country_ar": "تشيلي",
+        "country_en": "Chile",
+        "flag": "cl",
+        "role": "var"
+    },
+    {
+        "name": "MASTRANGELO Hernan",
+        "country_ar": "الأرجنتين",
+        "country_en": "Argentina",
+        "flag": "ar",
+        "role": "var"
+    },
+    {
+        "name": "MIRANDA Erick",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "var"
+    },
+    {
+        "name": "MOHAMMED OBAID KHADIM",
+        "country_ar": "الإمارات",
+        "country_en": "UAE",
+        "flag": "ae",
+        "role": "var"
+    },
+    {
+        "name": "PACHECO Guillermo",
+        "country_ar": "المكسيك",
+        "country_en": "Mexico",
+        "flag": "mx",
+        "role": "var"
+    },
+    {
+        "name": "SAN Fedayi",
+        "country_ar": "سويسرا",
+        "country_en": "Switzerland",
+        "flag": "ch",
+        "role": "var"
+    },
+    {
+        "name": "SOTO Juan",
+        "country_ar": "فنزويلا",
+        "country_en": "Venezuela",
+        "flag": "ve",
+        "role": "var"
+    },
+    {
+        "name": "TOSKI Rodolpho",
+        "country_ar": "البرازيل",
+        "country_en": "Brazil",
+        "flag": "br",
+        "role": "var"
+    },
+    {
+        "name": "VAN DRIESSCHE Bram",
+        "country_ar": "بلجيكا",
+        "country_en": "Belgium",
+        "flag": "be",
+        "role": "var"
+    },
+    {
+        "name": "VILLARREAL Armando",
+        "country_ar": "الولايات المتحدة",
+        "country_en": "USA",
+        "flag": "us",
+        "role": "var"
+    }
+]

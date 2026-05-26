@@ -1,0 +1,48 @@
+# ===== Secrets — NEVER commit / الأسرار — لا تُرفع أبداً =====
+/includes/config.local.php
+
+# ===== Runtime cache / كاش وقت التشغيل =====
+/cache/*
+!/cache/.htaccess
+!/cache/.gitkeep
+!/cache/page/
+!/cache/ratelimit/
+!/cache/stadiums/
+/cache/page/*
+!/cache/page/.gitkeep
+/cache/ratelimit/*
+!/cache/ratelimit/.gitkeep
+/cache/stadiums/*
+!/cache/stadiums/.gitkeep
+
+# ===== Runtime user data / بيانات المستخدمين وقت التشغيل =====
+/data/users/*
+!/data/users/.gitkeep
+/data/preds/*
+!/data/preds/.gitkeep
+/data/leagues/*
+!/data/leagues/.gitkeep
+/data/polls/*
+!/data/polls/.gitkeep
+/data/qahr/*
+!/data/qahr/.gitkeep
+/data/messages/*
+!/data/messages/.gitkeep
+/data/triviapts/*
+!/data/triviapts/.gitkeep
+/data/_names.json
+/data/_leaderboard.json
+
+# ===== Logs & system files / السجلّات وملفات النظام =====
+/logs/*
+!/logs/.htaccess
+!/logs/index.html
+*.log
+Thumbs.db
+.DS_Store
+
+# ===== Editor / OS =====
+.vscode/
+.idea/
+*.swp
+.claude/

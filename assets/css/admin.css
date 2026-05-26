@@ -1,0 +1,109 @@
+/* ============================================================
+   admin.css — تنسيق لوحة التحكم (admin.php وأقسام admin/)
+   يعتمد على متغيّرات الألوان المعرّفة في style.css.
+   ============================================================ */
+.admin-body {
+  margin: 0; background: var(--bg, #0a1626); color: var(--text, #dfe7f5);
+  font-family: 'Cairo', Tahoma, Arial, sans-serif; min-height: 100vh;
+}
+
+/* ---- شاشة الدخول ---- */
+.admin-login {
+  max-width: 340px; margin: 12vh auto; padding: 28px 24px;
+  background: var(--surface, #11203a); border: 1px solid var(--border, #243a68);
+  border-radius: 16px; text-align: center; display: flex; flex-direction: column; gap: 12px;
+}
+.admin-login-mark {
+  width: 54px; height: 54px; margin: 0 auto; border-radius: 14px;
+  background: #fff; color: #0a1626; font-weight: 900; font-size: 26px;
+  display: flex; align-items: center; justify-content: center;
+}
+.admin-login h1 { font-size: 1.2rem; margin: 0; }
+.admin-login input {
+  padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border, #243a68);
+  background: var(--bg-2, #0c1830); color: var(--text, #fff); font-size: 1rem; font-family: inherit;
+}
+.admin-login button {
+  padding: 12px; border-radius: 10px; border: 0; cursor: pointer;
+  background: #fff; color: #0a1626; font-weight: 800; font-size: 1rem;
+}
+.admin-login-err { color: #ff9aa8; font-size: .9rem; margin: 0; }
+
+/* ---- الهيكل ---- */
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  padding: 12px 20px; background: var(--surface, #11203a);
+  border-bottom: 1px solid var(--border, #243a68); position: sticky; top: 0; z-index: 20;
+}
+.admin-brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.05rem; }
+.admin-mark {
+  width: 34px; height: 34px; border-radius: 9px; background: #fff; color: #0a1626;
+  font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.admin-nav { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.admin-nav a {
+  padding: 8px 14px; border-radius: 9px; font-weight: 700; font-size: .9rem;
+  color: var(--text-dim, #9fb0c8); text-decoration: none; transition: .15s;
+}
+.admin-nav a:hover { background: var(--bg-2, #0c1830); color: var(--text, #fff); }
+.admin-nav a.active { background: rgba(255,255,255,.12); color: var(--accent, #fff); }
+.admin-nav-out { color: var(--text-faint, #7e90ad) !important; font-size: .82rem !important; }
+
+.admin-main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+.admin-title { font-size: 1.5rem; margin: 0 0 18px; }
+.admin-muted { color: var(--text-dim, #9fb0c8); }
+.admin-alert {
+  background: #3a1d22; border: 1px solid #7a2a36; color: #ffd7dd;
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+}
+
+/* ---- بطاقات الإحصائيات ---- */
+.admin-stats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); margin-bottom: 22px; }
+.admin-stat {
+  background: var(--surface, #11203a); border: 1px solid var(--border, #243a68);
+  border-radius: 14px; padding: 16px; text-align: center;
+}
+.admin-stat strong { display: block; font-size: 1.9rem; font-weight: 900; color: var(--accent, #fff); }
+.admin-stat span { font-size: .82rem; color: var(--text-dim, #9fb0c8); }
+
+/* ---- البطاقات والجداول ---- */
+.admin-card {
+  background: var(--surface, #11203a); border: 1px solid var(--border, #243a68);
+  border-radius: 14px; padding: 18px; margin-bottom: 18px;
+}
+.admin-card h2, .admin-card h3 { margin-top: 0; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.admin-table th, .admin-table td { padding: 10px 12px; text-align: start; border-bottom: 1px solid var(--border, #243a68); white-space: nowrap; }
+.admin-table th { color: var(--text-dim, #9fb0c8); font-weight: 800; font-size: .8rem; }
+.admin-table tbody tr:hover { background: var(--bg-2, #0c1830); }
+
+/* ---- أزرار وشارات ---- */
+.admin-btn {
+  display: inline-block; padding: 7px 14px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--border, #243a68); background: var(--bg-2, #0c1830);
+  color: var(--text, #fff); font-weight: 700; font-size: .85rem; font-family: inherit; text-decoration: none;
+}
+.admin-btn:hover { border-color: var(--accent, #fff); }
+.admin-btn-primary { background: #fff; color: #0a1626; border-color: #fff; }
+.admin-btn-danger  { background: #7a2a36; color: #ffe3e8; border-color: #93313f; }
+.admin-btn-danger:hover { border-color: #ff9aa8; }
+.admin-badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: .74rem; font-weight: 800; }
+.admin-badge-ok   { background: #163a2a; color: #7ef0b0; }
+.admin-badge-warn { background: #3a3216; color: #f0d77e; }
+.admin-badge-bad  { background: #3a1d22; color: #ff9aa8; }
+
+/* ---- حقول الإدخال ---- */
+.admin-input, .admin-field input, .admin-field select {
+  padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border, #243a68);
+  background: var(--bg-2, #0c1830); color: var(--text, #fff); font-family: inherit; font-size: .9rem;
+}
+.admin-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.admin-field label { font-size: .82rem; color: var(--text-dim, #9fb0c8); font-weight: 700; }
+.admin-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+
+/* ---- قائمة فحص الأمان ---- */
+.admin-check { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border, #243a68); }
+.admin-check:last-child { border-bottom: 0; }
+.admin-check-ico { font-size: 1.1rem; }
+.admin-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }

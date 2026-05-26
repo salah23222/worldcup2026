@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+# تهدئة الزحف: ثانيتان بين الطلبات لتفادي إغراق الاستضافة المشتركة (يحترمها Bing وغيره).
+Crawl-delay: 2
+
+# لا داعي لفهرسة الـ API الداخلي أو ملفات الكاش/البيانات أو لوحة التحكم
+Disallow: /api/
+Disallow: /cache/
+Disallow: /data/
+Disallow: /admin/
+Disallow: /admin.php
+Disallow: /cron/
+Disallow: /health.php
+
+Sitemap: /sitemap.xml

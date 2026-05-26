@@ -1,0 +1,62 @@
+# ============================================================
+# World Cup 2026 — .htaccess
+# أمان + ضغط + كاش للملفات الثابتة
+# ============================================================
+
+# ---------- منع عرض محتويات المجلدات ----------
+Options -Indexes
+
+# ---------- حماية الملفات الحساسة ----------
+<FilesMatch "\.(json|md|log)$">
+  Require all denied
+</FilesMatch>
+
+# منع الوصول للملفات المخفية (.htaccess, .gitignore, .env ...)
+<FilesMatch "^\.">
+  Require all denied
+</FilesMatch>
+
+# منع الوصول المباشر لملفات الإعداد (دفاع في العمق إن تعطّل تنفيذ PHP)
+<FilesMatch "^config(\.local)?(\.example)?\.php$">
+  Require all denied
+</FilesMatch>
+
+# ---------- ضغط GZIP ----------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain
+  AddOutputFilterByType DEFLATE application/javascript application/json
+</IfModule>
+
+# ---------- كاش المتصفح للملفات الثابتة ----------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css            "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType image/png           "access plus 30 days"
+  ExpiresByType image/jpeg          "access plus 30 days"
+  ExpiresByType image/svg+xml       "access plus 30 days"
+</IfModule>
+
+# ---------- ترويسات أمان ----------
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+  # الودجت قابل للتضمين في أي موقع — ألغِ منع التأطير له فقط
+  <FilesMatch "^widget\.php$">
+    Header unset X-Frame-Options
+    Header set Content-Security-Policy "frame-ancestors *"
+  </FilesMatch>
+</IfModule>
+
+# ---------- روابط لطيفة لخريطة الموقع ----------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^sitemap\.xml$ sitemap.php [L]
+</IfModule>
+
+# ---------- صفحة الخطأ ----------
+ErrorDocument 404 /index.php
+
+# ---------- الترميز الافتراضي ----------
+AddDefaultCharset UTF-8
