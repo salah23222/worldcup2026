@@ -42,10 +42,15 @@ Options -Indexes
   Header set X-Content-Type-Options "nosniff"
   Header set X-Frame-Options "SAMEORIGIN"
   Header set Referrer-Policy "strict-origin-when-cross-origin"
-  # الودجت قابل للتضمين في أي موقع — ألغِ منع التأطير له فقط
+  Header set Permissions-Policy "geolocation=(self), microphone=(), camera=(), payment=()"
+  # سياسة أمان المحتوى (CSP) — دفاع في العمق ضد XSS وحقن الموارد.
+  # img-src https: مسموح لأن صور الأخبار تأتي من مصادر RSS متعددة؛ الخطوط من Google Fonts.
+  # ملاحظة: 'unsafe-inline' للسكربتات/الأنماط مؤقّت (الموقع يستخدم inline) — يُشدَّد لاحقاً عبر nonce.
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  # الودجت قابل للتضمين في أي موقع — اسمح بالتأطير له فقط مع بقاء بقية الحماية.
   <FilesMatch "^widget\.php$">
     Header unset X-Frame-Options
-    Header set Content-Security-Policy "frame-ancestors *"
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors *"
   </FilesMatch>
 </IfModule>
 

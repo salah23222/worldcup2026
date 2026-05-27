@@ -107,8 +107,13 @@ define('SMTP_PORT',   (int)   cfg_secret('SMTP_PORT', 465, $__local));        //
 define('SMTP_USER',   (string)cfg_secret('SMTP_USER', '', $__local));         // = البريد الكامل
 define('SMTP_PASS',   (string)cfg_secret('SMTP_PASS', '', $__local));         // كلمة سر صندوق البريد
 define('SMTP_SECURE', (string)cfg_secret('SMTP_SECURE', 'ssl', $__local));    // 'ssl' أو 'tls'
-// سرّ توقيع روابط إلغاء الاشتراك (لا يُكشف للمستخدم).
-define('MAIL_SECRET', (string)cfg_secret('MAIL_SECRET', (INSTALL_TOKEN !== '' ? INSTALL_TOKEN : 'wc26-mail-secret'), $__local));
+// سرّ توقيع روابط إلغاء الاشتراك (لا يُكشف للمستخدم). الأفضل ضبطه صراحةً في config.local.php.
+// إن لم يُضبط: نشتقّه من INSTALL_TOKEN ثم DB_PASS (قيمة خاصّة بكل تثبيت) — لا سرّ عام مكتوب
+// في المستودع (كان سابقاً 'wc26-mail-secret' وهو متوقَّع علناً ويسمح بتزوير روابط إلغاء الاشتراك).
+define('MAIL_SECRET', (string)cfg_secret('MAIL_SECRET',
+    (INSTALL_TOKEN !== '' ? INSTALL_TOKEN
+        : (DB_PASS !== '' ? hash('sha256', 'wc26-mail|' . DB_PASS) : '')),
+    $__local));
 // كل كم يوم تُرسَل النشرة (افتراضي 2 = كل يومين). تتوقّف تلقائياً بعد النهائي.
 define('DIGEST_EVERY_DAYS', (int)cfg_secret('DIGEST_EVERY_DAYS', 2, $__local));
 

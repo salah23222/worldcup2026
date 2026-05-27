@@ -209,6 +209,22 @@ Architecture in one line:
 PRs welcome. Please keep the project dependency‑free (plain PHP/JS), escape all output
 with `e()`, protect state‑changing endpoints with CSRF, and never commit secrets.
 
+## 🙏 Acknowledgments / شكر وتقدير
+
+- **[openfootball](https://github.com/openfootball/worldcup.json)** — all match fixtures,
+  results and schedules come from this excellent **public‑domain (CC0)** open‑data project.
+  Sincere thanks to its maintainers and contributors — this site is built on their work.
+  بيانات المباريات والنتائج والجداول مصدرها مشروع **openfootball** المفتوح (ملكية عامة CC0) —
+  شكر وتقدير كبير للقائمين عليه والمساهمين فيه؛ هذا الموقع قائم على عملهم. 🙌
+- **API‑Football**, **Anthropic Claude**, and public **RSS** sources — optional integrations
+  powering live scores, AI previews, and the news feed.
+
+> 🛠️ **Built in PHP — but usable from any language.** The data is plain JSON over HTTP,
+> so you can build on it in **Python, JavaScript, Java, Go, Rust, C#, …** —
+> see **[For developers](#-for-developers--use-the-data-in-any-language)**.
+
+---
+
 ## 📄 License / الرخصة
 
 MIT — see [LICENSE](LICENSE).
