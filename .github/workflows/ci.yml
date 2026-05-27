@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+# Uses only the GitHub-owned actions/checkout + the PHP preinstalled on
+# ubuntu-latest. No third-party actions, so it runs even when the repo's
+# Actions policy restricts actions to GitHub-authored ones.
 jobs:
   php-lint:
     name: PHP syntax check
@@ -14,11 +17,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.2'
-          coverage: none
+      - name: Show PHP version
+        run: php -v
 
       - name: Lint all PHP files
         run: |
