@@ -54,6 +54,8 @@ function security_init(): void
     if (headers_sent()) { return; }
 
     // 3) ترويسات الأمان.
+    // أخفِ إصدار PHP (X-Powered-By) — يقلّل المعلومات المتاحة لاستهداف ثغرات خاصّة بالإصدار.
+    header_remove('X-Powered-By');
     header('X-Content-Type-Options: nosniff');
     header('Referrer-Policy: strict-origin-when-cross-origin');
 

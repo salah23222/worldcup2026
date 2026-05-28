@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.5] — 2026-05-29
+### Security
+- **Hide PHP version.** `security.php` now calls `header_remove('X-Powered-By')`,
+  so responses no longer advertise the exact PHP version (reduces information
+  available for version-targeted attacks). Works regardless of `expose_php`.
+
 ## [1.1.4] — 2026-05-29
 ### Security
 - **Rate-limit IP spoofing fixed.** `RateLimiter::ip()` previously trusted the
