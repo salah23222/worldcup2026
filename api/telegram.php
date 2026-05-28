@@ -51,17 +51,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     exit;
 }
 
-// 2) تحقّق من ترويسة السرّ (إن ضُبط سرّ) — يمنع استدعاء العنوان من جهات غير تيليجرام.
+// 2) تحقّق من ترويسة السرّ — يمنع استدعاء العنوان من جهات غير تيليجرام.
+//    السرّ إلزاميّ متى فُعّل البوت: بلا سرّ مضبوط نرفض كل الطلبات (نمنع ترك
+//    الـwebhook مفتوحاً للعموم بالخطأ → إساءة/سبام عبر إرسال رسائل لأي chat_id).
 $secret = defined('TELEGRAM_WEBHOOK_SECRET') ? TELEGRAM_WEBHOOK_SECRET
         : (getenv('TELEGRAM_WEBHOOK_SECRET') ?: '');
 $secret = is_string($secret) ? trim($secret) : '';
-if ($secret !== '') {
-    $got = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
-    if (!is_string($got) || !hash_equals($secret, $got)) {
-        http_response_code(403);
-        echo json_encode(['ok' => false, 'error' => 'forbidden'], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+if ($secret === '') {
+    error_log('[telegram] TELEGRAM_WEBHOOK_SECRET not set while bot token is — webhook refused.');
+    http_response_code(503);
+    echo json_encode(['ok' => false, 'error' => 'disabled'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+$got = $_SERVER['HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN'] ?? '';
+if (!is_string($got) || !hash_equals($secret, $got)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'forbidden'], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 // 3) اقرأ التحديث (JSON) بأمان.

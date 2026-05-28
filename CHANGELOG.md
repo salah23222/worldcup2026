@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-05-28
+### Security
+- **Telegram webhook now requires a secret.** When `TELEGRAM_BOT_TOKEN` is set,
+  the webhook (`api/telegram.php`) refuses every request unless
+  `TELEGRAM_WEBHOOK_SECRET` is configured and matches the
+  `X-Telegram-Bot-Api-Secret-Token` header. Previously the secret check was
+  skipped when no secret was set, leaving an enabled bot's webhook open to
+  unauthenticated POSTs (spam / sending messages to arbitrary chat IDs).
+  The bot remains fully disabled by default (no token → 503).
+### Changed
+- Bumped the service-worker cache to `wc2026-v7`.
+
 ## [1.1.0] — 2026-05-28
 ### Added
 - **Redesigned match detail page** — a single continuous narrative
