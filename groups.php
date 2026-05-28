@@ -7,6 +7,7 @@ require __DIR__ . '/templates/group_table.php';
 
 $page_title = t('groups');
 $tables     = Standings::all();
+$thirds     = Standings::thirdPlaceRanking();
 
 tpl('header');
 ?>
@@ -32,6 +33,12 @@ tpl('header');
     <span class="legend-dot qualified"></span>
     <?= e(t('qualified')) ?>
   </p>
+
+  <?php if ($thirds): ?>
+    <div class="groups-grid third-place-grid">
+      <?php render_third_place_table($thirds); ?>
+    </div>
+  <?php endif; ?>
 <?php endif; ?>
 
 <?php tpl('footer'); ?>

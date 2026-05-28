@@ -56,3 +56,59 @@ function render_group_table(string $group, array $rows): void {
     </div>
     <?php
 }
+
+/**
+ * render_third_place_table() — جدول ترتيب أصحاب المركز الثالث عبر المجموعات.
+ * يُستدعى عبر render_third_place_table($rows) حيث $rows من Standings::thirdPlaceRanking().
+ * كل صف يحوي إضافةً: 'group' و'qualified'.
+ */
+function render_third_place_table(array $rows): void {
+    if (!$rows) return;
+    ?>
+    <div class="group-block third-place-block">
+      <h3 class="group-title">
+        <span class="group-letter">3</span>
+        <?= e(t('best_thirds')) ?>
+      </h3>
+      <p class="muted third-place-note"><?= e(t('best_thirds_note')) ?></p>
+      <div class="table-scroll">
+        <table class="standings">
+          <thead>
+            <tr>
+              <th class="t-pos"><?= e(t('pos')) ?></th>
+              <th><?= e(t('col_group')) ?></th>
+              <th class="t-team"><?= e(t('team')) ?></th>
+              <th><?= e(t('played')) ?></th>
+              <th><?= e(t('gf')) ?></th>
+              <th><?= e(t('gd')) ?></th>
+              <th class="t-pts"><?= e(t('points')) ?></th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($rows as $i => $r):
+              $rank      = $i + 1;
+              $qualClass = !empty($r['qualified']) ? ' qualified' : '';
+            ?>
+            <tr class="<?= e(ltrim($qualClass)) ?>">
+              <td class="t-pos"><span class="rank"><?= $rank ?></span></td>
+              <td><strong><?= e(preg_replace('/[^A-L]/i', '', (string)($r['group'] ?? ''))) ?></strong></td>
+              <td class="t-team">
+                <a href="<?= e(url('team.php', ['team' => $r['team']])) ?>">
+                  <?= flag_img($r['team'], 'w40') ?>
+                  <span><?= e(team_name($r['team'])) ?></span>
+                </a>
+              </td>
+              <td><?= (int)$r['p'] ?></td>
+              <td><?= (int)$r['gf'] ?></td>
+              <td class="<?= $r['gd'] > 0 ? 'pos' : ($r['gd'] < 0 ? 'neg' : '') ?>">
+                <?= ($r['gd'] > 0 ? '+' : '') . (int)$r['gd'] ?>
+              </td>
+              <td class="t-pts"><strong><?= (int)$r['pts'] ?></strong></td>
+            </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <?php
+}

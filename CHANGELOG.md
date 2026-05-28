@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.2] — 2026-05-28
+### Added
+- **Best third-placed teams table** (`Standings::thirdPlaceRanking()`) — the
+  2026 format qualifies the 8 best third-placed teams across the 12 groups
+  into the Round of 32. The groups page now renders a dedicated cross-group
+  ranking table that highlights the 8 qualifiers.
+### Fixed
+- **FIFA-compliant group tie-breakers.** Group standings now resolve ties by
+  overall points → goal difference → goals scored, then by **head-to-head**
+  results among the teams still level (their direct-match points → GD → goals),
+  falling back to alphabetical order. Previously ties fell straight to
+  alphabetical order after goals scored, which could mis-order level teams.
+### Changed
+- Bumped the service-worker cache to `wc2026-v8`.
+
 ## [1.1.1] — 2026-05-28
 ### Security
 - **Telegram webhook now requires a secret.** When `TELEGRAM_BOT_TOKEN` is set,
