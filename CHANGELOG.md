@@ -4,6 +4,35 @@ All notable changes to this project are documented here.
 Format based on [Keep a Changelog](https://keepachangelog.com/); versioning follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-05-28
+### Added
+- **Redesigned match detail page** — a single continuous narrative
+  (hero score, info, AI preview/summary, unified events timeline,
+  statistics, lineup, officials, share). Inspired by professional
+  league fixture pages.
+- **Unified events timeline** — goals and cards merged into one
+  chronological stream with team-side indicators and per-event icons.
+- **Comparative statistics** — possession, shots, on-target, corners,
+  fouls, offsides rendered as proportional team1/team2 bars.
+- **Tactical pitch board** (`templates/pitch.php`) — both teams facing
+  each other with real grid positions; falls back to a textual lineup
+  when grid data is missing.
+- **Officials block** — main referee plus assistant referees and VAR
+  placeholders that resolve before kickoff.
+- **Local-only match preview** — a tightly-scoped demo for match `#0`
+  that only activates on `localhost` / `127.0.0.1` so authors can
+  preview how the page looks during a real match. Never ships to any
+  public deploy.
+
+### Changed
+- **JSON-LD hardening** (`seo.php`) — switched to
+  `JSON_HEX_TAG | JSON_HEX_AMP` so the structured-data script tag
+  cannot be broken out of regardless of data source.
+- **JSON-LD enrichment** — added the recommended `offers` field
+  (links to the official FIFA ticketing page; no fabricated price).
+- Bumped the service-worker cache to `wc2026-v6` so PWA clients pick
+  up the new layout and CSS.
+
 ## [1.0.1] — 2026-05-27
 ### Security
 - **Unsubscribe link signing:** removed the public default secret (`wc26-mail-secret`).
