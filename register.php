@@ -26,6 +26,19 @@ if (Database::available() && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
             (string)($_POST['country'] ?? '')
         );
         if ($res['ok']) {
+            $newId = (int)($res['user']['id'] ?? 0);
+            // إيميل ترحيب (best-effort — لا يُعطّل التسجيل عند فشل البريد).
+            try {
+                if ($newId > 0) {
+                    @AccountMail::welcome($newId, current_lang());
+                }
+            } catch (Throwable $e) { /* تجاهَل */ }
+            // تسجيل الإحالة (best-effort) — إن وُجد كوكي ?ref= صالح، يُكافأ المُحيل.
+            try {
+                if ($newId > 0) {
+                    Referrals::recordSignup($newId);
+                }
+            } catch (Throwable $e) { /* تجاهَل */ }
             header('Location: ' . url('predict.php'));
             exit;
         }

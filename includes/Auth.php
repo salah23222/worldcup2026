@@ -210,6 +210,41 @@ class Auth
         return ['ok' => true, 'error' => null, 'user' => self::publicUser($row)];
     }
 
+    /**
+     * loginAsUser() — يفتح جلسة للمستخدم مباشرةً (بعد إثبات هويّة آمن مسبق:
+     * مثل استهلاك رمز استعادة كلمة السر). يتحقق من وجوده، عدم إيقافه،
+     * ثم يفتح الجلسة كما لو سجّل دخولاً عادياً.
+     *
+     * استخدم بحذر — لا تستدعِها قبل التحقّق من حقّ المستخدم في الدخول.
+     * @return array{ok:bool, user:?array}
+     */
+    public static function loginAsUser(int $userId): array
+    {
+        $pdo = Database::pdo();
+        if (!$pdo instanceof PDO || $userId <= 0) {
+            return ['ok' => false, 'user' => null];
+        }
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, username, display_name, email, phone, country, created_at, updated_at
+                 FROM users WHERE id = ? LIMIT 1'
+            );
+            $stmt->execute([$userId]);
+            $row = $stmt->fetch();
+        } catch (Throwable $e) {
+            return ['ok' => false, 'user' => null];
+        }
+        if (!$row) {
+            return ['ok' => false, 'user' => null];
+        }
+        // منع الدخول إن كان موقوفاً (احترام لوحة الإشراف).
+        if (class_exists('Moderation') && Moderation::isBanned((int)$row['id'])) {
+            return ['ok' => false, 'user' => null];
+        }
+        self::setLoggedIn((int)$row['id']);
+        return ['ok' => true, 'user' => self::publicUser($row)];
+    }
+
     /** يسجّل الخروج ويُتلف الجلسة بالكامل. */
     public static function logout(): void
     {

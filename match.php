@@ -81,7 +81,7 @@ $page_title = team_name($t1) . ' ' . t('vs') . ' ' . team_name($t2);
 $page_desc  = $page_title . ' — ' . round_label($m['round'] ?? '')
             . (!empty($m['ground']) ? ' · ' . $m['ground'] : '');
 $seo_type   = 'article';
-$page_image = base_url() . '/card.php?id=' . (int)$id . '&mode=match&v=2';
+$page_image = base_url() . '/card.php?id=' . (int)$id . '&mode=match&v=3';
 
 // ----- خط زمني موحّد: أهداف + بطاقات مرتّبة بالدقيقة -----
 $events = [];
@@ -373,7 +373,11 @@ seo_sportsevent($m);
   <?php endif; endif; endif; ?>
 
   <!-- ============ مشاركة ============ -->
-  <?php render_share(canonical_url(), team_name($t1) . ' ' . t('vs') . ' ' . team_name($t2) . ' — ' . SITE_NAME_AR); ?>
+  <?php render_share(
+    canonical_url(),
+    team_name($t1) . ' ' . t('vs') . ' ' . team_name($t2) . ' — ' . SITE_NAME_AR,
+    ['teams' => [$t1, $t2]]
+  ); ?>
 
 </article>
 

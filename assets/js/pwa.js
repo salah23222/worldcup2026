@@ -107,20 +107,32 @@
   var installBtn = document.getElementById('pwaInstall');
   var closeBtn   = document.getElementById('pwaClose');
   var hintEl     = document.getElementById('pwaHint');
-  var DISMISS_KEY = 'wc_pwa_dismissed';
+  var DISMISS_KEY  = 'wc_pwa_dismissed';
+  var DISMISS_DAYS = 14;   // مدّة التجاهل قبل إعادة عرض شريط التثبيت
 
   // إذا التطبيق مثبّت أصلاً (يعمل بوضع standalone) → لا تُظهر شيئاً
   var isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                      window.navigator.standalone === true;
   if (isStandalone) return;
 
-  // لا تُزعج الزائر إن سبق أن أغلق الشريط
-  try { if (localStorage.getItem(DISMISS_KEY) === '1') return; } catch (e) {}
+  // لا تُزعج الزائر إن أغلق الشريط مؤخراً — تنتهي صلاحية التجاهل بعد DISMISS_DAYS يوماً.
+  try {
+    var raw = localStorage.getItem(DISMISS_KEY);
+    if (raw) {
+      var when = parseInt(raw, 10);
+      // قيمة قديمة '1' = تجاهل دائم → نُحوّلها لطابع زمني الآن لتنتهي بعد 14 يوماً
+      if (!when || when < 1e12) {
+        when = Date.now();
+        try { localStorage.setItem(DISMISS_KEY, String(when)); } catch (e) {}
+      }
+      if ((Date.now() - when) < DISMISS_DAYS * 86400000) return;
+    }
+  } catch (e) {}
 
   function show() { banner.hidden = false; }
   function dismiss() {
     banner.hidden = true;
-    try { localStorage.setItem(DISMISS_KEY, '1'); } catch (e) {}
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch (e) {}
   }
   if (closeBtn) closeBtn.addEventListener('click', dismiss);
 

@@ -58,6 +58,8 @@ tpl('header');
     </form>
 
     <p class="auth-alt">
+      <a class="btn-link" href="<?= e(url('forgot.php')) ?>"><?= e(t('forgot_link')) ?></a>
+      &nbsp;·&nbsp;
       <a class="btn-link" href="<?= e(url('register.php')) ?>"><?= e(t('no_account')) ?></a>
     </p>
 </div>

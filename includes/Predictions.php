@@ -322,6 +322,9 @@ class Predictions
                 }
             } catch (Throwable $e) {}
 
+            // خريطة نقاط الإحالة لكل user_id (best-effort — لا تكسر اللوحة لو فشل)
+            $refByUser = class_exists('Referrals') ? Referrals::pointsByUserMap() : [];
+
             foreach ($users as $u) {
                 $uid = (int)$u['id'];
                 $points = $exact = $correct = $played = 0;
@@ -334,12 +337,14 @@ class Predictions
                     if ($s === 3) $exact++;
                     if ($s >= 2) $correct++;
                 }
-                $trivia  = $trivByUser[$uid] ?? 0;
-                $points += $trivia;
+                $trivia    = $trivByUser[$uid] ?? 0;
+                $referral  = $refByUser[$uid]  ?? 0;
+                $points += $trivia + $referral;
                 $rows[] = [
                     'nickname' => (string)$u['display_name'],
                     'points'   => $points, 'exact' => $exact,
-                    'correct'  => $correct, 'played' => $played, 'trivia' => $trivia,
+                    'correct'  => $correct, 'played' => $played,
+                    'trivia'   => $trivia,  'referral' => $referral,
                 ];
             }
         } else {

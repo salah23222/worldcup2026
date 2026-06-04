@@ -44,8 +44,15 @@ require __DIR__ . '/Cards.php';
 require __DIR__ . '/Leagues.php';
 require __DIR__ . '/Polls.php';
 require __DIR__ . '/Mailer.php';
+require __DIR__ . '/AccountMail.php';
+require __DIR__ . '/PasswordReset.php';
+require __DIR__ . '/Referrals.php';
 require __DIR__ . '/Digest.php';
 require __DIR__ . '/Admin.php';
+
+// التقط ?ref=username من أيّ صفحة وضع الكوكي (قبل أي إخراج)
+Referrals::captureFromRequest();
+
 require __DIR__ . '/PageCache.php';
 
 /** اختصار لتضمين قالب من مجلد templates */

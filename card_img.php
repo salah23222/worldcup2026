@@ -117,14 +117,17 @@ try {
     ];
     $title = $isMatch ? 'FIFA WORLD CUP 2026' : ($titleMap[$type] ?? $titleMap['predict']);
 
-    // لا مباراة صالحة وليست بطاقة ملصق → بطاقة هوية بسيطة (كسلوك card.php التاريخي)
+    // لا مباراة صالحة وليست بطاقة ملصق → بطاقة هوية الموقع (الواجهة الافتراضية للمشاركة)
     if ($m === null && $type !== 'sticker') {
         if ($hasFont) {
-            $centerText($im, 40, 330, $white, $font, 'FIFA WORLD CUP 2026');
+            $centerText($im, 64, 290, $white, $font, 'FIFA WORLD CUP 2026');
+            $centerText($im, 32, 360, $gold,  $font, 'CANADA  .  MEXICO  .  USA');
+            $centerText($im, 24, 440, $dim,   $font, '104 MATCHES  .  48 TEAMS  .  16 CITIES');
             $domain = parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org';
-            $centerText($im, 24, $H-50, $white, $font, $domain);
+            $centerText($im, 26, $H-50, $white, $font, $domain);
         } else {
-            $centerBuiltin($im, 5, 300, $white, 'FIFA WORLD CUP 2026');
+            $centerBuiltin($im, 5, 280, $white, 'FIFA WORLD CUP 2026');
+            $centerBuiltin($im, 4, 330, $dim,   'CANADA - MEXICO - USA');
         }
         imagepng($im); imagedestroy($im); exit;
     }

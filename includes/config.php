@@ -124,9 +124,13 @@ define('DIGEST_EVERY_DAYS', (int)cfg_secret('DIGEST_EVERY_DAYS', 2, $__local));
 define('RATE_LIMIT_TRUST_FORWARDED', (bool)cfg_secret('RATE_LIMIT_TRUST_FORWARDED', false, $__local));
 
 // ---------- لوحة التحكم (admin.php) ----------
-// كلمة سر الدخول للوحة التحكم. فارغة = اللوحة معطّلة تماماً.
-// ضعها في config.local.php / البيئة، واستخدم كلمة سر قوية ومميّزة.
-define('ADMIN_PASS', (string)cfg_secret('ADMIN_PASS', '', $__local));
+// المُفضَّل: ADMIN_PASS_HASH (بصمة bcrypt) — حتى لو سُرّب ملف الإعدادات لا تُكشف كلمة السر.
+// لتوليد هاش جديد من كلمة سرّ تختارها:
+//   php -r "echo password_hash('YOUR_NEW_PASSWORD', PASSWORD_BCRYPT, ['cost'=>12]).PHP_EOL;"
+// التوافق الرجعي: ADMIN_PASS كنص عادي يُقبل أيضاً (لكنه أقلّ أماناً).
+// فارغ كلاهما = اللوحة معطّلة تماماً.
+define('ADMIN_PASS_HASH', (string)cfg_secret('ADMIN_PASS_HASH', '', $__local));
+define('ADMIN_PASS',      (string)cfg_secret('ADMIN_PASS',      '', $__local));
 
 // ---------- المحتوى الذكي (Claude API — اختياري) ----------
 // ضع مفتاح sk-ant-... لتفعيل المعاينات/الملخصات بالذكاء الاصطناعي (عربي + إنجليزي).

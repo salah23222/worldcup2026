@@ -89,10 +89,21 @@ tpl('header');
       <button type="button" class="btn-link" id="changeNameBtn"><?= e(t('change_name')) ?></button> ·
     <?php endif; ?>
     <a class="btn-link" href="<?= e(url('leaderboard.php')) ?>"><?= e(t('leaderboard')) ?> ›</a>
+    · <a class="btn-link" href="<?= e(url('trivia.php')) ?>"><?= e(t('trivia')) ?> ›</a>
     <?php if (Database::available()): ?>
       · <a class="btn-link" href="<?= e(url('logout.php')) ?>"><?= e(t('logout')) ?></a>
     <?php endif; ?>
   </div>
+
+  <!-- 🧠 سؤال اليوم — بطاقة دعوة بارزة (لكل الزوّار) -->
+  <a class="trivia-cta" href="<?= e(url('trivia.php')) ?>">
+    <span class="trivia-cta-icon" aria-hidden="true">🧠</span>
+    <span class="trivia-cta-text">
+      <strong><?= e(t('trivia')) ?></strong>
+      <small><?= e(t('trivia_cta_sub')) ?></small>
+    </span>
+    <span class="trivia-cta-arrow" aria-hidden="true">←</span>
+  </a>
 </div>
 
 <!-- قائمة المباريات المفتوحة -->

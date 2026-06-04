@@ -71,7 +71,7 @@ class PageCache
         $script = basename($_SERVER['SCRIPT_NAME'] ?? '');
         static $noCache = [
             'predict.php', 'leaderboard.php', 'trivia.php',
-            'login.php', 'register.php', 'logout.php',
+            'login.php', 'register.php', 'logout.php', 'forgot.php', 'reset.php', 'promote.php',
             'admin.php', 'health.php', 'install.php', 'db_selftest.php',
             'card.php', 'card_img.php', 'calendar.php', 'manifest.php', 'sitemap.php',
             'widget.php', 'embed.php', 'stickers.php', 'unsubscribe.php',

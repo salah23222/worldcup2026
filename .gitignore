@@ -49,3 +49,4 @@ Thumbs.db
 
 # ===== سكربت الرفع الشخصي (لا يُرفع) / personal push helper =====
 /رفع-التعديلات.bat
+/data/_visits.json

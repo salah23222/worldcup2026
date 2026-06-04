@@ -152,18 +152,43 @@ function render_news_item(array $it): void {
     <?php
 }
 
-/** شريط أزرار مشاركة (X / واتساب / فيسبوك / تيليجرام / نسخ) لرابط ونصّ معيّنين. */
-function render_share(string $url, string $text): void {
+/**
+ * شريط أزرار مشاركة (X / واتساب / فيسبوك / تيليجرام / نسخ).
+ * $opts['teams'] = [$team1En, $team2En] (اختياري) → يُضاف هاشتاقا المنتخبَين بالعربي والإنجليزي.
+ * الدول المستضيفة (كندا/المكسيك/أمريكا) تُضاف دائماً بـAR+EN.
+ */
+function render_share(string $url, string $text, array $opts = []): void {
     $u = rawurlencode($url);
-    // هاشتاقات: اسم الموقع (wcup2026) + كأس العالم 2026 عربي/إنجليزي + الرسمي (FIFAWorldCup26/WeAre26)
-    // تركيز إقليمي: X للسعودية، فيسبوك لمصر — لزيادة الانتشار.
-    $tagsX   = '#كأس_العالم_2026 #FIFAWorldCup26 #WeAre26 #السعودية #wcup2026';
-    $tagsFB  = '#WorldCup2026 #FIFAWorldCup26 #مصر #wcup2026';
-    $tagsGen = '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026';
 
-    $tX = rawurlencode($text . "\n\n" . $tagsX);
-    $tF = rawurlencode($text . "\n" . $tagsFB);
-    $tG = rawurlencode($text . ' ' . $tagsGen);
+    // هاشتاقات أساسية: اسم الموقع + الوسوم الرسمية للبطولة + الـlatin (يستهدفهم Google/X)
+    $core    = ['كأس_العالم_2026', 'FIFAWorldCup2026', 'WeAre26', 'wcup2026'];
+    // الدول المستضيفة — تظهر دوماً (AR + EN)
+    $hostsAr = ['كندا', 'المكسيك', 'أمريكا'];
+    $hostsEn = ['Canada', 'Mexico', 'USA'];
+
+    // المنتخبان (عند تمريرهما من صفحة المباراة) — AR via team_name() + EN
+    $teamTags = [];
+    foreach (($opts['teams'] ?? []) as $tEn) {
+        $tEn = trim((string)$tEn);
+        if ($tEn === '') continue;
+        // إنجليزي بلا مسافات (Mexico, SouthAfrica)
+        $teamTags[] = str_replace(' ', '', $tEn);
+        // عربي عبر team_name() + استبدال المسافات بـ_
+        if (function_exists('team_name')) {
+            $tAr = trim((string)team_name($tEn));
+            if ($tAr !== '' && $tAr !== $tEn) {
+                $teamTags[] = str_replace(' ', '_', $tAr);
+            }
+        }
+    }
+
+    // قائمة موحّدة بلا تكرار (مثلاً Mexico موجود في المضيفين وفي المنتخبَين)
+    $allTags = array_values(array_unique(array_merge($core, $hostsAr, $hostsEn, $teamTags)));
+    $tags    = '#' . implode(' #', $allTags);
+
+    $tX = rawurlencode($text . "\n\n" . $tags);
+    $tF = rawurlencode($text . "\n" . $tags);
+    $tG = rawurlencode($text . ' ' . $tags);
 
     $x  = "https://twitter.com/intent/tweet?text={$tX}&url={$u}";
     $wa = "https://wa.me/?text={$tG}%20{$u}";

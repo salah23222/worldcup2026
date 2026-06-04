@@ -44,7 +44,10 @@ function seo_head(array $opts = []): void {
     $lang  = current_lang();
     $title = $opts['title'] ?? t('site_desc');
     $desc  = $opts['description'] ?? t('site_desc');
-    $image = $opts['image'] ?? (base_url() . '/assets/img/og.png');
+    // og:image الافتراضي = البطاقة الديناميكية بالهوية الحالية (تتحدّث تلقائياً عند تغيير التصميم).
+    // الـcache-buster مبنيٌّ على mtime ملف المولّد → URL جديد عند كل تعديل → تويتر/فيسبوك يُعيدان الجلب.
+    $defaultOg = base_url() . '/card_img.php?v=' . (@filemtime(__DIR__ . '/../card_img.php') ?: 1);
+    $image = $opts['image'] ?? $defaultOg;
     $type  = $opts['type'] ?? 'website';
     $canon = canonical_url();
     $siteName = ($lang === 'ar') ? SITE_NAME_AR : SITE_NAME_EN;
@@ -110,7 +113,7 @@ function seo_sportsevent(array $m): void {
 
     // صورة المباراة: نفس بطاقة المشاركة المُولّدة التي تستخدمها صفحة match.php
     $idx   = (int)($m['_index'] ?? 0);
-    $image = base_url() . '/card.php?id=' . $idx . '&mode=match&v=2';
+    $image = base_url() . '/card.php?id=' . $idx . '&mode=match&v=3';
 
     // وصف موجز ودقيق للمباراة (الحقل description المطلوب من Google)
     $bits = [];
@@ -134,6 +137,10 @@ function seo_sportsevent(array $m): void {
         'sport'       => 'Football',
         'url'         => canonical_url(),
         'image'       => [$image],              // ← image
+        // إشارات معياريّة: تغطية الموقع لهذه المباراة مجانية ومتاحة للعموم.
+        // تُخبر Google أن الحدث «مجاني المشاهدة عبر موقعنا» فلا يُطالب بـoffers.
+        'isAccessibleForFree' => true,
+        'publicAccess'        => true,
     ];
     if ($ts !== null) {
         $ld['startDate']   = gmdate('c', $ts);
