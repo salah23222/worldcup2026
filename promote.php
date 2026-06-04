@@ -202,6 +202,16 @@ tpl('header');
     ['icon'=>'🏆','title'=>'Bracket tweet','platform'=>'X',
      'text'=>"🏆 Who lifts the World Cup 2026?\nFill your bracket and stake your claim now:\n{$kitBracket}"],
   ];
+
+  // الهاشتاقات الرسمية من FIFA + المحلية + الدول المستضيفة — تُضاف في نهاية كل قالب
+  // (يضمن أن المستخدم الذي ينسخ النص ويلصقه على إنستجرام/ثردز/أي منصّة يحصل عليها تلقائياً)
+  $tags = $isAr
+    ? '#كأس_العالم_2026 #WeAre26 #FIFAWorldCup26 #wcup2026 #كندا #المكسيك #أمريكا'
+    : '#WeAre26 #FIFAWorldCup26 #WorldCup2026 #wcup2026 #Canada #Mexico #USA';
+  foreach ($templates as &$t) {
+    $t['text'] .= "\n\n" . $tags;
+  }
+  unset($t);
   ?>
   <div class="marketing-kit">
     <h2 class="section-head">🧰 <?= e($isAr ? 'صندوق التسويق — قوالب جاهزة' : 'Marketing Kit — Ready-to-Post Templates') ?></h2>
