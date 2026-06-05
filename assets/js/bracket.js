@@ -160,15 +160,15 @@
     var champ = finalNum != null ? state.winners[finalNum] : null;
     var champName = champ ? (team[champ] ? team[champ].name : champ) : null;
     var txt = champName
-      ? (AR ? 'توقّعي لبطل كأس العالم 2026: ' + champName + ' 🏆' : 'My FIFA World Cup 2026 champion pick: ' + champName + ' 🏆')
-      : (AR ? 'املأ توقّعك لمشوار كأس العالم 2026!' : 'Fill your FIFA World Cup 2026 bracket!');
+      ? (AR ? 'توقّعي لبطل كأس العالم 2026: ' + champName + ' 🏆' : (FR ? 'Mon champion pour la Coupe du Monde 2026 : ' + champName + ' 🏆' : 'My FIFA World Cup 2026 champion pick: ' + champName + ' 🏆'))
+      : (AR ? 'املأ توقّعك لمشوار كأس العالم 2026!' : (FR ? 'Remplissez votre tableau prédictif Coupe du Monde 2026 !' : 'Fill your FIFA World Cup 2026 bracket!'));
     var url = location.href;
     if (navigator.share) {
       navigator.share({ title: 'World Cup 2026', text: txt, url: url }).catch(function () {});
     } else if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(txt + ' ' + url).then(function () {
-        shareBtn.textContent = AR ? 'تم النسخ ✓' : 'Copied ✓';
-        setTimeout(function () { shareBtn.textContent = AR ? '📣 شارك توقّعي' : '📣 Share my bracket'; }, 1800);
+        shareBtn.textContent = AR ? 'تم النسخ ✓' : (FR ? 'Copié ✓' : 'Copied ✓');
+        setTimeout(function () { shareBtn.textContent = AR ? '📣 شارك توقّعي' : (FR ? '📣 Partager mon tableau' : '📣 Share my bracket'); }, 1800);
       });
     }
   });
