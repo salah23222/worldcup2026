@@ -91,11 +91,11 @@ tpl('header');
         <?php
           $cs = countries();
           $sel = strtoupper($_POST['country'] ?? '');
-          uasort($cs, fn($a, $b) => strcmp($a[current_lang() === 'ar' ? 0 : 1], $b[current_lang() === 'ar' ? 0 : 1]));
+          uasort($cs, fn($a, $b) => strcmp($a[current_lang() === 'ar' ? 0 : (current_lang() === 'fr' ? 2 : 1)], $b[current_lang() === 'ar' ? 0 : (current_lang() === 'fr' ? 2 : 1)]));
           foreach ($cs as $code => $names):
         ?>
           <option value="<?= e($code) ?>" <?= $sel === $code ? 'selected' : '' ?>>
-            <?= e(current_lang() === 'ar' ? $names[0] : $names[1]) ?>
+            <?= e(current_lang() === 'ar' ? $names[0] : (current_lang() === 'fr' ? ($names[2] ?? $names[1]) : $names[1])) ?>
           </option>
         <?php endforeach; ?>
       </select>

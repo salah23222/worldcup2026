@@ -7,6 +7,8 @@ if (!defined('WC2026')) { exit('Access denied'); }
 $lang  = current_lang();
 $dir   = lang_dir();
 $title = isset($page_title) ? ($page_title . ' — ' . t('site_desc')) : t('site_desc');
+$siteName = match($lang) { 'ar' => SITE_NAME_AR, 'fr' => SITE_NAME_FR, default => SITE_NAME_EN };
+$siteTagline = match($lang) { 'ar' => SITE_TAGLINE_AR, 'fr' => SITE_TAGLINE_FR, default => SITE_TAGLINE_EN };
 // تحديد الصفحة النشطة من اسم الملف الحالي
 $current = basename($_SERVER['SCRIPT_NAME']);
 function nav_active(string $file): string {
@@ -29,13 +31,17 @@ function nav_group_active(array $files): string {
 <?php
 // كلمات مفتاحية للبحث (Bing/محركات أخرى تستخدمها؛ Google يتجاهلها غالباً — القيمة الأكبر
 // في العنوان والوصف والمحتوى والبيانات المنظّمة، وكلها مضبوطة). تُترجَم حسب اللغة.
-$kw = ($lang === 'ar')
-    ? 'كأس العالم 2026, مونديال 2026, كأس العالم, نتائج كأس العالم 2026, مباريات كأس العالم 2026, '
-      . 'جدول مباريات المونديال, ترتيب المجموعات, مواعيد المباريات بتوقيتك, توقعات كأس العالم, '
-      . 'الأدوار الإقصائية, المنتخبات, الملاعب, كأس العالم كندا المكسيك أمريكا, هدافو كأس العالم, دليل المشجع'
-    : 'FIFA World Cup 2026, World Cup 2026, World Cup 2026 schedule, World Cup 2026 results, '
-      . 'World Cup 2026 fixtures, group standings, knockout bracket, match predictions, World Cup 2026 teams, '
-      . 'World Cup stadiums, Canada Mexico USA World Cup, live scores, top scorers, fan guide';
+$kw = match($lang) {
+    'ar' => 'كأس العالم 2026, مونديال 2026, كأس العالم, نتائج كأس العالم 2026, مباريات كأس العالم 2026, '
+          . 'جدول مباريات المونديال, ترتيب المجموعات, مواعيد المباريات بتوقيتك, توقعات كأس العالم, '
+          . 'الأدوار الإقصائية, المنتخبات, الملاعب, كأس العالم كندا المكسيك أمريكا, هدافو كأس العالم, دليل المشجع',
+    'fr' => 'Coupe du Monde 2026, Coupe du Monde FIFA 2026, calendrier Coupe du Monde 2026, résultats Coupe du Monde, '
+          . 'matchs Coupe du Monde 2026, classement groupes, tableau phase finale, pronostics Coupe du Monde, '
+          . 'équipes Coupe du Monde 2026, stades Coupe du Monde, Canada Mexique États-Unis, scores en direct, meilleurs buteurs, guide du supporter',
+    default => 'FIFA World Cup 2026, World Cup 2026, World Cup 2026 schedule, World Cup 2026 results, '
+          . 'World Cup 2026 fixtures, group standings, knockout bracket, match predictions, World Cup 2026 teams, '
+          . 'World Cup stadiums, Canada Mexico USA World Cup, live scores, top scorers, fan guide',
+};
 ?>
 <meta name="keywords" content="<?= e($page_keywords ?? $kw) ?>">
 <?php if (defined('GOOGLE_SITE_VERIFICATION') && GOOGLE_SITE_VERIFICATION !== ''): ?>
@@ -51,7 +57,7 @@ $kw = ($lang === 'ar')
 <link rel="apple-touch-icon" href="<?= $b ?>/assets/img/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="<?= e($lang === 'ar' ? 'مونديال 2026' : 'WC 2026') ?>">
+<meta name="apple-mobile-web-app-title" content="<?= e($siteName) ?>">
 <?php
 // كل وسوم SEO: canonical + hreflang + Open Graph/Twitter + JSON-LD
 seo_head([
@@ -76,8 +82,8 @@ seo_head([
     <a class="brand" href="<?= e(url('index.php')) ?>">
       <span class="brand-mark">26</span>
       <span class="brand-text">
-        <strong><?= e($lang === 'ar' ? SITE_NAME_AR : SITE_NAME_EN) ?></strong>
-        <small><?= e($lang === 'ar' ? SITE_TAGLINE_AR : SITE_TAGLINE_EN) ?></small>
+        <strong><?= e($siteName) ?></strong>
+        <small><?= e($siteTagline) ?></small>
       </span>
     </a>
 
@@ -87,7 +93,7 @@ seo_head([
 
     <nav class="main-nav" id="mainNav">
       <a href="<?= e(url('index.php')) ?>"<?= nav_active('index.php') ?>><?= e(t('home')) ?></a>
-      <a href="<?= e(url('today.php')) ?>"<?= nav_active('today.php') ?>><?= e($lang === 'ar' ? 'اليوم' : 'Today') ?></a>
+      <a href="<?= e(url('today.php')) ?>"<?= nav_active('today.php') ?>><?= e(t('today_matches')) ?></a>
       <a href="<?= e(url('matches.php')) ?>"<?= nav_active('matches.php') ?>><?= e(t('matches')) ?></a>
 
       <div class="nav-group">
@@ -95,10 +101,10 @@ seo_head([
           <?= e(t('predict')) ?><i class="nav-caret">▾</i>
         </button>
         <div class="nav-drop">
-          <a href="<?= e(url('predict.php')) ?>"<?= nav_active('predict.php') ?>><?= e($lang === 'ar' ? 'توقّع المباريات' : 'Predict matches') ?></a>
+          <a href="<?= e(url('predict.php')) ?>"<?= nav_active('predict.php') ?>><?= e(t('predict')) ?></a>
           <a href="<?= e(url('bracket.php')) ?>"<?= nav_active('bracket.php') ?>><?= e(t('bracket')) ?></a>
           <a href="<?= e(url('leaderboard.php')) ?>"<?= nav_active('leaderboard.php') ?>><?= e(t('leaderboard')) ?></a>
-          <a href="<?= e(url('leagues.php')) ?>"<?= nav_active('leagues.php') ?>><?= e($lang === 'ar' ? 'المجلس' : 'My Leagues') ?></a>
+          <a href="<?= e(url('leagues.php')) ?>"<?= nav_active('leagues.php') ?>><?= e($lang === 'ar' ? 'المجلس' : ($lang === 'fr' ? 'Mes ligues' : 'My Leagues')) ?></a>
           <a href="<?= e(url('stickers.php')) ?>"<?= nav_active('stickers.php') ?>><?= e(t('stickers')) ?></a>
           <a href="<?= e(url('trivia.php')) ?>"<?= nav_active('trivia.php') ?>><?= e(t('trivia')) ?></a>
           <a href="<?= e(url('promote.php')) ?>"<?= nav_active('promote.php') ?>>📣 <?= e(t('promote_title')) ?></a>
@@ -149,9 +155,13 @@ seo_head([
       <a href="<?= e(url('login.php')) ?>"<?= nav_active('login.php') ?>><?= e(t('login')) ?></a>
 <?php     endif;
       endif; ?>
-      <a class="lang-switch" href="<?= e(url($current, ['lang' => $lang === 'ar' ? 'en' : 'ar'])) ?>">
-        <?= $lang === 'ar' ? 'English' : 'العربية' ?>
-      </a>
+      <div class="lang-switch-group">
+        <?php foreach (['ar' => 'العربية', 'en' => 'English', 'fr' => 'Français'] as $lk => $lv): ?>
+          <?php if ($lk !== $lang): ?>
+            <a class="lang-switch" href="<?= e(url($current, ['lang' => $lk])) ?>"><?= $lv ?></a>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
     </nav>
   </div>
 </header>

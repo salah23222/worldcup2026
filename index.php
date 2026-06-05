@@ -76,12 +76,12 @@ if ($finalM && isset($finalM['score']['ft'])) {
 <?php endif; ?>
 
 <!-- ============ البطولة في أرقام (شريط بارز) ============ -->
-<?php $ar = (current_lang() === 'ar'); ?>
-<section class="stats-band" aria-label="<?= e($ar ? 'البطولة في أرقام' : 'Tournament in numbers') ?>">
+<?php $lang = current_lang(); $ar = ($lang === 'ar'); ?>
+<section class="stats-band" aria-label="<?= e(match($lang) { 'ar' => 'البطولة في أرقام', 'fr' => 'Le tournoi en chiffres', default => 'Tournament in numbers' }) ?>">
   <div class="sb-item"><span class="sb-num">48</span><span class="sb-lbl"><?= e(t('teams')) ?></span></div>
   <div class="sb-item"><span class="sb-num">104</span><span class="sb-lbl"><?= e(t('matches')) ?></span></div>
   <div class="sb-item"><span class="sb-num">16</span><span class="sb-lbl"><?= e(t('host_cities')) ?></span></div>
-  <div class="sb-item"><span class="sb-num">3</span><span class="sb-lbl"><?= e($ar ? 'دول مضيفة' : 'Host nations') ?></span></div>
+  <div class="sb-item"><span class="sb-num">3</span><span class="sb-lbl"><?= e(match($lang) { 'ar' => 'دول مضيفة', 'fr' => 'Pays hôtes', default => 'Host nations' }) ?></span></div>
 </section>
 
 <!-- ============ تفاعل مع المونديال (إبراز الميزات) ============ -->
@@ -199,17 +199,17 @@ if ($finalM && isset($finalM['score']['ft'])) {
 <!-- ============ روابط رسمية ============ -->
 <?php
 $officialLinks = [
-  ['🌐', $ar ? 'الموقع الرسمي (FIFA)' : 'Official FIFA site', 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026', true],
-  ['🎟️', $ar ? 'التذاكر' : 'Tickets',                         'https://www.fifa.com/tickets',                                        true],
-  ['🗺️', $ar ? 'خريطة المدن المضيفة' : 'Host cities map',      url('map.php'),                                                         false],
-  ['📅', $ar ? 'جدول المباريات' : 'Match schedule',            url('matches.php'),                                                     false],
-  ['🏟️', $ar ? 'الملاعب' : 'Stadiums',                         url('stadiums.php'),                                                    false],
-  ['🧭', $ar ? 'دليل المشجّع' : 'Fan guide',                   url('fanguide.php'),                                                    false],
+  ['🌐', match($lang) { 'ar' => 'الموقع الرسمي (FIFA)', 'fr' => 'Site officiel (FIFA)', default => 'Official FIFA site' }, 'https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026', true],
+  ['🎟️', match($lang) { 'ar' => 'التذاكر', 'fr' => 'Billets', default => 'Tickets' }, 'https://www.fifa.com/tickets', true],
+  ['🗺️', match($lang) { 'ar' => 'خريطة المدن المضيفة', 'fr' => 'Carte des villes hôtes', default => 'Host cities map' }, url('map.php'), false],
+  ['📅', match($lang) { 'ar' => 'جدول المباريات', 'fr' => 'Calendrier des matchs', default => 'Match schedule' }, url('matches.php'), false],
+  ['🏟️', match($lang) { 'ar' => 'الملاعب', 'fr' => 'Stades', default => 'Stadiums' }, url('stadiums.php'), false],
+  ['🧭', match($lang) { 'ar' => 'دليل المشجّع', 'fr' => 'Guide du fan', default => 'Fan guide' }, url('fanguide.php'), false],
 ];
 ?>
 <section class="section official-links">
   <div class="section-head">
-    <h2><span class="section-bar"></span><?= e($ar ? 'روابط رسمية ومفيدة' : 'Official & useful links') ?></h2>
+    <h2><span class="section-bar"></span><?= e(match($lang) { 'ar' => 'روابط رسمية ومفيدة', 'fr' => 'Liens officiels & utiles', default => 'Official & useful links' }) ?></h2>
   </div>
   <div class="official-grid">
     <?php foreach ($officialLinks as [$icon, $label, $href, $external]): ?>

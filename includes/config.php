@@ -34,8 +34,10 @@ if (!function_exists('cfg_secret')) {
 // ---------- معلومات الموقع ----------
 define('SITE_NAME_AR', 'كأس العالم 2026');
 define('SITE_NAME_EN', 'World Cup 2026');
+define('SITE_NAME_FR', 'Coupe du Monde 2026');
 define('SITE_TAGLINE_AR', 'كندا · المكسيك · الولايات المتحدة');
 define('SITE_TAGLINE_EN', 'Canada · Mexico · USA');
+define('SITE_TAGLINE_FR', 'Canada · Mexique · États-Unis');
 // من config.local.php / البيئة. فارغ = روابط نسبية. للإنتاج: https://wcup2026.org
 define('SITE_URL', (string)cfg_secret('SITE_URL', '', $__local));
 

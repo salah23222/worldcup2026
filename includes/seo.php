@@ -50,16 +50,18 @@ function seo_head(array $opts = []): void {
     $image = $opts['image'] ?? $defaultOg;
     $type  = $opts['type'] ?? 'website';
     $canon = canonical_url();
-    $siteName = ($lang === 'ar') ? SITE_NAME_AR : SITE_NAME_EN;
+    $siteName = match($lang) { 'ar' => SITE_NAME_AR, 'fr' => SITE_NAME_FR, default => SITE_NAME_EN };
+    $ogLocale = match($lang) { 'ar' => 'ar_AR', 'fr' => 'fr_FR', default => 'en_US' };
 
     echo '<link rel="canonical" href="' . e($canon) . '">' . "\n";
     echo '<link rel="alternate" hreflang="ar" href="' . e(page_url_lang('ar')) . '">' . "\n";
     echo '<link rel="alternate" hreflang="en" href="' . e(page_url_lang('en')) . '">' . "\n";
+    echo '<link rel="alternate" hreflang="fr" href="' . e(page_url_lang('fr')) . '">' . "\n";
     echo '<link rel="alternate" hreflang="x-default" href="' . e(page_url_lang('ar')) . '">' . "\n";
 
     // Open Graph
     echo '<meta property="og:site_name" content="' . e($siteName) . '">' . "\n";
-    echo '<meta property="og:locale" content="' . ($lang === 'ar' ? 'ar_AR' : 'en_US') . '">' . "\n";
+    echo '<meta property="og:locale" content="' . $ogLocale . '">' . "\n";
     echo '<meta property="og:type" content="' . e($type) . '">' . "\n";
     echo '<meta property="og:title" content="' . e($title) . '">' . "\n";
     echo '<meta property="og:description" content="' . e($desc) . '">' . "\n";
@@ -121,7 +123,7 @@ function seo_sportsevent(array $m): void {
     if (!empty($m['group']))  { $bits[] = group_label($m['group']); }
     if (!empty($m['ground'])) { $bits[] = $m['ground']; }
     $desc = $name . ($bits ? ' — ' . implode(' · ', $bits) : '')
-          . ' — ' . ($ar ? 'كأس العالم 2026' : 'FIFA World Cup 2026');
+          . ' — ' . t('site_desc');
 
     // الفريقان (يُستخدمان في competitor الدقيق + performer الذي يطلبه Google)
     $teams = [

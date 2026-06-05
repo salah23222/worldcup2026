@@ -115,7 +115,7 @@ class Referees
 
         $guess  = self::wikiTitleGuess($name);
         $result = [];
-        $tryLangs = $lang === 'ar' ? ['ar', 'en'] : ['en'];
+        $tryLangs = $lang === 'ar' ? ['ar', 'en'] : ($lang === 'fr' ? ['fr', 'en'] : ['en']);
         foreach ($tryLangs as $wl) {
             $title = self::wikiSearch($wl, $guess);
             if ($title === '') continue;

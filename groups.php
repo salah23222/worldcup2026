@@ -15,9 +15,11 @@ tpl('header');
 <div class="page-head">
   <h1><?= e(t('groups')) ?> — <?= e(t('standings')) ?></h1>
   <p class="muted">
-    <?= e(current_lang()==='ar'
-        ? 'يتأهل أول منتخبين من كل مجموعة + أفضل 8 منتخبات في المركز الثالث'
-        : 'Top 2 of each group + 8 best third-placed teams advance') ?>
+    <?= e(match(current_lang()) {
+        'ar' => 'يتأهل أول منتخبين من كل مجموعة + أفضل 8 منتخبات في المركز الثالث',
+        'fr' => 'Les 2 premiers de chaque groupe + les 8 meilleurs troisièmes se qualifient',
+        default => 'Top 2 of each group + 8 best third-placed teams advance',
+    }) ?>
   </p>
 </div>
 

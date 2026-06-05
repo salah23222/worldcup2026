@@ -9,6 +9,7 @@
   var ROUNDS = window.BRACKET;
   if (!ROUNDS) return;
   var AR = (window.BRACKET_LANG || 'ar') === 'ar';
+  var FR = (window.BRACKET_LANG || '') === 'fr';
   var STORE = 'wc_bracket_v1';
 
   // فهرسة المباريات برقمها + ترتيب الحساب (من الأسفل للأعلى)
@@ -62,8 +63,8 @@
   function teamsOf(num) { return [resolve(num, 1), resolve(num, 2)]; }
 
   function label(s) {
-    if (s.type === 'win')  return (AR ? 'الفائز ' : 'Winner ') + s.src;
-    if (s.type === 'lose') return (AR ? 'الخاسر ' : 'Loser ')  + s.src;
+    if (s.type === 'win')  return (AR ? 'الفائز ' : (FR ? 'Vainqueur ' : 'Winner ')) + s.src;
+    if (s.type === 'lose') return (AR ? 'الخاسر ' : (FR ? 'Perdant ' : 'Loser '))  + s.src;
     return s.label || '—';
   }
 

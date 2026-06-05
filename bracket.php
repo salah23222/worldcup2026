@@ -10,10 +10,12 @@ $data   = Bracket::predictorData();
 $rounds = $data['rounds'];
 $lang   = current_lang();
 
-$page_title = $lang === 'ar' ? 'توقّع المشوار' : 'Predict the Bracket';
-$page_desc  = $lang === 'ar'
-    ? 'املأ شجرة الأدوار الإقصائية كاملة من دور الـ32 حتى النهائي، وتوّج بطلك وشاركه.'
-    : 'Fill the entire knockout bracket from the Round of 32 to the final, crown your champion and share it.';
+$page_title = match($lang) { 'ar' => 'توقّع المشوار', 'fr' => 'Tableau prédictif', default => 'Predict the Bracket' };
+$page_desc  = match($lang) {
+    'ar' => 'املأ شجرة الأدوار الإقصائية كاملة من دور الـ32 حتى النهائي، وتوّج بطلك وشاركه.',
+    'fr' => 'Remplissez tout le tableau des phases finales des 32es de finale jusqu\'à la finale, couronnez votre champion et partagez-le.',
+    default => 'Fill the entire knockout bracket from the Round of 32 to the final, crown your champion and share it.',
+};
 
 $roundTitles = [
     'round_of_32'    => t('round_of_32'),
@@ -40,7 +42,7 @@ function bk_slot(array $slot, int $num, int $idx): void {
               data-src="<?= (int)($slot['src'] ?? 0) ?>"
               data-kind="<?= e($slot['type']) ?>">—</span>
       <?php endif; ?>
-      <button type="button" class="bk-pick" title="<?= e($lang === 'ar' ? 'يتأهّل' : 'advance') ?>" disabled>▲</button>
+      <button type="button" class="bk-pick" title="<?= e(t('tbd')) ?>" disabled>▲</button>
     </div>
     <?php
 }
@@ -59,11 +61,13 @@ tpl('header');
 </div>
 
 <div class="bk-toolbar">
-  <button type="button" class="btn-cta" id="bkShare"><?= e($lang === 'ar' ? '📣 شارك توقّعي' : '📣 Share my bracket') ?></button>
-  <button type="button" class="btn-ghost" id="bkReset"><?= e($lang === 'ar' ? '↺ تصفير' : '↺ Reset') ?></button>
-  <span class="bk-hint muted"><?= e($lang === 'ar'
-      ? 'اختر المتأهّلين في دور الـ32 ثم اضغط ▲ لتصعيد الفائز.'
-      : 'Pick the Round-of-32 qualifiers, then press ▲ to advance a winner.') ?></span>
+  <button type="button" class="btn-cta" id="bkShare"><?= e('📣 ' . t('share_pred')) ?></button>
+  <button type="button" class="btn-ghost" id="bkReset"><?= e(match($lang) { 'ar' => '↺ تصفير', 'fr' => '↺ Réinitialiser', default => '↺ Reset' }) ?></button>
+  <span class="bk-hint muted"><?= e(match($lang) {
+      'ar' => 'اختر المتأهّلين في دور الـ32 ثم اضغط ▲ لتصعيد الفائز.',
+      'fr' => 'Sélectionnez les qualifiés des 32es de finale, puis appuyez ▲ pour faire avancer un vainqueur.',
+      default => 'Pick the Round-of-32 qualifiers, then press ▲ to advance a winner.',
+  }) ?></span>
 </div>
 
 <div class="bk-board-wrap">

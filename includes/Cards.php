@@ -121,13 +121,13 @@ class Cards
 
         switch ($type) {
             case 'brag':
-                $headline = $ar ? 'قلتلكم! 🏆' : 'I CALLED IT! 🏆';
-                $subline  = $ar ? 'توقّعت النتيجة بالضبط' : 'Called the exact score';
+                $headline = match($lang) { 'ar' => 'قلتلكم! 🏆', 'fr' => 'JE L\'AVAIS DIT ! 🏆', default => 'I CALLED IT! 🏆' };
+                $subline  = match($lang) { 'ar' => 'توقّعت النتيجة بالضبط', 'fr' => 'Score exact prédit', default => 'Called the exact score' };
                 $score    = $p1 . ' : ' . $p2;
                 break;
 
             case 'result':
-                $headline = $ar ? 'النتيجة النهائية' : 'FINAL RESULT';
+                $headline = match($lang) { 'ar' => 'النتيجة النهائية', 'fr' => 'RÉSULTAT FINAL', default => 'FINAL RESULT' };
                 // النتيجة الفعلية من البيانات إن وُجدت، وإلا المُمرَّرة
                 if ($match && $match['ft'] !== null) {
                     $score = $match['ft'][0] . ' : ' . $match['ft'][1];
@@ -135,14 +135,14 @@ class Cards
                     $score = $p1 . ' : ' . $p2;
                 }
                 $subline = $match
-                    ? ($match['name1'] . ' ' . ($ar ? 'ضد' : 'vs') . ' ' . $match['name2'])
-                    : (($ar) ? 'كأس العالم 2026' : 'World Cup 2026');
+                    ? ($match['name1'] . ' ' . t('vs') . ' ' . $match['name2'])
+                    : t('site_desc');
                 break;
 
             case 'sticker':
                 $name = self::cleanText($params['name'] ?? '', 40);
-                if ($name === '') $name = $ar ? 'ملصق نادر' : 'Rare Sticker';
-                $headline = $ar ? 'حصلت على ملصق! ✨' : 'Got a sticker! ✨';
+                if ($name === '') $name = match($lang) { 'ar' => 'ملصق نادر', 'fr' => 'Sticker rare', default => 'Rare Sticker' };
+                $headline = match($lang) { 'ar' => 'حصلت على ملصق! ✨', 'fr' => 'Sticker obtenu ! ✨', default => 'Got a sticker! ✨' };
                 $subline  = $name;
                 $score    = '';
                 break;
@@ -170,12 +170,14 @@ class Cards
                 }
                 if ($roast === '') {
                     // سطر احتياطي مدمج (إن غاب Qahr أو رجع فارغاً)
-                    $roast = $ar
-                        ? 'قهر… بس بكرة نرجع أقوى 😩💔'
-                        : 'Heartbreak… but we rise again 😩💔';
+                    $roast = match($lang) {
+                        'ar' => 'قهر… بس بكرة نرجع أقوى 😩💔',
+                        'fr' => 'Frustration… mais on revient plus forts 😩💔',
+                        default => 'Heartbreak… but we rise again 😩💔',
+                    };
                 }
 
-                $headline = $ar ? 'قهر! 😩' : 'HEARTBREAK 😩';
+                $headline = match($lang) { 'ar' => 'قهر! 😩', 'fr' => 'FRUSTRATION ! 😩', default => 'HEARTBREAK 😩' };
                 $subline  = $roast;
                 $score    = ($g1 !== null && $g2 !== null) ? ((int)$g1 . ' : ' . (int)$g2) : '';
                 break;
@@ -183,8 +185,8 @@ class Cards
             case 'predict':
             default:
                 $type     = 'predict';
-                $headline = $ar ? 'توقّعي 🔮' : 'MY PREDICTION 🔮';
-                $subline  = $ar ? 'كأس العالم 2026' : 'FIFA World Cup 2026';
+                $headline = match($lang) { 'ar' => 'توقّعي 🔮', 'fr' => 'MA PRÉDICTION 🔮', default => 'MY PREDICTION 🔮' };
+                $subline  = t('site_desc');
                 $score    = $p1 . ' : ' . $p2;
                 break;
         }
@@ -211,33 +213,44 @@ class Cards
      */
     public static function shareText(string $type, array $data): string
     {
-        $ar = (current_lang() === 'ar');
+        $lang = current_lang();
+        $ar = ($lang === 'ar');
         $m  = $data['match'] ?? null;
-        $vs = $ar ? 'ضد' : 'vs';
+        $vs = t('vs');
         $pair = $m ? ($m['name1'] . ' ' . $vs . ' ' . $m['name2']) : '';
 
         switch (self::normalizeType($type)) {
             case 'brag':
-                return $ar
-                    ? 'قلتلكم! توقّعت ' . ($pair ?: 'المباراة') . ' بالضبط ' . $data['score'] . ' 🏆🔥'
-                    : 'I called it! Predicted ' . ($pair ?: 'the match') . ' exactly ' . $data['score'] . ' 🏆🔥';
+                return match($lang) {
+                    'ar' => 'قلتلكم! توقّعت ' . ($pair ?: 'المباراة') . ' بالضبط ' . $data['score'] . ' 🏆🔥',
+                    'fr' => 'Je l\'avais dit ! ' . ($pair ?: 'Le match') . ' prédit exactement ' . $data['score'] . ' 🏆🔥',
+                    default => 'I called it! Predicted ' . ($pair ?: 'the match') . ' exactly ' . $data['score'] . ' 🏆🔥',
+                };
             case 'result':
-                return $ar
-                    ? 'نتيجة ' . ($pair ?: 'المباراة') . ': ' . $data['score'] . ' ⚽'
-                    : ($pair ?: 'Match') . ' result: ' . $data['score'] . ' ⚽';
+                return match($lang) {
+                    'ar' => 'نتيجة ' . ($pair ?: 'المباراة') . ': ' . $data['score'] . ' ⚽',
+                    'fr' => ($pair ?: 'Match') . ' résultat : ' . $data['score'] . ' ⚽',
+                    default => ($pair ?: 'Match') . ' result: ' . $data['score'] . ' ⚽',
+                };
             case 'sticker':
-                return $ar
-                    ? 'حصلت على ملصق «' . $data['subline'] . '» في ألبوم المونديال! ✨'
-                    : 'Got the "' . $data['subline'] . '" sticker in the World Cup album! ✨';
+                return match($lang) {
+                    'ar' => 'حصلت على ملصق «' . $data['subline'] . '» في ألبوم المونديال! ✨',
+                    'fr' => 'Sticker "' . $data['subline'] . '" obtenu dans l\'album de la Coupe du Monde ! ✨',
+                    default => 'Got the "' . $data['subline'] . '" sticker in the World Cup album! ✨',
+                };
             case 'qahr':
-                return $ar
-                    ? ($data['subline'] !== '' ? $data['subline'] . ' 😩' : 'قهر مونديالي 😩')
-                    : ($data['subline'] !== '' ? $data['subline'] . ' 😩' : 'World Cup heartbreak 😩');
+                return match($lang) {
+                    'ar' => ($data['subline'] !== '' ? $data['subline'] . ' 😩' : 'قهر مونديالي 😩'),
+                    'fr' => ($data['subline'] !== '' ? $data['subline'] . ' 😩' : 'Frustration de Coupe du Monde 😩'),
+                    default => ($data['subline'] !== '' ? $data['subline'] . ' 😩' : 'World Cup heartbreak 😩'),
+                };
             case 'predict':
             default:
-                return $ar
-                    ? 'توقّعي في كأس العالم 2026 🔮 — ' . ($pair ?: '') . ' ' . $data['score']
-                    : 'My FIFA World Cup 2026 prediction 🔮 — ' . ($pair ?: '') . ' ' . $data['score'];
+                return match($lang) {
+                    'ar' => 'توقّعي في كأس العالم 2026 🔮 — ' . ($pair ?: '') . ' ' . $data['score'],
+                    'fr' => 'Ma prédiction Coupe du Monde 2026 🔮 — ' . ($pair ?: '') . ' ' . $data['score'],
+                    default => 'My FIFA World Cup 2026 prediction 🔮 — ' . ($pair ?: '') . ' ' . $data['score'],
+                };
         }
     }
 
@@ -273,7 +286,7 @@ class Cards
         if (!empty($params['brag'])) $out['brag'] = 1;
         if (isset($params['name']) && $params['name'] !== '') $out['name'] = self::cleanText($params['name'], 40);
         if (isset($params['team']) && $params['team'] !== '') $out['team'] = self::cleanText($params['team'], 40);
-        if (isset($params['lang']) && in_array($params['lang'], ['ar', 'en'], true)) $out['lang'] = $params['lang'];
+        if (isset($params['lang']) && in_array($params['lang'], ['ar', 'en', 'fr'], true)) $out['lang'] = $params['lang'];
         return $out;
     }
 

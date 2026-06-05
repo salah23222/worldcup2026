@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * today.php — «اليوم» — مركز الطقس اليومي.
  * ============================================================
@@ -21,18 +21,19 @@ if (!class_exists('Polls')) {
     require_once __DIR__ . '/includes/Polls.php';
 }
 
-$ar = (current_lang() === 'ar');
-$L  = fn(string $a, string $e) => $ar ? $a : $e;
+$lang = current_lang();
+$ar   = ($lang === 'ar');
+$L    = fn(string $a, string $e, string $f = '') => $ar ? $a : (($lang === 'fr') ? ($f ?: $e) : $e);
 
 // نضمن رمز CSRF قبل أي إخراج HTML (يستخدمه استطلاع الجمهور للتصويت).
 $csrf = Predictions::ensureCsrf();
 
 // ---------- تحية حسب وقت اليوم ----------
 $hour = (int)date('G');
-if ($hour < 5)        { $greet = $L('سهرة سعيدة', 'Good night'); }
-elseif ($hour < 12)   { $greet = $L('صباح الخير', 'Good morning'); }
-elseif ($hour < 17)   { $greet = $L('نهارك سعيد', 'Good afternoon'); }
-else                  { $greet = $L('مساء الخير', 'Good evening'); }
+if ($hour < 5)        { $greet = $L('سهرة سعيدة', 'Good night', 'Bonne nuit'); }
+elseif ($hour < 12)   { $greet = $L('صباح الخير', 'Good morning', 'Bonjour'); }
+elseif ($hour < 17)   { $greet = $L('نهارك سعيد', 'Good afternoon', 'Bon après-midi'); }
+else                  { $greet = $L('مساء الخير', 'Good evening', 'Bonsoir'); }
 
 $todayTs = time();
 
@@ -66,9 +67,10 @@ $story = (class_exists('AiContent') && method_exists('AiContent', 'dailyStory'))
        : null;
 if (!is_string($story) || trim($story) === '') { $story = null; }
 
-$page_title = $L('اليوم', 'Today');
+$page_title = $L('اليوم', 'Today', "Aujourd'hui");
 $page_desc  = $L('جولتك اليومية: مباراة اليوم، توقّع، تحدّي معرفة، واستطلاع الجمهور.',
-                 'Your daily ritual: match of the day, a prediction, trivia and the crowd poll.');
+                 'Your daily ritual: match of the day, a prediction, trivia and the crowd poll.',
+                 'Votre rituel quotidien : match du jour, prédiction, quiz et sondage du public.');
 tpl('header');
 ?>
 
@@ -123,7 +125,7 @@ tpl('header');
 
   <!-- ============ مباراة اليوم ============ -->
   <section class="today-card today-span2">
-    <h2>⚽ <?= e($L('مباراة اليوم', 'Match of the day')) ?></h2>
+    <h2>⚽ <?= e($L('مباراة اليوم', 'Match of the day', 'Match du jour')) ?></h2>
     <?php if ($matchOfDay !== null):
       $isLive = ($matchOfDay['_status'] ?? '') === 'live';
       $mTs    = DataService::matchTimestamp($matchOfDay);
@@ -131,70 +133,75 @@ tpl('header');
     ?>
       <p>
         <span class="today-tag <?= $isLive ? 'live' : '' ?>">
-          <?= e($isLive ? $L('مباشر الآن', 'Live now') : $L('قادمة', 'Upcoming')) ?>
+          <?= e($isLive ? $L('مباشر الآن', 'Live now', 'En direct') : $L('قادمة', 'Upcoming', 'À venir')) ?>
         </span>
       </p>
       <div style="margin:6px 0 4px"><?php render_match_card($matchOfDay); ?></div>
     <?php else: ?>
       <p class="today-muted"><?= e($L('لا توجد مباراة مبرمجة لليوم — تابع المباريات القادمة.',
-                                       'No match scheduled today — check the upcoming fixtures.')) ?></p>
+                                        'No match scheduled today — check the upcoming fixtures.',
+                                        'Aucun match prévu aujourd\'hui — consultez les prochains matchs.')) ?></p>
       <p class="tc-cta">
-        <a class="btn btn-cta" href="<?= e(url('matches.php')) ?>"><?= e($L('كل المباريات', 'All matches')) ?></a>
+        <a class="btn btn-cta" href="<?= e(url('matches.php')) ?>"><?= e($L('كل المباريات', 'All matches', 'Tous les matchs')) ?></a>
       </p>
     <?php endif; ?>
   </section>
 
   <!-- ============ تحدّي المعرفة ============ -->
   <section class="today-card">
-    <h2>🧠 <?= e($L('تحدّي اليوم', "Today's trivia")) ?></h2>
+    <h2>🧠 <?= e($L('تحدّي اليوم', "Today's trivia", 'Quiz du jour')) ?></h2>
     <div class="today-stat">
       <b><?= (int)($triv['total'] ?? 0) ?></b>
-      <span class="today-muted" style="margin:0"><?= e($L('نقطة في رصيدك', 'points in your bank')) ?></span>
+      <span class="today-muted" style="margin:0"><?= e($L('نقطة في رصيدك', 'points in your bank', 'points dans votre réserve')) ?></span>
     </div>
     <?php if (!empty($triv['answered_today'])): ?>
       <p class="today-muted"><?= e($L('أجبت تحدّي اليوم ✅ — عُد غداً لسؤال جديد.',
-                                      'Answered today ✅ — come back tomorrow for a new one.')) ?></p>
+                                      'Answered today ✅ — come back tomorrow for a new one.',
+                                      'Défi répondu aujourd\'hui ✅ — revenez demain pour une nouvelle question.')) ?></p>
     <?php elseif (empty($triv['registered'])): ?>
       <p class="today-muted"><?= e($L('سجّل اسمك لتجمع النقاط وتظهر في لوحة الصدارة.',
-                                      'Register a nickname to earn points and join the leaderboard.')) ?></p>
+                                      'Register a nickname to earn points and join the leaderboard.',
+                                      'Enregistrez un pseudo pour gagner des points et apparaître au classement.')) ?></p>
     <?php else: ?>
       <p class="today-muted"><?= e($L('سؤال اليوم بانتظارك — أجب واكسب حتى 3 نقاط.',
-                                      "Today's question is waiting — answer for up to 3 points.")) ?></p>
+                                      "Today's question is waiting — answer for up to 3 points.",
+                                      'La question du jour vous attend — répondez pour gagner jusqu\'à 3 points.')) ?></p>
     <?php endif; ?>
     <p class="tc-cta">
-      <a class="btn btn-cta" href="<?= e(url('trivia.php')) ?>"><?= e($L('العب تحدّي اليوم', 'Play today’s trivia')) ?></a>
+      <a class="btn btn-cta" href="<?= e(url('trivia.php')) ?>"><?= e($L('العب تحدّي اليوم', "Play today's trivia", 'Jouer au quiz du jour')) ?></a>
     </p>
   </section>
 
   <!-- ============ توقّع اليوم ============ -->
   <section class="today-card">
-    <h2>🎯 <?= e($L('توقّع اليوم', "Today's prediction")) ?></h2>
+    <h2>🎯 <?= e($L('توقّع اليوم', "Today's prediction", 'Pronostic du jour')) ?></h2>
     <p class="today-muted">
       <?php if ($matchOfDay !== null && !Predictions::isLocked($matchOfDay)
                 && is_real_team($matchOfDay['team1'] ?? '') && is_real_team($matchOfDay['team2'] ?? '')): ?>
-        <?= e($L('توقّع نتيجة ', 'Predict the score for ')
-              . team_name($matchOfDay['team1']) . ' ' . $L('و', 'vs') . ' ' . team_name($matchOfDay['team2'])
-              . $L(' قبل انطلاقها.', ' before kick-off.')) ?>
+        <?= e($L('توقّع نتيجة ', 'Predict the score for ', 'Prédisez le score de ')
+              . team_name($matchOfDay['team1']) . ' ' . $L('و', 'vs', ' vs ') . ' ' . team_name($matchOfDay['team2'])
+              . $L(' قبل انطلاقها.', ' before kick-off.', ' avant le coup d\'envoi.')) ?>
       <?php else: ?>
         <?= e($L('توقّع نتائج المباريات القادمة وتسلّق لوحة الصدارة.',
-                 'Predict upcoming results and climb the leaderboard.')) ?>
+                 'Predict upcoming results and climb the leaderboard.',
+                 'Prédisez les résultats et grimpez au classement.')) ?>
       <?php endif; ?>
     </p>
     <p class="tc-cta">
-      <a class="btn btn-cta" href="<?= e(url('predict.php')) ?>"><?= e($L('سجّل توقّعك', 'Make your prediction')) ?></a>
+      <a class="btn btn-cta" href="<?= e(url('predict.php')) ?>"><?= e($L('سجّل توقّعك', 'Make your prediction', 'Faites votre prédiction')) ?></a>
     </p>
   </section>
 
   <!-- ============ استطلاع الجمهور ============ -->
   <section class="today-card today-span2">
-    <h2>📊 <?= e($L('رأي الجمهور', 'The crowd says')) ?></h2>
+    <h2>📊 <?= e($L('رأي الجمهور', 'The crowd says', 'L\'avis du public')) ?></h2>
     <div data-poll data-poll-api="<?= e(rtrim(SITE_URL, '/') . '/api/poll.php') ?>"></div>
   </section>
 
   <?php if ($story !== null): ?>
   <!-- ============ قصة اليوم (ذكاء اصطناعي، اختيارية) ============ -->
   <section class="today-card today-span2">
-    <h2>📰 <?= e($L('قصة اليوم', 'Story of the day')) ?></h2>
+    <h2>📰 <?= e($L('قصة اليوم', 'Story of the day', 'Histoire du jour')) ?></h2>
     <p class="today-story today-muted"><?= e($story) ?></p>
   </section>
   <?php endif; ?>

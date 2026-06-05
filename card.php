@@ -78,7 +78,7 @@ $jsV = @filemtime(__DIR__ . '/assets/js/share.js') ?: 1;
 <!-- Open Graph / Twitter — معاينة غنية عند اللصق في واتساب/X/تيليجرام -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="<?= e($siteName) ?>">
-<meta property="og:locale" content="<?= $lang === 'ar' ? 'ar_AR' : 'en_US' ?>">
+<meta property="og:locale" content="<?= match($lang) { 'ar' => 'ar_AR', 'fr' => 'fr_FR', default => 'en_US' } ?>">
 <meta property="og:title" content="<?= e($ogTitle) ?>">
 <meta property="og:description" content="<?= e($ogDesc) ?>">
 <meta property="og:url" content="<?= e($shareUrl) ?>">
@@ -214,7 +214,7 @@ $jsV = @filemtime(__DIR__ . '/assets/js/share.js') ?: 1;
     <span class="mark">26</span>
     <span class="head-meta">
       <strong><?= e($siteName) ?></strong>
-      <?= e($lang === 'ar' ? 'بطاقة قابلة للمشاركة' : 'Shareable card') ?>
+      <?= e(t('share_pred')) ?>
     </span>
   </div>
 
@@ -229,7 +229,7 @@ $jsV = @filemtime(__DIR__ . '/assets/js/share.js') ?: 1;
       <?php if ($data['score'] !== ''): ?>
         <span class="score<?= $type === 'qahr' ? ' qahr' : '' ?>"><?= e($data['score']) ?></span>
       <?php else: ?>
-        <span class="score"><?= e($lang === 'ar' ? 'ضد' : 'VS') ?></span>
+        <span class="score"><?= e(t('vs')) ?></span>
       <?php endif; ?>
       <span class="team">
         <?php if ($m['flag2'] !== ''): ?><img src="<?= e($m['flag2']) ?>" alt="<?= e($m['name2']) ?>" loading="lazy"><?php endif; ?>
@@ -248,20 +248,20 @@ $jsV = @filemtime(__DIR__ . '/assets/js/share.js') ?: 1;
   <?php endif; ?>
 
   <div class="card-foot">
-    <span><?= e($data['emoji']) ?> <?= e($lang === 'ar' ? 'كأس العالم 2026' : 'World Cup 2026') ?></span>
+    <span><?= e($data['emoji']) ?> <?= e($siteName) ?></span>
     <span class="domain"><?= e(parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org') ?></span>
   </div>
 </div>
 
 <div class="share-bar" data-share-url="<?= e($shareUrl) ?>" data-share-text="<?= e($shareTxt) ?>">
-  <a class="share-btn s-wa" data-share="wa" href="<?= e('https://wa.me/?text=' . rawurlencode($shareTxt . ' ' . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026' . ' ' . $shareUrl)) ?>" target="_blank" rel="noopener"><?= e($lang === 'ar' ? 'واتساب' : 'WhatsApp') ?></a>
-  <a class="share-btn s-x"  data-share="x"  href="<?= e('https://twitter.com/intent/tweet?text=' . rawurlencode($shareTxt . "\n\n" . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026') . '&url=' . rawurlencode($shareUrl)) ?>" target="_blank" rel="noopener">𝕏</a>
-  <a class="share-btn s-tg" data-share="tg" href="<?= e('https://t.me/share/url?url=' . rawurlencode($shareUrl) . '&text=' . rawurlencode($shareTxt . ' ' . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026')) ?>" target="_blank" rel="noopener"><?= e($lang === 'ar' ? 'تيليجرام' : 'Telegram') ?></a>
+  <a class="share-btn s-wa" data-share="wa" href="<?= e('https://wa.me/?text=' . rawurlencode($shareTxt . ' ' . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026' . ' ' . $shareUrl)) ?>" target="_blank" rel="noopener">WhatsApp</a>
+  <a class="share-btn s-x"  data-share="x"  href="<?= e('https://twitter.com/intent/tweet?text=' . rawurlencode($shareTxt . "\n\n" . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026') . '&url=' . rawurlencode($shareUrl)) ?>" target="_blank" rel="noopener">X</a>
+  <a class="share-btn s-tg" data-share="tg" href="<?= e('https://t.me/share/url?url=' . rawurlencode($shareUrl) . '&text=' . rawurlencode($shareTxt . ' ' . '#كأس_العالم_2026 #FIFAWorldCup26 #wcup2026')) ?>" target="_blank" rel="noopener">Telegram</a>
   <button type="button" class="share-btn s-copy" data-share="copy" data-copied="<?= e(t('link_copied')) ?>"><?= e(t('copy_link')) ?></button>
 </div>
 
 <a class="home-link" href="<?= e(base_url()) ?>/index.php?lang=<?= e($lang) ?>">
-  <?= e($lang === 'ar' ? '← اذهب إلى الموقع' : '← Visit the site') ?>
+  <?= e(t('back')) ?>
 </a>
 
 <script src="<?= e(base_url()) ?>/assets/js/share.js?v=<?= e((string)$jsV) ?>"></script>

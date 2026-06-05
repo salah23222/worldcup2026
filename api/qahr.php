@@ -43,7 +43,7 @@ if ($method === 'POST') {
     }
 }
 
-$lang = in_array(($input['lang'] ?? ''), ['ar', 'en'], true) ? (string)$input['lang'] : current_lang();
+$lang = in_array(($input['lang'] ?? ''), ['ar', 'en', 'fr'], true) ? (string)$input['lang'] : current_lang();
 $dialect = isset($input['dialect']) ? (string)$input['dialect'] : '';
 
 switch ($action) {

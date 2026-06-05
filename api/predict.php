@@ -66,7 +66,7 @@ switch ($action) {
 
     case 'trivia':
         if ($method !== 'POST') respond(['ok' => false, 'error' => 'method'], 405);
-        $lang = in_array(($input['lang'] ?? ''), ['ar', 'en'], true) ? $input['lang'] : current_lang();
+        $lang = in_array(($input['lang'] ?? ''), ['ar', 'en', 'fr'], true) ? $input['lang'] : current_lang();
         $q = AiContent::dailyTrivia($lang);
         if (!$q) respond(['ok' => false, 'error' => 'no_trivia'], 400);
         $chosen = (int)($input['index'] ?? -1);

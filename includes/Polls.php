@@ -50,9 +50,8 @@ class Polls
      */
     public static function current(?string $lang = null): ?array
     {
-        $lang = in_array($lang, ['ar', 'en'], true) ? $lang : current_lang();
+        $lang = in_array($lang, ['ar', 'en', 'fr'], true) ? $lang : current_lang();
         $m = self::pickMatch();
-        if ($m === null) return null;
 
         $built = self::forMatch($m, $lang);
         if ($built === null) return null;
@@ -66,7 +65,7 @@ class Polls
      */
     public static function card(array $m, ?string $lang = null): ?array
     {
-        $lang  = in_array($lang, ['ar', 'en'], true) ? $lang : current_lang();
+        $lang  = in_array($lang, ['ar', 'en', 'fr'], true) ? $lang : current_lang();
         $built = self::forMatch($m, $lang);
         if ($built === null) return null;
         return self::hydrate($built, $lang);
@@ -113,7 +112,7 @@ class Polls
      */
     public static function forMatch(array $m, ?string $lang = null): ?array
     {
-        $lang = in_array($lang, ['ar', 'en'], true) ? $lang : current_lang();
+        $lang = in_array($lang, ['ar', 'en', 'fr'], true) ? $lang : current_lang();
         $idx  = (int)($m['_index'] ?? -1);
         if ($idx < 0) return null;
 
@@ -127,21 +126,25 @@ class Polls
         $kind = $live ? 'next' : 'winner';
 
         if ($kind === 'next') {
-            $question = ($lang === 'ar')
-                ? "من يسجّل التالي؟ {$n1} و {$n2}"
-                : "Who scores next? {$n1} vs {$n2}";
+            $question = match($lang) {
+                'ar' => "من يسجّل التالي؟ {$n1} و {$n2}",
+                'fr' => "Qui marque le prochain ? {$n1} vs {$n2}",
+                default => "Who scores next? {$n1} vs {$n2}",
+            };
             $options = [
                 $n1,
-                ($lang === 'ar') ? 'لا أحد (يبقى كما هو)' : 'No one (stays as is)',
+                match($lang) { 'ar' => 'لا أحد (يبقى كما هو)', 'fr' => 'Personne (reste comme ça)', default => 'No one (stays as is)' },
                 $n2,
             ];
         } else {
-            $question = ($lang === 'ar')
-                ? "من يفوز؟ {$n1} و {$n2}"
-                : "Who wins? {$n1} vs {$n2}";
+            $question = match($lang) {
+                'ar' => "من يفوز؟ {$n1} و {$n2}",
+                'fr' => "Qui gagne ? {$n1} vs {$n2}",
+                default => "Who wins? {$n1} vs {$n2}",
+            };
             $options = [
                 $n1,
-                ($lang === 'ar') ? 'تعادل' : 'Draw',
+                match($lang) { 'ar' => 'تعادل', 'fr' => 'Nul', default => 'Draw' },
                 $n2,
             ];
         }

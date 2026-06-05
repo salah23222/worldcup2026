@@ -65,12 +65,12 @@ tpl('header');
 <!-- ============ نبذة (ويكيبيديا) ============ -->
 <?php if (!empty($about['bio'])): ?>
 <section class="section">
-  <h2 class="section-title"><?= e($ar ? 'نبذة' : 'About') ?></h2>
+  <h2 class="section-title"><?= e(t('about_stadium')) ?></h2>
   <p class="ref-bio"><?= e($about['bio']) ?></p>
   <?php if (!empty($about['url'])): ?>
     <p class="ref-bio-src">
-      <a href="<?= e($about['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e($ar ? 'اقرأ المزيد' : 'Read more') ?> ↗</a>
-      <span class="muted"> · <?= e($ar ? 'المصدر: ويكيبيديا' : 'Source: Wikipedia') ?></span>
+      <a href="<?= e($about['url']) ?>" target="_blank" rel="noopener noreferrer"><?= e(t('read_more')) ?> ↗</a>
+      <span class="muted"> · <?= e(match($lang) { 'ar' => 'المصدر: ويكيبيديا', 'fr' => 'Source : Wikipédia', default => 'Source: Wikipedia' }) ?></span>
     </p>
   <?php endif; ?>
 </section>
@@ -92,7 +92,7 @@ tpl('header');
 <!-- ============ ترتيب المجموعة ============ -->
 <?php if ($group && $groupRows): ?>
 <section class="section">
-  <h2 class="section-title"><?= e($ar ? 'ترتيب المجموعة' : 'Group standing') ?></h2>
+  <h2 class="section-title"><?= e(t('standings')) ?></h2>
   <?php render_group_table($group, $groupRows); ?>
 </section>
 <?php endif; ?>

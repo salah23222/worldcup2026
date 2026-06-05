@@ -22,7 +22,7 @@ function render_sticker(array $s, string $lang): void {
         <?php else: ?>
           <span class="st-emoji"><?= $s['emoji'] ?></span>
         <?php endif; ?>
-        <span class="st-name"><?= e($lang === 'ar' ? $s['name_ar'] : $s['name_en']) ?></span>
+        <span class="st-name"><?= e(match($lang) { 'ar' => $s['name_ar'], 'fr' => $s['name_fr'] ?? $s['name_en'], default => $s['name_en'] }) ?></span>
       </div>
       <span class="st-lock" aria-hidden="true">?</span>
     </div>

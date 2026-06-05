@@ -10,14 +10,17 @@ $lang = current_lang();
 $ar   = ($lang === 'ar');
 $st   = Stadiums::all();
 
-$page_title = $ar ? 'خريطة المدن المستضيفة' : 'Host Cities Map';
-$page_desc  = $ar ? 'المدن الـ16 المستضيفة لكأس العالم 2026 عبر كندا والمكسيك والولايات المتحدة على خريطة تفاعلية — اضغط مدينة لتفتح ملعبها.'
-                  : 'The 16 host cities of the 2026 World Cup across Canada, Mexico and the USA on an interactive map — tap a city for its stadium.';
+$page_title = match($lang) { 'ar' => 'خريطة المدن المستضيفة', 'fr' => 'Carte des villes hôtes', default => 'Host Cities Map' };
+$page_desc  = match($lang) {
+    'ar' => 'المدن الـ16 المستضيفة لكأس العالم 2026 عبر كندا والمكسيك والولايات المتحدة على خريطة تفاعلية — اضغط مدينة لتفتح ملعبها.',
+    'fr' => 'Les 16 villes hôtes de la Coupe du Monde 2026 au Canada, Mexique et États-Unis sur une carte interactive — appuyez sur une ville pour ouvrir son stade.',
+    default => 'The 16 host cities of the 2026 World Cup across Canada, Mexico and the USA on an interactive map — tap a city for its stadium.',
+};
 
 $countries = [
-    'ca' => $ar ? 'كندا' : 'Canada',
-    'us' => $ar ? 'الولايات المتحدة' : 'United States',
-    'mx' => $ar ? 'المكسيك' : 'Mexico',
+    'ca' => match($lang) { 'ar' => 'كندا', 'fr' => 'Canada', default => 'Canada' },
+    'us' => match($lang) { 'ar' => 'الولايات المتحدة', 'fr' => 'États-Unis', default => 'United States' },
+    'mx' => match($lang) { 'ar' => 'المكسيك', 'fr' => 'Mexique', default => 'Mexico' },
 ];
 $byCountry = ['ca' => [], 'us' => [], 'mx' => []];
 $points = [];
@@ -25,13 +28,13 @@ foreach ($st as $s) {
     $byCountry[$s['country']][] = $s;
     $points[] = [
         'lat'  => (float)$s['lat'], 'lng' => (float)$s['lng'],
-        'city' => $ar ? $s['cityAr'] : $s['cityEn'],
-        'name' => $ar ? $s['nameAr'] : $s['nameEn'],
+        'city' => match($lang) { 'ar' => $s['cityAr'], 'fr' => $s['cityFr'] ?? $s['cityEn'], default => $s['cityEn'] },
+        'name' => match($lang) { 'ar' => $s['nameAr'], 'fr' => $s['nameFr'] ?? $s['nameEn'], default => $s['nameEn'] },
         'cc'   => $s['country'],
         'url'  => url('stadium.php', ['id' => (int)$s['id']]),
     ];
 }
-$viewLabel = $ar ? 'عرض الملعب' : 'View stadium';
+$viewLabel = match($lang) { 'ar' => 'عرض الملعب', 'fr' => 'Voir le stade', default => 'View stadium' };
 
 tpl('header');
 ?>
@@ -60,8 +63,8 @@ tpl('header');
       </h2>
       <ul class="hm-city-list">
         <?php foreach ($byCountry[$cc] as $s):
-          $city = $ar ? $s['cityAr'] : $s['cityEn'];
-          $name = $ar ? $s['nameAr'] : $s['nameEn'];
+          $city = match($lang) { 'ar' => $s['cityAr'], 'fr' => $s['cityFr'] ?? $s['cityEn'], default => $s['cityEn'] };
+          $name = match($lang) { 'ar' => $s['nameAr'], 'fr' => $s['nameFr'] ?? $s['nameEn'], default => $s['nameEn'] };
         ?>
           <li>
             <a href="<?= e(url('stadium.php', ['id' => (int)$s['id']])) ?>">

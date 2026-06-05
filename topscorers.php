@@ -92,7 +92,7 @@ $lang = current_lang();
         'name'  => $h['name'],
         'photo' => fut_photo_html($h['name'], sprintf($flagUrl, 'w160')),
         'flag'  => '<img class="flag" src="' . e(sprintf($flagUrl, 'w40')) . '" alt="" loading="lazy" width="28" height="21">',
-        'label' => $lang === 'ar' ? $h['country_ar'] : $h['country_en'],
+        'label' => match($lang) { 'ar' => $h['country_ar'], 'fr' => $h['country_fr'] ?? $h['country_en'], default => $h['country_en'] },
         'goals' => (int)$h['goals'],
         'badge' => (int)$h['year'],
         'gold'  => true,
