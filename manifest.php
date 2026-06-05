@@ -12,9 +12,9 @@ $lang = current_lang();
 $base = rtrim(SITE_URL, '/');   // فارغ محلياً → مسارات من الجذر
 
 echo json_encode([
-    'name'             => $lang === 'ar' ? 'كأس العالم 2026' : 'FIFA World Cup 2026',
-    'short_name'       => $lang === 'ar' ? 'مونديال 2026' : 'WC 2026',
-    'description'      => $lang === 'ar' ? 'التغطية الكاملة واللحظية لكأس العالم 2026' : 'Full live FIFA World Cup 2026 coverage',
+    'name'             => match($lang) { 'ar' => 'كأس العالم 2026', 'fr' => 'Coupe du Monde 2026', default => 'FIFA World Cup 2026' },
+    'short_name'       => match($lang) { 'ar' => 'مونديال 2026', 'fr' => 'CDM 2026', default => 'WC 2026' },
+    'description'      => match($lang) { 'ar' => 'التغطية الكاملة واللحظية لكأس العالم 2026', 'fr' => 'Couverture complète et en direct de la Coupe du Monde 2026', default => 'Full live FIFA World Cup 2026 coverage' },
     'lang'             => $lang,
     'dir'              => $lang === 'ar' ? 'rtl' : 'ltr',
     'start_url'        => $base . '/index.php?lang=' . $lang,

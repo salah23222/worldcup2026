@@ -31,7 +31,7 @@ $lang       = current_lang();
         <?php endforeach; ?>
       <?php else: ?>
         <?php for ($i = 0; $i < (int)(defined('SPONSOR_PLACEHOLDERS') ? SPONSOR_PLACEHOLDERS : 0); $i++): ?>
-          <button type="button" class="sponsor sponsor-empty" data-contact-open><?= e($lang === 'ar' ? 'شعارك هنا' : 'Your logo here') ?></button>
+          <button type="button" class="sponsor sponsor-empty" data-contact-open><?= e(match($lang) { 'ar' => 'شعارك هنا', 'fr' => 'Votre logo ici', default => 'Your logo here' }) ?></button>
         <?php endfor; ?>
       <?php endif; ?>
     </div>

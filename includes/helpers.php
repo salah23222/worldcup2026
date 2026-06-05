@@ -54,10 +54,19 @@ function group_label(string $group): string {
 /** تنسيق التاريخ حسب اللغة */
 function fmt_date(?int $ts): string {
     if ($ts === null) return '—';
-    if (current_lang() === 'ar') {
+    $lang = current_lang();
+    if ($lang === 'ar') {
         $days   = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
         $months = ['','يناير','فبراير','مارس','أبريل','مايو','يونيو',
                    'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+        $d = $days[(int)date('w', $ts)];
+        $mn = $months[(int)date('n', $ts)];
+        return $d . ' ' . date('j', $ts) . ' ' . $mn . ' ' . date('Y', $ts);
+    }
+    if ($lang === 'fr') {
+        $days   = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+        $months = ['','janvier','février','mars','avril','mai','juin',
+                   'juillet','août','septembre','octobre','novembre','décembre'];
         $d = $days[(int)date('w', $ts)];
         $mn = $months[(int)date('n', $ts)];
         return $d . ' ' . date('j', $ts) . ' ' . $mn . ' ' . date('Y', $ts);
@@ -68,11 +77,15 @@ function fmt_date(?int $ts): string {
 /** تنسيق الوقت 12 ساعة */
 function fmt_time(?int $ts): string {
     if ($ts === null) return '—';
-    if (current_lang() === 'ar') {
+    $lang = current_lang();
+    if ($lang === 'ar') {
         $h = (int)date('g', $ts);
         $min = date('i', $ts);
         $ampm = (date('a', $ts) === 'am') ? 'ص' : 'م';
         return $h . ':' . $min . ' ' . $ampm;
+    }
+    if ($lang === 'fr') {
+        return date('H\\hi', $ts);
     }
     return date('g:i A', $ts);
 }
@@ -80,9 +93,15 @@ function fmt_time(?int $ts): string {
 /** تنسيق مختصر للتاريخ: "15 يونيو" */
 function fmt_date_short(?int $ts): string {
     if ($ts === null) return '—';
-    if (current_lang() === 'ar') {
+    $lang = current_lang();
+    if ($lang === 'ar') {
         $months = ['','يناير','فبراير','مارس','أبريل','مايو','يونيو',
                    'يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+        return date('j', $ts) . ' ' . $months[(int)date('n', $ts)];
+    }
+    if ($lang === 'fr') {
+        $months = ['','janv.','févr.','mars','avr.','mai','juin',
+                   'juil.','août','sept.','oct.','nov.','déc.'];
         return date('j', $ts) . ' ' . $months[(int)date('n', $ts)];
     }
     return date('j M', $ts);

@@ -22,7 +22,7 @@ tpl('header');
 <?php if (!Database::available()): ?>
   <div class="alert muted">
     <?= e(t('accounts_disabled')) ?>
-    — <?= e(current_lang()==='ar' ? 'صندوق التسويق أسفل يعمل بالرابط العام.' : 'The marketing kit below still works with the general link.') ?>
+    — <?= e(match(current_lang()) { 'ar' => 'صندوق التسويق أسفل يعمل بالرابط العام.', 'fr' => 'Le kit marketing ci-dessous fonctionne avec le lien générique.', default => 'The marketing kit below still works with the general link.' }) ?>
   </div>
 
 <?php else: ?>
@@ -174,6 +174,7 @@ tpl('header');
   // floor (وليس ceil) لتطابق عدّاد الرئيسية بالضبط — لو فيه 7 أيام و1 ساعة باقية، نقول 7.
   $daysLeft     = $tStart ? max(0, (int)floor(($tStart - time()) / 86400)) : 0;
   $isAr         = (current_lang() === 'ar');
+  $isFr         = (current_lang() === 'fr');
 
   $templates = $isAr ? [
     ['icon'=>'⏰','title'=>'تغريدة العدّ التنازلي اليومية (X)','platform'=>'X',
@@ -188,6 +189,19 @@ tpl('header');
      'text'=>"شباب، لقيت موقع توقعات لكأس العالم 2026 — مجّاني، بالعربي والإنجليزي، فيه تحدّي معرفة يومي وشجرة أدوار وعدّاد قهر 😅\nعجبني وحبيت أشاركه:\n\n{$kitHomeLink}"],
     ['icon'=>'📱','title'=>'رسالة الواتساب القصيرة','platform'=>'WhatsApp',
      'text'=>"كأس العالم بعد {$daysLeft} يوم 🔥\nانضمّ معاي للتوقعات — مجّاني وممتع\n{$kitHomeLink}"],
+  ] : ($isFr ? [
+    ['icon'=>'⏰','title'=>'Tweet quotidien du compte à rebours (X)','platform'=>'X',
+     'text'=>"⚽ Plus que {$daysLeft} jours avant la Coupe du Monde 2026 !\n\nPrédisez les résultats et rejoignez la compétition 👇\n{$kitHomeLink}"],
+    ['icon'=>'🎯','title'=>'Invitez vos amis aux pronostics (X / WhatsApp)','platform'=>'X',
+     'text'=>"🎯 Jeu de pronostics Coupe du Monde 2026 — gratuit\nInscrivez-vous, prédisez, rivalisez au classement 🏆\n\n{$kitHomeLink}"],
+    ['icon'=>'🏆','title'=>'Jeu du tableau prédictif (X / Facebook)','platform'=>'X',
+     'text'=>"🏆 Qui soulèvera la Coupe du Monde 2026 ?\nRemplissez votre tableau et affirmez votre choix ⚽\n\n{$kitBracket}"],
+    ['icon'=>'🚨','title'=>'Avant le match (X)','platform'=>'X',
+     'text'=>"🚨 Match dans 1 heure !\nFaites votre prédiction et gagnez des points avant le coup d'envoi ⚽\n\n{$kitHomeLink}"],
+    ['icon'=>'💬','title'=>'Message Telegram','platform'=>'Telegram',
+     'text'=>"Salut les fans — un jeu de pronostics gratuit pour la Coupe du Monde 2026 vient de lancer. Prédisez les matchs, remplissez le tableau, rivalisez au classement. À tester :\n{$kitHomeLink}"],
+    ['icon'=>'📱','title'=>'Message WhatsApp court','platform'=>'WhatsApp',
+     'text'=>"Coupe du Monde dans {$daysLeft} jours 🔥\nRejoignez-moi pour les pronostics — gratuit et amusant\n{$kitHomeLink}"],
   ] : [
     ['icon'=>'⏰','title'=>'Daily countdown tweet (X)','platform'=>'X',
      'text'=>"⚽ {$daysLeft} days until FIFA World Cup 2026!\n\nPredict match results and join the competition 👇\n{$kitHomeLink}"],
@@ -201,29 +215,35 @@ tpl('header');
      'text'=>"🚨 Match starting in 1 hour!\nLock in your prediction and earn points before kickoff:\n{$kitHomeLink}"],
     ['icon'=>'🏆','title'=>'Bracket tweet','platform'=>'X',
      'text'=>"🏆 Who lifts the World Cup 2026?\nFill your bracket and stake your claim now:\n{$kitBracket}"],
-  ];
+  ]);
 
   // الهاشتاقات الرسمية من FIFA + المحلية + الدول المستضيفة — تُضاف في نهاية كل قالب
   // (يضمن أن المستخدم الذي ينسخ النص ويلصقه على إنستجرام/ثردز/أي منصّة يحصل عليها تلقائياً)
   $tags = $isAr
     ? '#كأس_العالم_2026 #WeAre26 #FIFAWorldCup26 #wcup2026 #كندا #المكسيك #أمريكا'
-    : '#WeAre26 #FIFAWorldCup26 #WorldCup2026 #wcup2026 #Canada #Mexico #USA';
+    : ($isFr
+        ? '#CoupeDuMonde2026 #WeAre26 #FIFAWorldCup26 #wcup2026 #Canada #Mexique #USA'
+        : '#WeAre26 #FIFAWorldCup26 #WorldCup2026 #wcup2026 #Canada #Mexico #USA');
   foreach ($templates as &$t) {
     $t['text'] .= "\n\n" . $tags;
   }
   unset($t);
   ?>
   <div class="marketing-kit">
-    <h2 class="section-head">🧰 <?= e($isAr ? 'صندوق التسويق — قوالب جاهزة' : 'Marketing Kit — Ready-to-Post Templates') ?></h2>
+    <h2 class="section-head">🧰 <?= e($isAr ? 'صندوق التسويق — قوالب جاهزة' : ($isFr ? 'Kit marketing — Modèles prêts à publier' : 'Marketing Kit — Ready-to-Post Templates')) ?></h2>
     <p class="muted" style="margin-bottom:14px">
       <?php if ($hasRef): ?>
         <?= e($isAr
               ? "العدّ التنازلي ورابطك المخصّص محشوّان في كل قالب — انسخ والصق فقط."
-              : "Countdown and your personal link are pre-filled — just copy and post.") ?>
+              : ($isFr
+                  ? "Le compte à rebours et votre lien personnel sont pré-remplis — copiez et collez."
+                  : "Countdown and your personal link are pre-filled — just copy and post.")) ?>
       <?php else: ?>
         <?= e($isAr
               ? "القوالب جاهزة بالرابط العام للموقع. سجّل حسابك لتحصل على رابط مخصّص يكسبك نقاطاً عن كل تسجيل عبر رابطك."
-              : "Templates use the general site link. Sign up to get a personal link that earns you points for each signup via your link.") ?>
+              : ($isFr
+                  ? "Les modèles utilisent le lien générique du site. Inscrivez-vous pour obtenir un lien personnel qui vous rapporte des points pour chaque inscription."
+                  : "Templates use the general site link. Sign up to get a personal link that earns you points for each signup via your link.")) ?>
       <?php endif; ?>
     </p>
     <div class="kit-grid">
@@ -249,13 +269,13 @@ tpl('header');
           <span class="kit-platform"><?= e($t['platform']) ?></span>
         </div>
         <textarea class="kit-text" readonly rows="4" id="kit-<?= $i ?>"><?= e($t['text']) ?></textarea>
-        <div class="kit-share-row" aria-label="<?= e($isAr ? 'مشاركة على' : 'Share to') ?>">
+        <div class="kit-share-row" aria-label="<?= e($isAr ? 'مشاركة على' : ($isFr ? 'Partager sur' : 'Share to')) ?>">
           <a class="kit-share kit-x"  href="<?= e($sX)  ?>" target="_blank" rel="noopener" title="X" aria-label="X">𝕏</a>
           <a class="kit-share kit-wa" href="<?= e($sWA) ?>" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp">WA</a>
           <a class="kit-share kit-tg" href="<?= e($sTG) ?>" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">✈</a>
           <a class="kit-share kit-fb" href="<?= e($sFB) ?>" target="_blank" rel="noopener" title="Facebook" aria-label="Facebook">f</a>
           <a class="kit-share kit-rd" href="<?= e($sRD) ?>" target="_blank" rel="noopener" title="Reddit" aria-label="Reddit">r/</a>
-          <button type="button" class="kit-share kit-cp" title="<?= e($isAr ? 'نسخ' : 'Copy') ?>"
+          <button type="button" class="kit-share kit-cp" title="<?= e($isAr ? 'نسخ' : ($isFr ? 'Copier' : 'Copy')) ?>"
                   data-target="kit-<?= $i ?>" data-done="<?= e(t('link_copied')) ?>">📋</button>
         </div>
       </div>

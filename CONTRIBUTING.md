@@ -22,7 +22,7 @@ The site runs with zero keys (uses the bundled fallback + public openfootball fe
   ```bash
   find . -name "*.php" -not -path "./assets/vendor/*" -print0 | xargs -0 -n1 php -l
   ```
-- Test the pages you touched in **both** languages (`?lang=ar` and `?lang=en`).
+- Test the pages you touched in **all three** languages (`?lang=ar`, `?lang=en` and `?lang=fr`).
 - Keep the change focused; explain *what* and *why* in the PR description.
 - Follow the existing code style (see `.editorconfig`).
 

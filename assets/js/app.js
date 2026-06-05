@@ -44,10 +44,13 @@
   function localeTag() {
     var l = (document.documentElement.lang || 'en').toLowerCase();
     // ar مع أرقام لاتينية ليتطابق مع بقية الموقع
-    return l.indexOf('ar') === 0 ? 'ar-u-nu-latn' : 'en';
+    if (l.indexOf('ar') === 0) return 'ar-u-nu-latn';
+    if (l.indexOf('fr') === 0) return 'fr';
+    return 'en';
   }
 
   function fmtOpts(mode) {
+    var isFr = (document.documentElement.lang || '').indexOf('fr') === 0;
     switch (mode) {
       case 'date':
         return { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
@@ -55,10 +58,10 @@
         return { day: 'numeric', month: 'short' };
       case 'datetime':
         return { weekday: 'short', day: 'numeric', month: 'short',
-                 hour: 'numeric', minute: '2-digit', hour12: true };
+                 hour: 'numeric', minute: '2-digit', hour12: !isFr };
       case 'time':
       default:
-        return { hour: 'numeric', minute: '2-digit', hour12: true };
+        return { hour: 'numeric', minute: '2-digit', hour12: !isFr };
     }
   }
 
@@ -123,7 +126,7 @@
       var diff = Math.floor((target - Date.now()) / 1000);
       if (diff <= 0) { cd.classList.add('cd-live'); cd.innerHTML =
         '<p class="cd-label cd-live-label">' +
-        (document.documentElement.lang === 'ar' ? 'انطلقت البطولة! 🎉' : 'The tournament has begun! 🎉') +
+        (document.documentElement.lang === 'ar' ? 'انطلقت البطولة! 🎉' : (document.documentElement.lang === 'fr' ? 'Le tournoi a commencé ! 🎉' : 'The tournament has begun! 🎉')) +
         '</p>'; clearInterval(timer); return; }
       var d = Math.floor(diff / 86400);
       var h = Math.floor((diff % 86400) / 3600);

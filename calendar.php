@@ -49,7 +49,7 @@ $lines = [
     'PRODID:-//WorldCup2026//Matches//' . strtoupper($lang),
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:' . ics_esc($lang === 'ar' ? 'كأس العالم 2026' : 'World Cup 2026'),
+    'X-WR-CALNAME:' . ics_esc(match($lang) { 'ar' => 'كأس العالم 2026', 'fr' => 'Coupe du Monde 2026', default => 'World Cup 2026' }),
     'X-WR-TIMEZONE:UTC',
     'REFRESH-INTERVAL;VALUE=DURATION:PT12H',
     'X-PUBLISHED-TTL:PT12H',

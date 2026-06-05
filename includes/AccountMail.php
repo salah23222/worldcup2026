@@ -14,14 +14,25 @@ class AccountMail
     private static function shell(string $inner, string $lang = 'ar'): string
     {
         $ar   = ($lang === 'ar');
+        $fr   = ($lang === 'fr');
         $dir  = $ar ? 'rtl' : 'ltr';
-        $site = $ar ? (defined('SITE_NAME_AR') ? SITE_NAME_AR : 'كأس العالم 2026')
-                    : (defined('SITE_NAME_EN') ? SITE_NAME_EN : 'World Cup 2026');
+        $site = match($lang) {
+            'ar' => defined('SITE_NAME_AR') ? SITE_NAME_AR : 'كأس العالم 2026',
+            'fr' => defined('SITE_NAME_FR') ? SITE_NAME_FR : 'Coupe du Monde 2026',
+            default => defined('SITE_NAME_EN') ? SITE_NAME_EN : 'World Cup 2026',
+        };
         $url  = defined('SITE_URL') ? rtrim((string)SITE_URL, '/') : '';
         $year = gmdate('Y');
-        $foot = $ar
-            ? "هذه رسالة آليّة من {$site} — لا تردّ عليها."
-            : "Automated message from {$site} — please do not reply.";
+        $foot = match($lang) {
+            'ar' => "هذه رسالة آليّة من {$site} — لا تردّ عليها.",
+            'fr' => "Message automatique de {$site} — merci de ne pas répondre.",
+            default => "Automated message from {$site} — please do not reply.",
+        };
+        $tagline = match($lang) {
+            'ar' => 'كندا · المكسيك · أمريكا',
+            'fr' => 'Canada · Mexique · États-Unis',
+            default => 'Canada · Mexico · USA',
+        };
 
         return ''
           . '<!doctype html><html lang="' . e($lang) . '" dir="' . $dir . '"><head>'
@@ -41,7 +52,7 @@ class AccountMail
           . 'border-radius:10px;text-align:center;line-height:42px">26</td>'
           . '<td style="padding:0 12px;color:#9fb3d1;font-size:13px;font-weight:700">'
           . '<div style="color:#eef4ff;font-size:15px">' . e($site) . '</div>'
-          . ($ar ? 'كندا · المكسيك · أمريكا' : 'Canada · Mexico · USA') . '</td>'
+          . e($tagline) . '</td>'
           . '</tr></table></td></tr>'
           // Inner content
           . '<tr><td style="padding:6px 28px 28px;font-size:15px;line-height:1.8;color:#eef4ff">'
@@ -85,8 +96,9 @@ class AccountMail
         if (!$u || empty($u['email'])) return false;
 
         $ar    = ($lang === 'ar');
-        $name  = trim((string)($u['display_name'] ?? '')) ?: ($ar ? 'صديقي' : 'friend');
-        $site  = $ar ? 'كأس العالم 2026' : 'World Cup 2026';
+        $fr    = ($lang === 'fr');
+        $name  = trim((string)($u['display_name'] ?? '')) ?: match($lang) { 'ar' => 'صديقي', 'fr' => 'ami', default => 'friend' };
+        $site  = match($lang) { 'ar' => 'كأس العالم 2026', 'fr' => 'Coupe du Monde 2026', default => 'World Cup 2026' };
         $url   = defined('SITE_URL') ? rtrim((string)SITE_URL, '/') : '';
         $predict = $url . '/predict.php?lang=' . $lang;
         $bracket = $url . '/bracket.php?lang=' . $lang;
@@ -107,6 +119,21 @@ class AccountMail
                 . '<a href="mailto:' . e(defined('CONTACT_EMAIL') ? CONTACT_EMAIL : '') . '" style="color:#ffc233">'
                 . e(defined('CONTACT_EMAIL') ? CONTACT_EMAIL : '') . '</a></p>';
             $text = "أهلاً {$name}!\n\nسعداء بانضمامك إلى {$site}.\n\nابدأ التوقعات: {$predict}\nاملأ شجرة الأدوار: {$bracket}\nمباريات اليوم: {$today}\n";
+        } elseif ($fr) {
+            $subj = "Bienvenue sur {$site} 🎉";
+            $inner = '<h1 style="font-size:24px;margin:6px 0 12px;color:#fff">Bienvenue, ' . e($name) . ' ! 🎉</h1>'
+                . '<p style="margin:0 0 10px">Ravi de vous accueillir dans la communauté <strong>' . e($site) . '</strong> — votre destination gratuite pour suivre la Coupe du Monde au Canada, Mexique et États-Unis.</p>'
+                . '<p style="margin:12px 0 6px;font-weight:700;color:#ffc233">Pour commencer :</p>'
+                . '<ul style="margin:0;padding-inline-start:22px;color:#cfe0f7">'
+                . '<li>🎯 <a href="' . e($predict) . '" style="color:#fff">Prédisez les matchs</a> et gagnez des points tout au long du tournoi.</li>'
+                . '<li>🏆 <a href="' . e($bracket) . '" style="color:#fff">Remplissez le tableau</a> et couronnez votre champion.</li>'
+                . '<li>📅 <a href="' . e($today) . '" style="color:#fff">Matchs du jour</a> dans votre fuseau horaire.</li>'
+                . '</ul>'
+                . self::button($predict, 'Commencer les pronostics →')
+                . '<p style="margin:14px 0 0;font-size:13px;color:#9fb3d1">Questions ? Écrivez-nous à '
+                . '<a href="mailto:' . e(defined('CONTACT_EMAIL') ? CONTACT_EMAIL : '') . '" style="color:#ffc233">'
+                . e(defined('CONTACT_EMAIL') ? CONTACT_EMAIL : '') . '</a></p>';
+            $text = "Bienvenue, {$name} !\n\nRavi de vous accueillir sur {$site}.\n\nCommencer les pronostics : {$predict}\nRemplir le tableau : {$bracket}\nMatchs du jour : {$today}\n";
         } else {
             $subj = "Welcome to {$site} 🎉";
             $inner = '<h1 style="font-size:24px;margin:6px 0 12px;color:#fff">Welcome, ' . e($name) . '! 🎉</h1>'
@@ -142,8 +169,9 @@ class AccountMail
         if (!$u || empty($u['email'])) return false;
 
         $ar   = ($lang === 'ar');
-        $name = trim((string)($u['display_name'] ?? '')) ?: ($ar ? 'صديقي' : 'friend');
-        $site = $ar ? 'كأس العالم 2026' : 'World Cup 2026';
+        $fr   = ($lang === 'fr');
+        $name = trim((string)($u['display_name'] ?? '')) ?: match($lang) { 'ar' => 'صديقي', 'fr' => 'ami', default => 'friend' };
+        $site = match($lang) { 'ar' => 'كأس العالم 2026', 'fr' => 'Coupe du Monde 2026', default => 'World Cup 2026' };
         $url  = defined('SITE_URL') ? rtrim((string)SITE_URL, '/') : '';
         $link = $url . '/reset.php?token=' . urlencode($token) . '&lang=' . $lang;
         $ip   = self::ipFromServer();
@@ -160,6 +188,18 @@ class AccountMail
                 . '<p style="margin:18px 0 0;padding:12px 14px;background:rgba(255,194,51,.08);border-inline-start:3px solid #ffc233;font-size:13px;color:#cfe0f7">'
                 . '⚠️ <strong>لم تطلب هذا؟</strong> تجاهل هذه الرسالة — كلمة سرّك لن تتغيّر. الطلب جاء من IP: ' . e($ip) . '.</p>';
             $text = "استعادة كلمة السر — {$site}\n\nأهلاً {$name}،\n\nلتعيين كلمة سر جديدة، افتح هذا الرابط (صالح لساعة واحدة):\n{$link}\n\nإن لم تطلب هذا، تجاهل الرسالة. الطلب جاء من IP: {$ip}";
+        } elseif ($fr) {
+            $subj = "Réinitialisation du mot de passe — {$site}";
+            $inner = '<h1 style="font-size:22px;margin:6px 0 12px;color:#fff">Demande de réinitialisation</h1>'
+                . '<p style="margin:0 0 10px">Bonjour ' . e($name) . ',</p>'
+                . '<p style="margin:0 0 10px">Nous avons reçu une demande de réinitialisation du mot de passe de votre compte sur <strong>' . e($site) . '</strong>. Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe :</p>'
+                . self::button($link, 'Définir un nouveau mot de passe')
+                . '<p style="margin:14px 0 6px;font-size:13px;color:#9fb3d1">Valable <strong>1 heure</strong>, usage unique.</p>'
+                . '<p style="margin:6px 0;font-size:13px;color:#9fb3d1">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>'
+                . '<p style="margin:6px 0;font-size:12px;word-break:break-all"><a href="' . e($link) . '" style="color:#ffc233">' . e($link) . '</a></p>'
+                . '<p style="margin:18px 0 0;padding:12px 14px;background:rgba(255,194,51,.08);border-inline-start:3px solid #ffc233;font-size:13px;color:#cfe0f7">'
+                . '⚠️ <strong>Vous n\'avez pas fait cette demande ?</strong> Ignorez cet e-mail — votre mot de passe ne changera pas. Demande depuis IP : ' . e($ip) . '.</p>';
+            $text = "Réinitialisation du mot de passe — {$site}\n\nBonjour {$name},\n\nPour définir un nouveau mot de passe, ouvrez ce lien (valable 1 heure) :\n{$link}\n\nSi vous n'avez pas fait cette demande, ignorez ce message. Demande depuis IP : {$ip}";
         } else {
             $subj = "Password Reset — {$site}";
             $inner = '<h1 style="font-size:22px;margin:6px 0 12px;color:#fff">Password reset request</h1>'

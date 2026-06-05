@@ -169,10 +169,12 @@ window.WC_I18N = {
   welcome: <?= json_encode(t('welcome'), JSON_UNESCAPED_UNICODE) ?>
 };
 window.WC_FUN = {
-  bragText: <?= json_encode(current_lang()==='ar' ? 'قلتلكم! توقّعي في كأس العالم 2026 🔮 — ' : 'I called it! My FIFA World Cup 2026 prediction 🔮 — ', JSON_UNESCAPED_UNICODE) ?>,
-  qahrTitles: <?= json_encode(current_lang()==='ar'
-      ? ['بلا قهر بعد 😌','مبتدئ في القهر','محترف خيبات','سفير القهر','أسطورة القهر العالمي 👑']
-      : ['No heartbreak yet 😌','Heartbreak rookie','Disappointment pro','Heartbreak envoy','Global Heartbreak Legend 👑'], JSON_UNESCAPED_UNICODE) ?>
+  bragText: <?= json_encode(match(current_lang()) { 'ar' => 'قلتلكم! توقّعي في كأس العالم 2026 🔮 — ', 'fr' => 'Je l\'avais dit ! Ma prédiction Coupe du Monde 2026 🔮 — ', default => 'I called it! My FIFA World Cup 2026 prediction 🔮 — ' }, JSON_UNESCAPED_UNICODE) ?>,
+  qahrTitles: <?= json_encode(match(current_lang()) {
+      'ar' => ['بلا قهر بعد 😌','مبتدئ في القهر','محترف خيبات','سفير القهر','أسطورة القهر العالمي 👑'],
+      'fr' => ['Pas encore de frustration 😌','Débutant en frustration','Pro de la déception','Envoyé de la frustration','Légende mondiale de la frustration 👑'],
+      default => ['No heartbreak yet 😌','Heartbreak rookie','Disappointment pro','Heartbreak envoy','Global Heartbreak Legend 👑'],
+  }, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
 <script src="<?= e(rtrim(SITE_URL,'/')) ?>/assets/js/predict.js" defer></script>

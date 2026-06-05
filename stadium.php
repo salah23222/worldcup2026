@@ -19,9 +19,9 @@ if (!$s) {
 }
 
 $lang = current_lang();
-$name = $lang === 'ar' ? $s['nameAr'] : $s['nameEn'];
-$city = $lang === 'ar' ? $s['cityAr'] : $s['cityEn'];
-$hist = $lang === 'ar' ? $s['histAr'] : $s['histEn'];
+$name = match($lang) { 'ar' => $s['nameAr'], 'fr' => $s['nameFr'] ?? $s['nameEn'], default => $s['nameEn'] };
+$city = match($lang) { 'ar' => $s['cityAr'], 'fr' => $s['cityFr'] ?? $s['cityEn'], default => $s['cityEn'] };
+$hist = match($lang) { 'ar' => $s['histAr'], 'fr' => $s['histFr'] ?? $s['histEn'], default => $s['histEn'] };
 $flag = 'https://flagcdn.com/w40/' . $s['country'] . '.png';
 $img  = Stadiums::image($id);
 $maps = Stadiums::mapsUrl($s);

@@ -10,31 +10,35 @@ require __DIR__ . '/includes/bootstrap.php';
 $csrf = Predictions::ensureCsrf();
 $user = Predictions::user();
 
-$ar = (current_lang() === 'ar');
-$L  = fn(string $a, string $e) => $ar ? $a : $e;
+$lang = current_lang();
+$ar   = ($lang === 'ar');
+$L    = fn(string $a, string $e, string $f = '') => $ar ? $a : (($lang === 'fr') ? ($f ?: $e) : $e);
 
 $myLeagues = $user ? Leagues::myLeagues() : [];
 
-$page_title = $L('المجلس', 'My Leagues');
+$page_title = $L('المجلس', 'My Leagues', 'Mes ligues');
 $page_desc  = $L('أنشئ دوريّة توقّعات خاصّة بأصدقائك وعائلتك وزملائك — بلوحة صدارة خاصّة بكم.',
-                 'Create a private predictions league with your friends, family and coworkers — with your own leaderboard.');
+                 'Create a private predictions league with your friends, family and coworkers — with your own leaderboard.',
+                 'Créez une ligue de pronostics privée avec vos amis, votre famille et vos collègues — avec votre propre classement.');
 tpl('header');
 ?>
 
 <link rel="stylesheet" href="<?= e(rtrim(SITE_URL, '/')) ?>/assets/css/leagues.css?v=<?= @filemtime(__DIR__ . '/assets/css/leagues.css') ?: 1 ?>">
 
 <div class="page-head">
-  <h1>🏆 <?= e($L('المجلس', 'My Leagues')) ?></h1>
+  <h1>🏆 <?= e($L('المجلس', 'My Leagues', 'Mes ligues')) ?></h1>
   <p class="muted"><?= e($L('دوريّة توقّعات خاصّة بينك وبين من تختار — لوحة صدارتكم وحدكم.',
-                            'A private predictions league among you and whoever you invite — your own leaderboard.')) ?></p>
+                            'A private predictions league among you and whoever you invite — your own leaderboard.',
+                            'Une ligue de pronostics privée entre vous et vos invités — votre propre classement.')) ?></p>
 </div>
 
 <?php if (!$user): ?>
   <!-- بلا هوية: ادعُه لاختيار اسم أولاً في صفحة التوقعات -->
   <div class="lg-card lg-needname">
     <p><?= e($L('لإنشاء دوريّة أو الانضمام لواحدة، اختر اسمك أولاً في صفحة التوقعات.',
-                'To create or join a league, pick your name first on the predictions page.')) ?></p>
-    <a class="btn btn-accent" href="<?= e(url('predict.php')) ?>"><?= e($L('اختر اسمك وابدأ', 'Pick a name to start')) ?> ›</a>
+                'To create or join a league, pick your name first on the predictions page.',
+                'Pour créer ou rejoindre une ligue, choisissez d\'abord votre pseudo sur la page Pronostics.')) ?></p>
+    <a class="btn btn-accent" href="<?= e(url('predict.php')) ?>"><?= e($L('اختر اسمك وابدأ', 'Pick a name to start', 'Choisir un pseudo')) ?> ›</a>
   </div>
 <?php else: ?>
 

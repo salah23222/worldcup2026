@@ -13,7 +13,9 @@ function render_match_card(array $m): void {
     $ts     = DataService::matchTimestamp($m);
     $hasScore = isset($m['score']['ft']) && is_array($m['score']['ft']);
     $detailUrl = url('match.php', ['id' => $m['_index'] ?? 0]);
-    $ar     = (current_lang() === 'ar');
+    $lang   = current_lang();
+    $ar     = ($lang === 'ar');
+    $fr     = ($lang === 'fr');
     // زر «ذكّرني» — للمباريات القادمة بين منتخبين حقيقيين فقط (تذكير محلي).
     $canRemind = ($status === 'upcoming') && $ts && is_real_team($t1) && is_real_team($t2);
     // استطلاع 1X2 سريع (فوز/تعادل/فوز) — للمباريات القادمة فقط (يُخفى للمقفلة/المنتهية).
@@ -68,11 +70,11 @@ function render_match_card(array $m): void {
       <button type="button" class="mc-remind" data-remind
               data-id="<?= (int)($m['_index'] ?? 0) ?>"
               data-ts="<?= (int)$ts ?>"
-              data-teams="<?= e(team_name($t1) . ' ' . ($ar ? '×' : 'vs') . ' ' . team_name($t2)) ?>"
+              data-teams="<?= e(team_name($t1) . ' ' . t('vs') . ' ' . team_name($t2)) ?>"
               data-url="<?= e($detailUrl) ?>"
               aria-pressed="false">
         <span class="mc-remind-ico" aria-hidden="true">🔔</span>
-        <span class="mc-remind-txt"><?= e($ar ? 'ذكّرني' : 'Remind me') ?></span>
+        <span class="mc-remind-txt"><?= e(match($lang) { 'ar' => 'ذكّرني', 'fr' => 'Me rappeler', default => 'Remind me' }) ?></span>
       </button>
     <?php endif; ?>
     <?php if ($poll !== null) render_match_poll($poll); ?>
@@ -92,11 +94,13 @@ function render_match_poll(array $p): void {
     $total  = (int)($p['total'] ?? array_sum($counts));
     $voted  = !empty($p['voted']);
     $choice = $p['choice'];
-    $ar     = (current_lang() === 'ar');
+    $lang   = current_lang();
+    $ar     = ($lang === 'ar');
+    $fr     = ($lang === 'fr');
     ?>
     <div class="mc-poll<?= $voted ? ' is-voted' : '' ?>" data-poll="<?= e($p['id']) ?>" data-opts="<?= count($opts) ?>"
          data-voted="<?= $voted ? '1' : '0' ?>" data-choice="<?= ($choice === null) ? '-1' : (int)$choice ?>">
-      <div class="mc-poll-q"><?= e($ar ? 'توقّعك؟' : 'Your call?') ?></div>
+      <div class="mc-poll-q"><?= e(match($lang) { 'ar' => 'توقّعك؟', 'fr' => 'Votre appel ?', default => 'Your call?' }) ?></div>
       <div class="mc-poll-list">
         <?php foreach ($opts as $i => $label):
           $pct  = ($voted && $total > 0) ? (int)round(100 * $counts[$i] / $total) : 0;

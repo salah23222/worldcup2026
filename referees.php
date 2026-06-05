@@ -10,18 +10,16 @@ $lang     = current_lang();
 $referees = Referees::all();
 
 $L = [
-    'title' => $lang === 'ar' ? 'الحكّام' : 'Referees',
-    'intro' => $lang === 'ar' ? 'القائمة الرسمية لحكّام كأس العالم FIFA 2026 — مفرزون حسب الاختصاص'
-                              : 'Official FIFA World Cup 2026 match officials — by role',
-    'empty' => $lang === 'ar' ? 'ستُعلَن أسماء الحكام قبل انطلاق البطولة'
-                              : 'Referees will be announced before the tournament begins',
-    'matches' => $lang === 'ar' ? 'مباراة' : 'matches',
+    'title' => match($lang) { 'ar' => 'الحكّام', 'fr' => 'Arbitres', default => 'Referees' },
+    'intro' => match($lang) { 'ar' => 'القائمة الرسمية لحكّام كأس العالم FIFA 2026 — مفرزون حسب الاختصاص', 'fr' => 'Officiels de match de la Coupe du Monde FIFA 2026 — par rôle', default => 'Official FIFA World Cup 2026 match officials — by role' },
+    'empty' => match($lang) { 'ar' => 'ستُعلَن أسماء الحكام قبل انطلاق البطولة', 'fr' => 'Les arbitres seront annoncés avant le début du tournoi', default => 'Referees will be announced before the tournament begins' },
+    'matches' => match($lang) { 'ar' => 'مباراة', 'fr' => 'matchs', default => 'matches' },
 ];
 
 $roleLabels = [
-    'referee'   => $lang === 'ar' ? 'الحكّام'              : 'Referees',
-    'assistant' => $lang === 'ar' ? 'الحكّام المساعدون'    : 'Assistant Referees',
-    'var'       => $lang === 'ar' ? 'حكّام الفيديو (VAR)'  : 'Video Match Officials (VAR)',
+    'referee'   => match($lang) { 'ar' => 'الحكّام', 'fr' => 'Arbitres', default => 'Referees' },
+    'assistant' => match($lang) { 'ar' => 'الحكّام المساعدون', 'fr' => 'Arbitres assistants', default => 'Assistant Referees' },
+    'var'       => match($lang) { 'ar' => 'حكّام الفيديو (VAR)', 'fr' => 'Arbitres vidéo (VAR)', default => 'Video Match Officials (VAR)' },
 ];
 
 // تجميع حسب الاختصاص (مع الحفاظ على ترتيب القائمة الأصلي كـ index للرابط التفصيلي)

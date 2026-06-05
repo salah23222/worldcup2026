@@ -12,25 +12,22 @@ $sel      = isset($_GET['team']) ? trim($_GET['team']) : '';
 $selValid = $sel !== '' && isset($allTeams[$sel]);
 
 $L = [
-    'title'      => $lang === 'ar' ? 'قوائم المنتخبات' : 'Team Squads',
-    'intro'      => $lang === 'ar' ? 'لاعبو كل منتخب في كأس العالم 2026'
-                                   : 'Player squads for the FIFA World Cup 2026',
-    'all'        => $lang === 'ar' ? '← كل المنتخبات' : '← All teams',
-    'squad'      => $lang === 'ar' ? 'القائمة' : 'Squad',
-    'soon'       => $lang === 'ar' ? 'قائمة اللاعبين تُعلن قبل البطولة بأيام — ستظهر هنا تلقائياً.'
-                                   : 'The 26-player squad is announced days before the tournament — it will appear here automatically.',
-    'no'         => $lang === 'ar' ? 'لا توجد بيانات بعد.' : 'No data yet.',
-    'num'        => $lang === 'ar' ? '#' : '#',
-    'player'     => $lang === 'ar' ? 'اللاعب' : 'Player',
-    'pos'        => $lang === 'ar' ? 'المركز' : 'Position',
+    'title'      => match($lang) { 'ar' => 'قوائم المنتخبات', 'fr' => 'Effectifs', default => 'Team Squads' },
+    'intro'      => match($lang) { 'ar' => 'لاعبو كل منتخب في كأس العالم 2026', 'fr' => 'Effectifs des équipes pour la Coupe du Monde FIFA 2026', default => 'Player squads for the FIFA World Cup 2026' },
+    'all'        => match($lang) { 'ar' => '← كل المنتخبات', 'fr' => '← Toutes les équipes', default => '← All teams' },
+    'squad'      => match($lang) { 'ar' => 'القائمة', 'fr' => 'Effectif', default => 'Squad' },
+    'soon'       => match($lang) { 'ar' => 'قائمة اللاعبين تُعلن قبل البطولة بأيام — ستظهر هنا تلقائياً.', 'fr' => 'La liste des 26 joueurs est annoncée quelques jours avant le tournoi — elle apparaîtra ici automatiquement.', default => 'The 26-player squad is announced days before the tournament — it will appear here automatically.' },
+    'no'         => match($lang) { 'ar' => 'لا توجد بيانات بعد.', 'fr' => 'Pas encore de données.', default => 'No data yet.' },
+    'num'        => '#',
+    'player'     => match($lang) { 'ar' => 'اللاعب', 'fr' => 'Joueur', default => 'Player' },
+    'pos'        => match($lang) { 'ar' => 'المركز', 'fr' => 'Position', default => 'Position' },
 ];
 
-// ترجمة المراكز من API-Football
 $posMap = [
-    'Goalkeeper' => $lang === 'ar' ? 'حراسة'  : 'Goalkeeper',
-    'Defender'   => $lang === 'ar' ? 'دفاع'   : 'Defender',
-    'Midfielder' => $lang === 'ar' ? 'وسط'    : 'Midfielder',
-    'Attacker'   => $lang === 'ar' ? 'هجوم'   : 'Attacker',
+    'Goalkeeper' => match($lang) { 'ar' => 'حراسة', 'fr' => 'Gardien', default => 'Goalkeeper' },
+    'Defender'   => match($lang) { 'ar' => 'دفاع', 'fr' => 'Défenseur', default => 'Defender' },
+    'Midfielder' => match($lang) { 'ar' => 'وسط', 'fr' => 'Milieu', default => 'Midfielder' },
+    'Attacker'   => match($lang) { 'ar' => 'هجوم', 'fr' => 'Attaquant', default => 'Attacker' },
 ];
 
 $page_title = $selValid ? (team_name($sel) . ' — ' . $L['squad']) : $L['title'];

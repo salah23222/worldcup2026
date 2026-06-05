@@ -92,7 +92,8 @@ if ($chatId === null || $text === '') {
 // لغة الردّ: حسب لغة تيليجرام للمستخدم إن توفّرت، وإلا الافتراضية.
 $tgLang = $message['from']['language_code'] ?? DEFAULT_LANG;
 $ar = (strpos((string)$tgLang, 'ar') === 0);
-$Lg = fn(string $a, string $e) => $ar ? $a : $e;
+$fr = (strpos((string)$tgLang, 'fr') === 0);
+$Lg = fn(string $a, string $e, string $f = '') => $ar ? $a : ($fr ? ($f ?: $e) : $e);
 
 // أوّل كلمة = الأمر (نتجاهل لاحقة @BotName والمعطيات).
 $cmd = strtolower(preg_replace('/[@\s].*$/', '', $text));

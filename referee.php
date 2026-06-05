@@ -25,9 +25,9 @@ $flag    = strtolower(trim((string)($ref['flag'] ?? '')));
 $role    = $ref['role'] ?? 'referee';
 
 $roleLabels = [
-    'referee'   => $lang === 'ar' ? 'حكم ساحة'           : 'Referee',
-    'assistant' => $lang === 'ar' ? 'حكم مساعد'          : 'Assistant Referee',
-    'var'       => $lang === 'ar' ? 'حكم فيديو (VAR)'    : 'Video Match Official (VAR)',
+    'referee'   => match($lang) { 'ar' => 'حكم ساحة', 'fr' => 'Arbitre principal', default => 'Referee' },
+    'assistant' => match($lang) { 'ar' => 'حكم مساعد', 'fr' => 'Arbitre assistant', default => 'Assistant Referee' },
+    'var'       => match($lang) { 'ar' => 'حكم فيديو (VAR)', 'fr' => 'Arbitre vidéo (VAR)', default => 'Video Match Official (VAR)' },
 ];
 $roleLabel = $roleLabels[$role] ?? $roleLabels['referee'];
 
@@ -35,16 +35,14 @@ $profile = Referees::profile($name, $lang);
 $matches = Referees::matchesFor($name);
 
 $L = [
-    'about'      => $lang === 'ar' ? 'نبذة'                  : 'About',
-    'no_profile' => $lang === 'ar' ? 'لا تتوفّر نبذة تفصيلية لهذا الحكم بعد — تُضاف عند توفّرها.'
-                                    : "A detailed profile isn't available yet — added as it becomes available.",
-    'source'     => $lang === 'ar' ? 'المصدر: ويكيبيديا'    : 'Source: Wikipedia',
-    'read_more'  => $lang === 'ar' ? 'اقرأ المزيد'           : 'Read more',
-    'role'       => $lang === 'ar' ? 'الاختصاص'             : 'Role',
-    'his_matches'=> $lang === 'ar' ? 'مبارياته في البطولة'  : 'Tournament matches',
-    'no_matches' => $lang === 'ar' ? 'لم تُسنَد إليه مباريات بعد — تظهر بمجرّد إعلان التعيينات.'
-                                    : 'No matches assigned yet — shown once appointments are announced.',
-    'back'       => $lang === 'ar' ? 'كل الحكّام'            : 'All referees',
+    'about'      => t('about_stadium'),
+    'no_profile' => match($lang) { 'ar' => 'لا تتوفّر نبذة تفصيلية لهذا الحكم بعد — تُضاف عند توفّرها.', 'fr' => "Un profil détaillé n'est pas encore disponible — il sera ajouté dès qu'il sera disponible.", default => "A detailed profile isn't available yet — added as it becomes available." },
+    'source'     => match($lang) { 'ar' => 'المصدر: ويكيبيديا', 'fr' => 'Source : Wikipédia', default => 'Source: Wikipedia' },
+    'read_more'  => t('read_more'),
+    'role'       => match($lang) { 'ar' => 'الاختصاص', 'fr' => 'Spécialité', default => 'Role' },
+    'his_matches'=> match($lang) { 'ar' => 'مبارياته في البطولة', 'fr' => 'Ses matchs dans le tournoi', default => 'Tournament matches' },
+    'no_matches' => match($lang) { 'ar' => 'لم تُسنَد إليه مباريات بعد — تظهر بمجرّد إعلان التعيينات.', 'fr' => "Aucun match assigné pour l'instant — affiché une fois les nominations annoncées.", default => 'No matches assigned yet — shown once appointments are announced.' },
+    'back'       => match($lang) { 'ar' => 'كل الحكّام', 'fr' => 'Tous les arbitres', default => 'All referees' },
 ];
 
 $page_title = $name;

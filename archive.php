@@ -62,14 +62,14 @@ $cflag = fn(string $code) => $code === ''
             <td class="ch-year"><strong><?= (int)$c['year'] ?></strong></td>
             <td class="ch-win">
               <?= $cflag($c['winner']['flag']) ?>
-              <span><?= e($lang === 'ar' ? $c['winner']['ar'] : $c['winner']['en']) ?></span>
+              <span><?= e(match($lang) { 'ar' => $c['winner']['ar'], 'fr' => $c['winner']['fr'] ?? $c['winner']['en'], default => $c['winner']['en'] }) ?></span>
             </td>
             <td class="ch-score"><?= e($c['score']) ?></td>
             <td class="ch-run">
               <?= $cflag($c['runner']['flag']) ?>
-              <span><?= e($lang === 'ar' ? $c['runner']['ar'] : $c['runner']['en']) ?></span>
+              <span><?= e(match($lang) { 'ar' => $c['runner']['ar'], 'fr' => $c['runner']['fr'] ?? $c['runner']['en'], default => $c['runner']['en'] }) ?></span>
             </td>
-            <td class="ch-host"><?= e($lang === 'ar' ? $c['host'] : $c['host_en']) ?></td>
+            <td class="ch-host"><?= e(match($lang) { 'ar' => $c['host'], 'fr' => $c['host_fr'] ?? $c['host_en'], default => $c['host_en'] }) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
