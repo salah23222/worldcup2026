@@ -69,6 +69,7 @@ $tabs = [
     'participants' => $L('المشاركون', 'Participants'),
     'security'     => $L('الأمان والإيقاف', 'Security & Moderation'),
     'email'        => $L('النشرة البريدية', 'Email Digest'),
+    'x'            => $L('نشر X (تويتر)', 'X (Twitter) Publishing'),
     'sponsors'     => $L('الرعاة', 'Sponsors'),
 ];
 $tab = (string)($_POST['tab'] ?? $_GET['tab'] ?? 'participants');

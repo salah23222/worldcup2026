@@ -146,6 +146,23 @@ define('AI_TIMEOUT', 10);   // مهلة قصيرة: تمنع تعليق عمّا
 // حتى لو وُضع المفتاح أبكر. الافتراضي = 3 أيام قبل افتتاح البطولة (11 يونيو 2026).
 define('AI_ACTIVATE_FROM', (string)cfg_secret('AI_ACTIVATE_FROM', '2026-06-08', $__local));
 
+// ---------- (اختياري) نشر تلقائي على X (تويتر) ----------
+// التسويق التلقائي للموقع عبر منصّة X. فارغ الكل = الميزة معطّلة بالكامل.
+// تحتاج أربعة مفاتيح من developer.x.com (مشروع له صلاحية Read+Write):
+//   1) API Key       (Consumer Key)
+//   2) API Secret    (Consumer Secret)
+//   3) Access Token         (لحساب يكتب التغريدات)
+//   4) Access Token Secret
+// خطة Free تسمح بـ 17 تغريدة/يوم — جدولنا أقصاه 6 تغريدات (داخل الحد بسهولة).
+define('X_API_KEY',        (string)cfg_secret('X_API_KEY',        '', $__local));
+define('X_API_SECRET',     (string)cfg_secret('X_API_SECRET',     '', $__local));
+define('X_ACCESS_TOKEN',   (string)cfg_secret('X_ACCESS_TOKEN',   '', $__local));
+define('X_ACCESS_SECRET',  (string)cfg_secret('X_ACCESS_SECRET',  '', $__local));
+// اسم الحساب (يُعرَض في لوحة التحكم — تجميلي فقط).
+define('X_HANDLE',         (string)cfg_secret('X_HANDLE',         'wcup2026', $__local));
+// الوسوم الرسمية المُلحَقة بكل تغريدة (FIFA الرسمية + هوية الموقع).
+define('X_HASHTAGS',       '#WeAre26 #FIFAWorldCup26');
+
 // ---------- (اختياري) بوت تيليجرام ----------
 // فارغ = البوت معطّل تماماً (نقطة الويبهوك ترد 503 ولا تتصل بأي شيء).
 // لتفعيله: أنشئ بوتاً عبر @BotFather، ضع التوكن هنا، واضبط ويبهوك يشير إلى
