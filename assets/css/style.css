@@ -1885,24 +1885,50 @@ button.sponsor-empty:hover { border-color: var(--accent-2); color: var(--text); 
   display: flex; align-items: center; gap: 14px;
   margin-bottom: 16px;
 }
+/* شعار 26 — هويّة FIFA الرسميّة: نصف أسود علوي + نصف أبيض سفلي مع "26" أسود واضح */
 .footer-mark {
   flex: 0 0 auto;
-  width: 48px; height: 48px;
-  display: grid; place-items: center;
-  background: linear-gradient(180deg, #000 0% 50%, #fff 50% 100%);
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 900; font-size: 1.4rem; line-height: 1;
+  width: 54px; height: 54px;
+  display: flex; flex-direction: column;
+  background: #fff;                                     /* القاعدة بيضاء */
   border-radius: 10px;
-  border: 1.5px solid rgba(255,255,255,.15);
-  letter-spacing: -.05em;
+  border: 1.5px solid rgba(0,0,0,.15);
+  overflow: hidden;
+  font-family: var(--font-display);
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
-.footer-brand-text { display: flex; flex-direction: column; line-height: 1.3; }
+.footer-mark .fm-top {
+  flex: 0 0 38%;                                        /* النصف العلوي الأسود */
+  background: #000;
+  color: #fff;
+  font-size: .55rem; font-weight: 700;
+  letter-spacing: .12em;
+  display: grid; place-items: center;
+  line-height: 1;
+}
+.footer-mark .fm-bot {
+  flex: 1;                                              /* النصف السفلي الأبيض */
+  background: #fff;
+  color: #000;                                          /* الأسود ← يظهر بوضوح */
+  font-size: 1.55rem; font-weight: 900;
+  letter-spacing: -.06em;
+  display: grid; place-items: center;
+  line-height: 1;
+}
+
+.footer-brand-text { display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
 .footer-brand-text strong {
   font-family: var(--font-display);
   font-size: 1rem; color: var(--text); letter-spacing: -.01em;
 }
-.footer-brand-text span { font-size: .76rem; color: var(--text-dim); }
+.footer-brand-text > span { font-size: .76rem; color: var(--text-dim); }
+.footer-brand-text .footer-brand-dates {
+  font-size: .72rem;
+  color: var(--accent-2);
+  font-weight: 600;
+  letter-spacing: .01em;
+  margin-top: 2px;
+}
 
 .footer-numbers {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;

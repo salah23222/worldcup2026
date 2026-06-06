@@ -44,10 +44,14 @@ $lang       = current_lang();
     <!-- ──────── العمود 1: الهوية + الأرقام ──────── -->
     <div class="footer-col footer-col-brand">
       <div class="footer-brand">
-        <span class="footer-mark" aria-hidden="true">26</span>
+        <span class="footer-mark" aria-hidden="true">
+          <span class="fm-top">FIFA</span>
+          <span class="fm-bot">26</span>
+        </span>
         <div class="footer-brand-text">
           <strong>wcup2026.org</strong>
           <span><?= e($lang === 'ar' ? 'كأس العالم 2026 · كندا · المكسيك · أمريكا' : 'FIFA World Cup 2026 · Canada · Mexico · USA') ?></span>
+          <span class="footer-brand-dates">📅 <?= e($lang === 'ar' ? '11 يونيو – 19 يوليو 2026' : 'June 11 – July 19, 2026') ?></span>
         </div>
       </div>
       <div class="footer-numbers">
