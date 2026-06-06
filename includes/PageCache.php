@@ -73,7 +73,7 @@ class PageCache
             'predict.php', 'leaderboard.php', 'trivia.php',
             'login.php', 'register.php', 'logout.php', 'forgot.php', 'reset.php', 'promote.php',
             'admin.php', 'health.php', 'install.php', 'db_selftest.php',
-            'card.php', 'card_img.php', 'calendar.php', 'manifest.php', 'sitemap.php',
+            'card.php', 'card_img.php', 'calendar.php', 'manifest.php', 'sitemap.php', 'print.php',
             'widget.php', 'embed.php', 'stickers.php', 'unsubscribe.php',
             // ميزات جديدة شخصية/ديناميكية — لا تُخزَّن كصفحة كاملة
             'leagues.php', 'league.php', 'today.php',

@@ -51,6 +51,7 @@ tpl('header');
 <div class="cal-bar">
   <a class="btn btn-cta" href="<?= $icsUrl ?>">📅 <?= e(t('add_to_calendar')) ?></a>
   <a class="btn btn-sm cal-sub" href="<?= $webcalUrl ?>">🔔 <?= e(t('subscribe_calendar')) ?></a>
+  <a class="btn btn-sm cal-sub" href="<?= e(url('print.php')) ?>" target="_blank">🖨️ <?= e(current_lang()==='ar' ? 'طباعة جدول البطولة' : 'Print schedule poster') ?></a>
   <span class="cal-hint muted"><?= e(t('calendar_hint')) ?></span>
 </div>
 
