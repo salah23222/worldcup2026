@@ -1885,35 +1885,18 @@ button.sponsor-empty:hover { border-color: var(--accent-2); color: var(--text); 
   display: flex; align-items: center; gap: 14px;
   margin-bottom: 16px;
 }
-/* شعار 26 — هويّة FIFA الرسميّة: نصف أسود علوي + نصف أبيض سفلي مع "26" أسود واضح */
+/* شعار 26 — مطابق تماماً لشعار الهيدر (هويّة الموقع) */
 .footer-mark {
   flex: 0 0 auto;
-  width: 54px; height: 54px;
-  display: flex; flex-direction: column;
-  background: #fff;                                     /* القاعدة بيضاء */
-  border-radius: 10px;
-  border: 1.5px solid rgba(0,0,0,.15);
-  overflow: hidden;
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
   font-family: var(--font-display);
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-.footer-mark .fm-top {
-  flex: 0 0 38%;                                        /* النصف العلوي الأسود */
-  background: #000;
-  color: #fff;
-  font-size: .55rem; font-weight: 700;
-  letter-spacing: .12em;
-  display: grid; place-items: center;
-  line-height: 1;
-}
-.footer-mark .fm-bot {
-  flex: 1;                                              /* النصف السفلي الأبيض */
-  background: #fff;
-  color: #000;                                          /* الأسود ← يظهر بوضوح */
-  font-size: 1.55rem; font-weight: 900;
-  letter-spacing: -.06em;
-  display: grid; place-items: center;
-  line-height: 1;
+  font-weight: 700; font-size: 1.5rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #d4dded);
+  color: #0a1626;
+  box-shadow: 0 6px 18px rgba(255,255,255,.18);
+  letter-spacing: -.02em;
 }
 
 .footer-brand-text { display: flex; flex-direction: column; gap: 2px; line-height: 1.3; }
