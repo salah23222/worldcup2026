@@ -51,6 +51,7 @@ require __DIR__ . '/Digest.php';
 require __DIR__ . '/XPublisher.php';
 require __DIR__ . '/TweetComposer.php';
 require __DIR__ . '/MatchTweets.php';
+require __DIR__ . '/GroupTweets.php';
 require __DIR__ . '/Admin.php';
 
 // التقط ?ref=username من أيّ صفحة وضع الكوكي (قبل أي إخراج)

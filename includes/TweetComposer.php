@@ -2,52 +2,64 @@
 /**
  * TweetComposer.php — يبني نصّ التغريدة من بيانات الموقع.
  * ============================================================
- * يوفّر تغريدة لكل «فترة» (slot) من جدول النشر اليومي:
+ * يوفّر تغريدة لكل «فترة» (slot) من جدول النشر اليومي، بالعربيّة أو الإنجليزيّة:
  *
- *   morning   (09:00 توقيت العرض) — تنبيه باليوم/ما تبقّى + رابط الجدول
- *   evening   (21:00 توقيت العرض) — ملخّص نتائج اليوم + رابط الترتيب
- *   countdown (قبل البطولة)        — العدّ التنازلي + رابط التوقّعات
- *   manual / preview               — تغريدة افتراضية للاختبار اليدوي
+ *   morning   (09:00) — تنبيه باليوم/ما تبقّى + رابط الجدول
+ *   countdown (10:00) — العدّ التنازلي + رابط التوقّعات (قبل البطولة فقط)
+ *   evening   (21:00) — ملخّص نتائج اليوم + رابط الترتيب
+ *   stats     (22:00) — هدّافون + بطاقات + إجمالي أهداف + رابط stats.php
+ *   manual                                                — تغريدة افتراضية للاختبار
  *
- * كل تغريدة تنتهي برابط الموقع + الوسوم الرسمية (#WeAre26 #FIFAWorldCup26).
- * عربي إن كانت لغة الموقع 'ar' وإلّا إنجليزي.
+ * كل فترة تُنشَر مرّتين في اليوم: عربيّة + إنجليزيّة (مفاتيح اللغة منفصلة في
+ * claimSlot لمنع التكرار). نهاية كل تغريدة: رابط الموقع + الوسوم الرسمية.
  * ============================================================
  */
 if (!defined('WC2026')) { exit('Access denied'); }
 
 class TweetComposer
 {
-    /** رمز فترة النشر للوقت الحالي حسب توقيت العرض (DISPLAY_TIMEZONE).
-     *  يعيد null لو لا توجد فترة فعّالة الآن. */
+    /** فترات النشر اليومية وساعاتها (Asia/Dubai). */
+    private const SLOT_HOURS = [
+        'morning'   => 9,
+        'countdown' => 10,
+        'evening'   => 21,
+        'stats'     => 22,
+    ];
+
+    /** رمز فترة النشر للوقت الحالي. null = لا فترة فعّالة. */
     public static function currentSlot(int $now = 0): ?string
     {
         $now = $now ?: time();
-        $h   = (int)date('G', $now);   // 0..23 — قد تأثرت أعلاه بـdate_default_timezone_set
+        $h   = (int)date('G', $now);
         $started = DataService::tournamentStarted();
-        // قبل البطولة: تنبيه واحد عند 10 صباحاً.
+
+        // قبل البطولة: نُفعّل countdown فقط (لا morning/evening/stats)
         if (!$started) {
-            return ($h === 10) ? 'countdown' : null;
+            return ($h === self::SLOT_HOURS['countdown']) ? 'countdown' : null;
         }
-        // أثناء البطولة: morning 09 + evening 21
-        if ($h === 9)  return 'morning';
-        if ($h === 21) return 'evening';
+        // أثناء البطولة
+        foreach (['morning', 'evening', 'stats'] as $s) {
+            if ($h === self::SLOT_HOURS[$s]) return $s;
+        }
         return null;
     }
 
-    /** يبني نصّ تغريدة لفترة معيّنة. لغة الموقع تتحكّم باللغة. */
-    public static function build(string $slot): string
+    /** يبني نصّ تغريدة لفترة معيّنة باللغة المطلوبة (ar/en). */
+    public static function build(string $slot, ?string $lang = null): string
     {
-        $ar = (current_lang() === 'ar');
+        $lang = ($lang === 'ar' || $lang === 'en') ? $lang : current_lang();
+        $ar = ($lang === 'ar');
         switch ($slot) {
             case 'countdown': return self::countdown($ar);
             case 'morning':   return self::morning($ar);
             case 'evening':   return self::evening($ar);
+            case 'stats':     return self::stats($ar, $lang);
             case 'manual':
             default:          return self::manual($ar);
         }
     }
 
-    // ---------- فترات ----------
+    // ───────────────────── الفترات ─────────────────────
 
     private static function countdown(bool $ar): string
     {
@@ -56,12 +68,12 @@ class TweetComposer
         $link  = self::link('predict.php');
         if ($days !== null && $days > 0) {
             $msg = $ar
-                ? "باقٍ {$days} يوم على انطلاق كأس العالم 2026 ⚽\nجهّز توقّعاتك واصعد في الترتيب 👇"
-                : "{$days} days until FIFA World Cup 2026 kicks off ⚽\nPick your predictions and climb the leaderboard 👇";
+                ? "⏳ باقٍ {$days} يوم على انطلاق كأس العالم 2026 ⚽🔥\nجهّز توقّعاتك الآن واصعد على القمّة 👇"
+                : "⏳ {$days} days until FIFA World Cup 2026 ⚽🔥\nLock your predictions now and climb to the top 👇";
         } else {
             $msg = $ar
-                ? "اقترب انطلاق كأس العالم 2026! آخر فرصة لتوقّعاتك 👇"
-                : "FIFA World Cup 2026 is almost here — last chance to lock your picks 👇";
+                ? "🚨 الكرة على وشك أن تتحرّك! آخر فرصة لتوقّعاتك 👇"
+                : "🚨 The ball is about to roll! Last chance to lock your picks 👇";
         }
         return self::sign($msg, $link);
     }
@@ -73,42 +85,90 @@ class TweetComposer
         $link  = self::link('matches.php');
         if ($n === 0) {
             $msg = $ar
-                ? "لا مباريات اليوم — استرح، راجع توقّعاتك، وتفقّد الترتيب 📊"
-                : "No matches today — take a breather, review your picks, check the standings 📊";
+                ? "☕ يوم راحة في المونديال — راجع توقّعاتك وتفقّد ترتيبك 📊"
+                : "☕ Quiet day at the World Cup — review your picks and check the standings 📊";
             return self::sign($msg, self::link('leaderboard.php'));
         }
-        $headline = $ar ? "اليوم {$n} مباراة في المونديال ⚽" : "{$n} World Cup matches today ⚽";
-        $lines    = [];
+        $headline = $ar
+            ? "🔥 اليوم {$n} مباراة في المونديال ⚽"
+            : "🔥 {$n} World Cup matches today ⚽";
+        $lines = [];
         foreach (array_slice($today, 0, 3) as $m) {
             $lines[] = self::matchLine($m, $ar, withTime: true);
         }
-        $body = implode("\n", $lines);
-        $foot = $ar ? "كل التفاصيل بتوقيت دولتك 👇" : "All times in your local timezone 👇";
-        return self::sign($headline . "\n" . $body . "\n" . $foot, $link);
+        $foot = $ar ? "كل التفاصيل بتوقيتك المحلي 👇" : "All times in your local timezone 👇";
+        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link);
     }
 
     private static function evening(bool $ar): string
     {
-        // نتائج اليوم فقط — نُرشّح من matchesOnDate
         $today = DataService::matchesOnDate();
         $done  = array_values(array_filter($today, fn($m) => ($m['_status'] ?? '') === 'finished'));
         $link  = self::link('leaderboard.php');
 
         if (!$done) {
             $msg = $ar
-                ? "ما زالت مباريات اليوم تجري — تابعها مباشرة 👇"
-                : "Today's matches are still in play — follow them live 👇";
+                ? "📺 المباريات لا تزال مستعرة — تابعها مباشرة 👇"
+                : "📺 Matches still in play — follow them live 👇";
             return self::sign($msg, self::link('matches.php'));
         }
-
-        $headline = $ar ? "نتائج اليوم ⚽" : "Today's results ⚽";
+        $headline = $ar ? "⚽ نتائج اليوم 🏆" : "⚽ Today's results 🏆";
         $lines    = [];
         foreach (array_slice($done, 0, 3) as $m) {
             $lines[] = self::matchLine($m, $ar, withTime: false);
         }
-        $body = implode("\n", $lines);
         $foot = $ar ? "كيف توقّعتها؟ تحقّق من ترتيبك 👇" : "How did your picks fare? Check your rank 👇";
-        return self::sign($headline . "\n" . $body . "\n" . $foot, $link);
+        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link);
+    }
+
+    /** stats — هدّافون + بطاقات + إجمالي أهداف (يُلغى إذا 0 مباريات منتهية). */
+    private static function stats(bool $ar, string $lang): string
+    {
+        $s = Stats::compute();
+        if ((int)($s['played'] ?? 0) === 0) {
+            $msg = $ar
+                ? "📊 البطولة بانتظار أوّل صافرة! تابع كل الإحصائيات لحظة بلحظة 👇"
+                : "📊 Tournament awaits its first whistle! Follow every stat live 👇";
+            return self::sign($msg, self::link("stats.php?lang={$lang}"));
+        }
+
+        $head = $ar
+            ? "📊 إحصائيات البطولة حتى الآن 🔥"
+            : "📊 Tournament stats so far 🔥";
+
+        $bullets = [];
+        // إجمالي المباريات والأهداف
+        $bullets[] = $ar
+            ? "⚽ {$s['played']} مباراة · {$s['goals']} هدف · معدّل {$s['avg']}"
+            : "⚽ {$s['played']} matches · {$s['goals']} goals · avg {$s['avg']}";
+
+        // أعلى 3 هدّافين
+        $scorers = class_exists('Scorers') ? Scorers::current() : [];
+        $top = array_slice($scorers, 0, 3);
+        if ($top) {
+            $names = [];
+            $medals = ['🥇', '🥈', '🥉'];
+            foreach ($top as $i => $p) {
+                $name = $p['name'];
+                $flag = self::flagEmoji($p['team']);
+                $g    = (int)$p['goals'];
+                $names[] = "{$medals[$i]} {$flag} {$name} ({$g})";
+            }
+            $bullets[] = ($ar ? "🎯 الهدّافون: " : "🎯 Top scorers: ") . implode(' · ', $names);
+        }
+
+        // البطاقات
+        $y = (int)($s['yellows'] ?? 0);
+        $r = (int)($s['reds']    ?? 0);
+        if ($y > 0 || $r > 0) {
+            $bullets[] = ($ar
+                ? "🟨 صفراء: {$y}  ·  🟥 حمراء: {$r}"
+                : "🟨 Yellows: {$y}  ·  🟥 Reds: {$r}");
+        }
+
+        $foot = $ar ? "كل الأرقام والمتصدّرين 👇" : "Full numbers & leaders 👇";
+        $body = $head . "\n" . implode("\n", $bullets) . "\n" . $foot;
+        return self::sign($body, self::link("stats.php?lang={$lang}"));
     }
 
     private static function manual(bool $ar): string
@@ -119,13 +179,12 @@ class TweetComposer
         return self::sign($msg, self::link());
     }
 
-    // ---------- مساعدات ----------
+    // ───────────────────── مساعدات ─────────────────────
 
-    /** يبني سطر مباراة قصير: 🇲🇽 المكسيك 1-0 جنوب أفريقيا 🇿🇦  أو  🇲🇽 vs 🇿🇦 17:00 */
     private static function matchLine(array $m, bool $ar, bool $withTime): string
     {
-        $t1 = team_name((string)($m['team1'] ?? ''));
-        $t2 = team_name((string)($m['team2'] ?? ''));
+        $t1 = self::nameInLang((string)($m['team1'] ?? ''), $ar ? 'ar' : 'en');
+        $t2 = self::nameInLang((string)($m['team2'] ?? ''), $ar ? 'ar' : 'en');
         $f1 = self::flagEmoji((string)($m['team1'] ?? ''));
         $f2 = self::flagEmoji((string)($m['team2'] ?? ''));
         $hasScore = isset($m['score']['ft']) && is_array($m['score']['ft']);
@@ -143,70 +202,64 @@ class TweetComposer
         return "{$f1} {$t1} {$vs} {$t2} {$f2}";
     }
 
-    /** علم Unicode من اسم منتخب (ISO-2 من teams_ar). يعيد '' إن تعذّر. */
+    /** اسم باللغة المطلوبة (مستقل عن current_lang). */
+    private static function nameInLang(string $raw, string $lang): string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || $lang !== 'ar') return $raw;
+        if (!function_exists('teams_map')) return $raw;
+        $map = teams_map();
+        return isset($map[$raw][0]) ? $map[$raw][0] : $raw;
+    }
+
     private static function flagEmoji(string $team): string
     {
         if ($team === '' || !function_exists('team_flag')) return '';
         $cc = strtoupper((string)team_flag($team));
         if (strlen($cc) !== 2 || !ctype_alpha($cc)) return '';
-        // Regional Indicator Symbols: A=🇦 (U+1F1E6) → كل حرف يُرفع بـ 127397
         $a = self::cp(ord($cc[0]) - 65 + 0x1F1E6);
         $b = self::cp(ord($cc[1]) - 65 + 0x1F1E6);
         return $a . $b;
     }
 
-    /** Unicode codepoint → UTF-8. */
     private static function cp(int $cp): string
     {
         return mb_chr($cp, 'UTF-8');
     }
 
-    /** يلصق رابطاً + الوسوم في نهاية التغريدة، ضمن حد 280. */
     private static function sign(string $msg, string $link): string
     {
         $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
         $full = $msg . "\n" . $link . "\n" . $tags;
         if (mb_strlen($full, 'UTF-8') <= 280) return $full;
-        // إن تجاوز → قصّ النص (نُبقي الرابط والوسوم سليمة)
         $budget = 280 - mb_strlen("\n" . $link . "\n" . $tags, 'UTF-8') - 1;
         $msg = mb_substr($msg, 0, max(0, $budget), 'UTF-8') . '…';
         return $msg . "\n" . $link . "\n" . $tags;
     }
 
-    /** رابط مطلق لصفحة في الموقع (يفضّل SITE_URL إن وُجد). */
     private static function link(string $page = ''): string
     {
         $base = defined('SITE_URL') && SITE_URL !== '' ? rtrim(SITE_URL, '/') : 'https://wcup2026.org';
         return $base . ($page !== '' ? '/' . ltrim($page, '/') : '');
     }
 
-    // ---------- وصف خطة النشر (للوحة التحكم) ----------
+    // ───────────────────── خطّة النشر للوحة الإدارة ─────────────────────
 
-    /** خطّة النشر اليومية المعروضة للأدمن. */
     public static function schedulePlan(bool $ar): array
     {
         return [
-            [
-                'time'  => '09:00',
-                'slot'  => 'morning',
-                'title' => $ar ? 'تنبيه الصباح' : 'Morning preview',
-                'note'  => $ar ? 'أبرز 3 مباريات اليوم + رابط الجدول' : 'Top 3 matches today + schedule link',
-                'when'  => $ar ? 'أثناء البطولة' : 'During tournament',
-            ],
-            [
-                'time'  => '10:00',
-                'slot'  => 'countdown',
-                'title' => $ar ? 'العدّ التنازلي' : 'Countdown',
-                'note'  => $ar ? 'كم يوم متبقٍ + رابط التوقّعات' : 'Days remaining + predictions link',
-                'when'  => $ar ? 'قبل البطولة فقط' : 'Pre-tournament only',
-            ],
-            [
-                'time'  => '21:00',
-                'slot'  => 'evening',
-                'title' => $ar ? 'ملخّص المساء' : 'Evening recap',
-                'note'  => $ar ? 'نتائج اليوم + رابط الترتيب' : 'Today\'s results + leaderboard link',
-                'when'  => $ar ? 'أثناء البطولة' : 'During tournament',
-            ],
+            ['time' => '09:00', 'slot' => 'morning',   'title' => $ar ? 'تنبيه الصباح' : 'Morning preview',
+             'note'  => $ar ? 'أبرز 3 مباريات اليوم + رابط الجدول' : 'Top 3 matches today + schedule link',
+             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
+            ['time' => '10:00', 'slot' => 'countdown', 'title' => $ar ? 'العدّ التنازلي' : 'Countdown',
+             'note'  => $ar ? 'كم يوم متبقٍ + رابط التوقّعات' : 'Days remaining + predictions link',
+             'when'  => $ar ? 'قبل البطولة فقط' : 'Pre-tournament only'],
+            ['time' => '21:00', 'slot' => 'evening',   'title' => $ar ? 'ملخّص المساء' : 'Evening recap',
+             'note'  => $ar ? 'نتائج اليوم + رابط الترتيب' : 'Today\'s results + leaderboard link',
+             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
+            ['time' => '22:00', 'slot' => 'stats',     'title' => $ar ? 'إحصائيات اليوم' : 'Daily stats',
+             'note'  => $ar ? 'الهدّافون + البطاقات + إجمالي الأهداف' : 'Top scorers + cards + total goals',
+             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
         ];
     }
 }

@@ -227,6 +227,72 @@ $mLog = MatchTweets::recentLog(12);
   <?php endif; ?>
 </div>
 
+<!-- ============ تغريدات ترتيب المجموعات (بعد كل جولة) ============ -->
+<?php
+$gPending = GroupTweets::pending();
+$gLog     = GroupTweets::recentLog(12);
+?>
+<div class="admin-card">
+  <h2><?= e($L('تغريدات ترتيب المجموعات (تلقائي)', 'Group standings tweets (automatic)')) ?></h2>
+  <p class="admin-muted">
+    <?= e($L('بعد كل جولة في مجموعة (كل المنتخبات لعبت نفس عدد المباريات) تُنشَر تغريدة ترتيب — عربيّ + إنجليزيّ.',
+             'After each round in a group (all teams played the same number of games) a standings tweet is posted — AR + EN.')) ?>
+  </p>
+
+  <h3 style="margin-top:14px"><?= e($L('في الطابور', 'In queue')) ?></h3>
+  <?php if (!$gPending): ?>
+    <p class="admin-muted">
+      <?= e($L('لا شيء في الطابور — لا توجد مجموعة أكملت جولة لم تُنشَر بعد.',
+               'Queue empty — no group has completed an unpublished round.')) ?>
+    </p>
+  <?php else: ?>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr>
+          <th><?= e($L('المجموعة', 'Group')) ?></th>
+          <th><?= e($L('المرحلة', 'Milestone')) ?></th>
+          <th><?= e($L('اللغة', 'Lang')) ?></th>
+        </tr></thead>
+        <tbody>
+          <?php foreach ($gPending as $j): ?>
+          <tr>
+            <td><strong><?= e($j['group']) ?></strong></td>
+            <td><code><?= e($j['milestone']) ?></code></td>
+            <td><code><?= e($j['lang']) ?></code></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+
+  <h3 style="margin-top:18px"><?= e($L('آخر تغريدات منشورة', 'Recent group tweets')) ?></h3>
+  <?php if (!$gLog): ?>
+    <p class="admin-muted"><?= e($L('لا يوجد بعد.', 'None yet.')) ?></p>
+  <?php else: ?>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead><tr>
+          <th><?= e($L('الوقت', 'Time')) ?></th>
+          <th><?= e($L('المجموعة', 'Group')) ?></th>
+          <th><?= e($L('الفترة', 'Slot')) ?></th>
+          <th><?= e($L('الرابط', 'Link')) ?></th>
+        </tr></thead>
+        <tbody>
+          <?php foreach ($gLog as $r): ?>
+          <tr>
+            <td><?= e(date('Y-m-d H:i', (int)$r['at'])) ?></td>
+            <td><?= e($r['group']) ?></td>
+            <td><code><?= e($r['slot']) ?></code></td>
+            <td><a href="https://x.com/<?= e($handle) ?>/status/<?= e($r['id']) ?>" target="_blank" rel="noopener">↗ X</a></td>
+          </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  <?php endif; ?>
+</div>
+
 <?php if ($previewText !== ''): ?>
 <!-- ============ معاينة النصّ ============ -->
 <div class="admin-card">

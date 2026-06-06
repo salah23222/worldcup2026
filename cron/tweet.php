@@ -53,19 +53,24 @@ if (!XPublisher::configured()) {
 
 $sent = 0; $failed = 0;
 
-// ═══════════════════ A) الفترات اليوميّة (09:00 / 10:00 / 21:00) ═══════════════════
+// ═══════════════════ A) الفترات اليوميّة (09:00/10:00/21:00/22:00) — AR + EN ═══════════════════
 if (!$skipDaily) {
     $dailySlot = $slot !== '' ? $slot : (TweetComposer::currentSlot() ?? '');
     if ($dailySlot === '') {
         $log('[daily] no slot active at ' . date('H:i') . '.');
-    } elseif (!$force && !XPublisher::claimSlot($dailySlot)) {
-        $log('[daily] slot ' . $dailySlot . ' already posted today.');
     } else {
-        $text = TweetComposer::build($dailySlot);
-        $log('[daily] slot=' . $dailySlot . ' chars=' . mb_strlen($text, 'UTF-8'));
-        if ($dry) {
-            $log('[daily] dry-run:'); $log('---'); $log($text); $log('---');
-        } else {
+        foreach (['ar', 'en'] as $lg) {
+            $slotKey = $dailySlot . '_' . $lg;
+            if (!$force && !XPublisher::claimSlot($slotKey)) {
+                $log('[daily] ' . $slotKey . ' already posted today.');
+                continue;
+            }
+            $text = TweetComposer::build($dailySlot, $lg);
+            $log('[daily] slot=' . $slotKey . ' chars=' . mb_strlen($text, 'UTF-8'));
+            if ($dry) {
+                $log('[daily] dry-run:'); $log('---'); $log($text); $log('---');
+                continue;
+            }
             $r = XPublisher::tweet($text);
             if ($r['ok']) { $log('[daily] OK id=' . $r['id']); $sent++; }
             else          { $log('[daily] FAIL ' . $r['error']); $failed++; }
@@ -108,6 +113,24 @@ if (!$skipMatches) {
         $r = MatchTweets::sendPost($m, $lg);
         if ($r['ok']) { $log('[post] OK ' . $label . ' id=' . $r['id']); $sent++; }
         else          { $log('[post] FAIL ' . $label . ' ' . $r['error']); $failed++; }
+    }
+}
+
+// ═══════════════════ D) ترتيب المجموعات بعد كل جولة (AR + EN) ═══════════════════
+if (!$skipMatches) {
+    $gq = GroupTweets::pending();
+    $log('[group] candidates=' . count($gq));
+    foreach ($gq as $job) {
+        if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[group] cap reached, stop.'); break; }
+        $label = $job['group'] . ' · ' . $job['milestone'] . ' [' . $job['lang'] . ']';
+        if ($dry) {
+            $log('[group] would tweet ' . $label);
+            $log('---'); $log(GroupTweets::buildStandings($job['group'], $job['milestone'], $job['lang'])); $log('---');
+            continue;
+        }
+        $r = GroupTweets::sendStandings($job['group'], $job['milestone'], $job['lang']);
+        if ($r['ok']) { $log('[group] OK ' . $label . ' id=' . $r['id']); $sent++; }
+        else          { $log('[group] FAIL ' . $label . ' ' . $r['error']); $failed++; }
     }
 }
 
