@@ -39,6 +39,35 @@ foreach ($matches as $m) {
 }
 ksort($groupTeams);
 
+// ─── سجل الأبطال (الفيفا يحتسب ألمانيا الغربية ضمن ألمانيا) ─────────────
+$titleCounts = ArchiveService::titleCounts();   // مرتّبة تنازلياً حسب عدد الألقاب
+// ─── الحذاء الذهبي (هدّافو نسخ كأس العالم السابقة) ─────────────────────
+$goldenBoots = Scorers::goldenBootHistory();    // 2022 → 1978
+
+/**
+ * يُعيد QR (PNG داخل data: URI) لرابط الموقع. يحفظ النتيجة في cache/
+ * لتفادي الاتصال بالشبكة عند كل تحميل. عند فشل الجلب: يعيد سلسلة فارغة
+ * — والصفحة تتعامل مع ذلك بإظهار رابط نصّي بدل QR.
+ */
+$qrFor = function (string $url): string {
+    $cache = rtrim(CACHE_DIR, '/') . '/qr_' . substr(md5($url), 0, 10) . '.txt';
+    if (is_file($cache) && filesize($cache) > 100) {
+        return (string)@file_get_contents($cache);
+    }
+    // مصدر مجاني بدون مفتاح: api.qrserver.com (مستقر منذ سنوات)
+    $api = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&format=png&data='
+         . urlencode($url);
+    $ctx = stream_context_create(['http' => ['timeout' => 4]]);
+    $png = @file_get_contents($api, false, $ctx);
+    if (!is_string($png) || strlen($png) < 100) return '';
+    $data = 'data:image/png;base64,' . base64_encode($png);
+    if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+    @file_put_contents($cache, $data);
+    return $data;
+};
+$siteUrl = defined('SITE_URL') && SITE_URL !== '' ? rtrim(SITE_URL, '/') : 'https://wcup2026.org';
+$qrPng   = $qrFor($siteUrl);
+
 $page_title = $ar ? 'جدول البطولة — للطباعة' : 'Tournament Schedule — Printable';
 ?>
 <!doctype html>
@@ -128,6 +157,48 @@ html, body {
 .group-card .flag {
     width: 9mm; height: 6mm; object-fit: cover;
     border: .5px solid #ccc;
+}
+
+/* ── لوحات إضافية أسفل المجموعات (QR + أبطال + هدّافون) ── */
+.extras { display: flex; flex-direction: column; gap: 3.5mm; margin-top: 1mm; }
+.extras .panel {
+    border: 1.5px solid #000;
+    padding: 2mm 2.5mm;
+}
+.extras .panel h3 {
+    background: #000; color: #fff;
+    font-family: 'Oswald', sans-serif; font-weight: 700;
+    font-size: 3mm; padding: .8mm 1.5mm; margin: -2mm -2.5mm 2mm;
+    letter-spacing: .8mm; text-align: center;
+}
+
+/* لوحة QR — صورة + نصّ صغير على اليمين */
+.qr-panel { display: grid; grid-template-columns: 22mm 1fr; gap: 2.5mm; align-items: center; }
+.qr-panel .qr-img { width: 22mm; height: 22mm; border: .5px solid #000; background: #fff; }
+.qr-panel .qr-img img { display: block; width: 100%; height: 100%; }
+.qr-panel .qr-text { font-family: 'Oswald', sans-serif; line-height: 1.25; }
+.qr-panel .qr-text .qr-line1 { font-size: 2.6mm; font-weight: 700; letter-spacing: .2mm; }
+.qr-panel .qr-text .qr-line2 { font-size: 2.2mm; color: #555; margin-top: 1mm; }
+.qr-panel .qr-text .qr-url   { font-size: 2.4mm; font-weight: 900; color: #0a1626; margin-top: 1mm; }
+
+/* لوحات أبطال + هدّافون — نفس الجدول الصغير */
+.mini-list { width: 100%; border-collapse: collapse; font-family: 'Oswald', sans-serif; }
+.mini-list td {
+    padding: .8mm 1mm; border-bottom: .5px solid #e5e5e5;
+    font-size: 2.4mm; line-height: 1.2; vertical-align: middle;
+}
+.mini-list tr:last-child td { border-bottom: 0; }
+.mini-list .yr   { font-weight: 700; color: #666; width: 9mm; }
+.mini-list .flag-cell { width: 6mm; }
+.mini-list .flag-cell img { width: 5mm; height: 3.5mm; object-fit: cover; border: .3px solid #aaa; display: block; }
+.mini-list .name { font-weight: 700; color: #000; }
+.mini-list .val  {
+    text-align: end; font-weight: 900; font-family: 'Oswald', monospace;
+    color: #0a1626; font-size: 2.6mm; width: 8mm;
+}
+.mini-list .titles-dots {
+    color: #ffc233; font-size: 2.8mm; letter-spacing: -.3mm;
+    font-family: 'Oswald', sans-serif;
 }
 
 /* الجانب الأيمن: جدول المباريات */
@@ -257,6 +328,63 @@ html, body {
         </div>
       </div>
       <?php endforeach; ?>
+    </div>
+
+    <!-- ════════ لوحات إضافية: QR + الأبطال + الهدّافون ════════ -->
+    <div class="extras">
+
+      <!-- ── QR للموقع ── -->
+      <div class="panel qr-panel">
+        <div class="qr-img">
+          <?php if ($qrPng !== ''): ?>
+            <img src="<?= e($qrPng) ?>" alt="QR · wcup2026.org">
+          <?php endif; ?>
+        </div>
+        <div class="qr-text">
+          <div class="qr-line1"><?= e($ar ? '📱 امسح للمواعيد والنتائج' : '📱 SCAN FOR LIVE SCORES') ?></div>
+          <div class="qr-line2"><?= e($ar ? 'النتائج، التوقعات، الترتيب' : 'Results · predictions · standings') ?></div>
+          <div class="qr-url"><?= e(preg_replace('#^https?://#', '', $siteUrl)) ?></div>
+        </div>
+      </div>
+
+      <!-- ── سجل الأبطال (الأكثر تتويجاً) ── -->
+      <div class="panel">
+        <h3>👑 <?= e($ar ? 'سجل الأبطال' : 'WORLD CHAMPIONS') ?></h3>
+        <table class="mini-list">
+          <?php foreach (array_slice($titleCounts, 0, 8) as $row):
+            $name = $ar ? $row['ar'] : $row['en'] ?? $row['ar'];
+            $flag = $row['flag'] ?? '';
+            $url  = $flag ? 'https://flagcdn.com/w40/' . $flag . '.png' : '';
+            $dots = str_repeat('★', (int)$row['titles']);
+          ?>
+          <tr>
+            <td class="flag-cell"><?php if ($url): ?><img src="<?= e($url) ?>" alt=""><?php endif; ?></td>
+            <td class="name"><?= e($name) ?></td>
+            <td class="titles-dots"><?= e($dots) ?></td>
+            <td class="val"><?= (int)$row['titles'] ?></td>
+          </tr>
+          <?php endforeach; ?>
+        </table>
+      </div>
+
+      <!-- ── الحذاء الذهبي (آخر 7 نسخ) ── -->
+      <div class="panel">
+        <h3>⚽ <?= e($ar ? 'الحذاء الذهبي' : 'GOLDEN BOOT') ?></h3>
+        <table class="mini-list">
+          <?php foreach (array_slice($goldenBoots, 0, 7) as $s):
+            $name = $s['name'];
+            $url  = !empty($s['flag']) ? 'https://flagcdn.com/w40/' . $s['flag'] . '.png' : '';
+          ?>
+          <tr>
+            <td class="yr"><?= (int)$s['year'] ?></td>
+            <td class="flag-cell"><?php if ($url): ?><img src="<?= e($url) ?>" alt=""><?php endif; ?></td>
+            <td class="name"><?= e($name) ?></td>
+            <td class="val"><?= (int)$s['goals'] ?></td>
+          </tr>
+          <?php endforeach; ?>
+        </table>
+      </div>
+
     </div>
   </aside>
 
