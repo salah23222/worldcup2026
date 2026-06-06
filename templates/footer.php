@@ -39,31 +39,73 @@ $lang       = current_lang();
 </section>
 
 <footer class="site-footer">
-  <div class="wrap footer-inner">
-    <div class="footer-stats">
-      <span><?= e(t('matches_count')) ?></span>
-      <span><?= e(t('teams_count')) ?></span>
-      <span><?= e(t('cities_count')) ?></span>
+  <div class="wrap footer-grid">
+
+    <!-- ──────── العمود 1: الهوية + الأرقام ──────── -->
+    <div class="footer-col footer-col-brand">
+      <div class="footer-brand">
+        <span class="footer-mark" aria-hidden="true">26</span>
+        <div class="footer-brand-text">
+          <strong>wcup2026.org</strong>
+          <span><?= e($lang === 'ar' ? 'كأس العالم 2026 · كندا · المكسيك · أمريكا' : 'FIFA World Cup 2026 · Canada · Mexico · USA') ?></span>
+        </div>
+      </div>
+      <div class="footer-numbers">
+        <div class="num-pill">
+          <span class="num-val">104</span>
+          <span class="num-lbl"><?= e($lang === 'ar' ? 'مباراة' : 'matches') ?></span>
+        </div>
+        <div class="num-pill">
+          <span class="num-val">48</span>
+          <span class="num-lbl"><?= e($lang === 'ar' ? 'منتخباً' : 'teams') ?></span>
+        </div>
+        <div class="num-pill">
+          <span class="num-val">16</span>
+          <span class="num-lbl"><?= e($lang === 'ar' ? 'مدينة' : 'cities') ?></span>
+        </div>
+      </div>
     </div>
-    <div class="footer-meta">
-      <p>
-        <?= e(t('data_source')) ?>:
-        <a href="https://github.com/openfootball/worldcup.json" target="_blank" rel="noopener">openfootball</a>
-        · Public Domain ·
-        <a href="<?= e(url('embed.php')) ?>"><?= e(t('embed_widget')) ?></a>
-      </p>
-      <?php if ($lastUpdate): ?>
-        <p class="muted">
-          <?= e(t('last_update')) ?>: <?= local_dt($lastUpdate, 'time') ?> ·
-          <span class="auto-refresh-note"><?= e(t('auto_refresh')) ?></span>
-        </p>
-      <?php endif; ?>
-      <p class="muted tz-note" id="tzNote" data-tz-note="<?= e(t('local_tz_note')) ?>">
-        🕒 <?= e(t('local_tz_note')) ?>
-      </p>
-      <p class="muted footer-visitors">
-        👁️ <span id="visitorCount">—</span> <?= e(t('visitors')) ?>
-      </p>
+
+    <!-- ──────── العمود 2: المصدر والبيانات ──────── -->
+    <div class="footer-col">
+      <h4 class="footer-h"><?= e($lang === 'ar' ? 'البيانات والمصدر' : 'Data & source') ?></h4>
+      <ul class="footer-list">
+        <li>
+          <span class="li-ico">📦</span>
+          <span><?= e(t('data_source')) ?>:
+            <a href="https://github.com/openfootball/worldcup.json" target="_blank" rel="noopener">openfootball</a>
+            <span class="muted">· Public Domain</span>
+          </span>
+        </li>
+        <?php if ($lastUpdate): ?>
+        <li>
+          <span class="li-ico">🔄</span>
+          <span><?= e(t('last_update')) ?>: <strong><?= local_dt($lastUpdate, 'time') ?></strong>
+            <span class="auto-refresh-note">· <?= e(t('auto_refresh')) ?></span>
+          </span>
+        </li>
+        <?php endif; ?>
+        <li class="tz-note" id="tzNote" data-tz-note="<?= e(t('local_tz_note')) ?>">
+          <span class="li-ico">🕒</span>
+          <span><?= e(t('local_tz_note')) ?></span>
+        </li>
+        <li>
+          <span class="li-ico">🧩</span>
+          <a href="<?= e(url('embed.php')) ?>"><?= e(t('embed_widget')) ?></a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ──────── العمود 3: المجتمع والتواصل ──────── -->
+    <div class="footer-col">
+      <h4 class="footer-h"><?= e($lang === 'ar' ? 'المجتمع والتواصل' : 'Community & contact') ?></h4>
+
+      <div class="footer-visitors-card">
+        <span class="visitor-ico" aria-hidden="true">👁️</span>
+        <span class="visitor-num" id="visitorCount">—</span>
+        <span class="visitor-lbl"><?= e(t('visitors')) ?></span>
+      </div>
+
       <div class="footer-rate" id="footerRate"
            data-api="<?= e(rtrim(SITE_URL,'/') . '/api/rate.php') ?>"
            data-thanks="<?= e(t('rate_thanks')) ?>"
@@ -76,11 +118,36 @@ $lang       = current_lang();
         </div>
         <p class="rate-result" id="rateResult" hidden></p>
       </div>
-      <p class="footer-contact">
-        📧 <?= e(t('contact_label')) ?>:
-        <a href="mailto:<?= e(CONTACT_EMAIL) ?>"><?= e(CONTACT_EMAIL) ?></a>
-        · <button type="button" class="link-btn" data-contact-open><?= e(t('contact_title')) ?></button>
+
+      <div class="footer-actions">
+        <a class="footer-action" href="mailto:<?= e(CONTACT_EMAIL) ?>">
+          <span class="li-ico">✉️</span> <?= e(CONTACT_EMAIL) ?>
+        </a>
+        <button type="button" class="footer-action footer-action-cta" data-contact-open>
+          <span class="li-ico">💬</span> <?= e(t('contact_title')) ?>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ──────── شريط حقوق سفلي ──────── -->
+  <div class="footer-bottom">
+    <div class="wrap footer-bottom-inner">
+      <p class="copyright">
+        © <?= date('Y') ?> wcup2026.org
+        <span class="dot">·</span>
+        <?= e($lang === 'ar' ? 'صُنع بشغف لكرة القدم' : 'Built with love for football') ?>
       </p>
+      <div class="footer-bottom-links">
+        <a href="<?= e(url('matches.php')) ?>"><?= e(t('matches')) ?></a>
+        <span class="dot">·</span>
+        <a href="<?= e(url('groups.php')) ?>"><?= e(t('groups')) ?></a>
+        <span class="dot">·</span>
+        <a href="<?= e(url('stats.php')) ?>"><?= e(t('stats') ?: ($lang==='ar'?'الإحصائيات':'Stats')) ?></a>
+        <span class="dot">·</span>
+        <a href="<?= e(url('predict.php')) ?>"><?= e($lang === 'ar' ? 'التوقّعات' : 'Predict') ?></a>
+      </div>
     </div>
   </div>
 </footer>
