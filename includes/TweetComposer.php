@@ -22,6 +22,7 @@ class TweetComposer
     private const SLOT_HOURS = [
         'morning'   => 9,
         'countdown' => 10,
+        'trivia'    => 16,
         'evening'   => 21,
         'stats'     => 22,
     ];
@@ -33,12 +34,14 @@ class TweetComposer
         $h   = (int)date('G', $now);
         $started = DataService::tournamentStarted();
 
-        // قبل البطولة: نُفعّل countdown فقط (لا morning/evening/stats)
+        // قبل البطولة: نُفعّل countdown + trivia فقط (المعرفة قبل المباريات تُحسّن التفاعل)
         if (!$started) {
-            return ($h === self::SLOT_HOURS['countdown']) ? 'countdown' : null;
+            if ($h === self::SLOT_HOURS['countdown']) return 'countdown';
+            if ($h === self::SLOT_HOURS['trivia'])    return 'trivia';
+            return null;
         }
         // أثناء البطولة
-        foreach (['morning', 'evening', 'stats'] as $s) {
+        foreach (['morning', 'trivia', 'evening', 'stats'] as $s) {
             if ($h === self::SLOT_HOURS[$s]) return $s;
         }
         return null;
@@ -54,6 +57,7 @@ class TweetComposer
             case 'morning':   return self::morning($ar);
             case 'evening':   return self::evening($ar);
             case 'stats':     return self::stats($ar, $lang);
+            case 'trivia':    return self::trivia($ar, $lang);
             case 'manual':
             default:          return self::manual($ar);
         }
@@ -171,6 +175,46 @@ class TweetComposer
         return self::sign($body, self::link("stats.php?lang={$lang}"));
     }
 
+    /** trivia — سؤال اليوم + رابط trivia.php (يستخدم الكاش اليومي للذكاء). */
+    private static function trivia(bool $ar, string $lang): string
+    {
+        $q = null;
+        if (class_exists('AiContent')) $q = AiContent::dailyTrivia($lang);
+        $link = self::link("trivia.php?lang={$lang}");
+        $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+
+        if (!is_array($q) || empty($q['q'])) {
+            // احتياط: إن لم يتوفّر سؤال اليوم لأي سبب
+            $msg = $ar
+                ? "🧠 سؤال اليوم بانتظارك في تحدّي المعرفة! 3 نقاط للإجابة الصحيحة 👇"
+                : "🧠 Today's trivia challenge awaits! 3 points for the correct answer 👇";
+            return self::sign($msg, $link);
+        }
+
+        $question = trim((string)$q['q']);
+        $head     = $ar ? "🧠 سؤال اليوم — تحدّي المعرفة" : "🧠 Daily trivia — test yourself";
+        $cta      = $ar ? "أيها الصحيح؟ شارك واربح 3 نقاط ⭐ 👇" : "Which one? Answer & earn 3 points ⭐ 👇";
+
+        // محاولة إضافة الخيارات لو السياق يسمح (حد 280 حرفاً)
+        $withOpts = '';
+        if (isset($q['options']) && is_array($q['options']) && count($q['options']) === 4) {
+            $labels = $ar ? ['أ', 'ب', 'ج', 'د'] : ['A', 'B', 'C', 'D'];
+            $optsLines = [];
+            foreach ($q['options'] as $i => $opt) {
+                $opt = trim((string)$opt);
+                $optsLines[] = "{$labels[$i]}) {$opt}";
+            }
+            $candidate = $head . "\n" . $question . "\n" . implode("\n", $optsLines) . "\n" . $cta . "\n" . $link . "\n" . $tags;
+            if (mb_strlen($candidate, 'UTF-8') <= 280) {
+                return $candidate;
+            }
+        }
+
+        // النسخة المختصرة (بدون خيارات)
+        $msg = $head . "\n" . $question . "\n" . $cta;
+        return self::sign($msg, $link);
+    }
+
     private static function manual(bool $ar): string
     {
         $msg = $ar
@@ -254,6 +298,9 @@ class TweetComposer
             ['time' => '10:00', 'slot' => 'countdown', 'title' => $ar ? 'العدّ التنازلي' : 'Countdown',
              'note'  => $ar ? 'كم يوم متبقٍ + رابط التوقّعات' : 'Days remaining + predictions link',
              'when'  => $ar ? 'قبل البطولة فقط' : 'Pre-tournament only'],
+            ['time' => '16:00', 'slot' => 'trivia',    'title' => $ar ? 'سؤال اليوم' : 'Daily trivia',
+             'note'  => $ar ? 'سؤال معرفة + خيارات + رابط trivia.php (3 نقاط للإجابة)' : 'Question + options + link to trivia.php (3 pts)',
+             'when'  => $ar ? 'يومياً' : 'Every day'],
             ['time' => '21:00', 'slot' => 'evening',   'title' => $ar ? 'ملخّص المساء' : 'Evening recap',
              'note'  => $ar ? 'نتائج اليوم + رابط الترتيب' : 'Today\'s results + leaderboard link',
              'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],

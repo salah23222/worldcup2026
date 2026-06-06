@@ -4,28 +4,81 @@
  */
 if (!defined('WC2026')) { exit('Access denied'); }
 
+/** اللغات المدعومة في الموقع. */
+const SUPPORTED_LANGS = ['ar', 'en', 'fr'];
+
 /**
- * يحدد اللغة الحالية من رابط الصفحة (?lang=) أو الكوكي أو الافتراضي.
+ * يحلّل ترويسة Accept-Language ويعيد أوّل لغة مدعومة (حسب الأولويّة)
+ * أو null إن لم يطابق شيء. مثال:
+ *   "fr-FR,fr;q=0.9,en;q=0.8,ar;q=0.7"  →  "fr"
+ *   "en-US,en;q=0.5"                     →  "en"
+ *   "ar-SA,ar"                           →  "ar"
+ *   ""                                   →  null (لا ترويسة)
+ */
+function detect_accept_lang(): ?string {
+    $hdr = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+    if ($hdr === '') return null;
+
+    $scores = [];   // 'ar' => 0.9, …
+    foreach (explode(',', $hdr) as $part) {
+        $part = trim($part);
+        if ($part === '') continue;
+
+        $q = 1.0;
+        if (preg_match('/;\s*q\s*=\s*([0-9.]+)/i', $part, $mm)) {
+            $q = (float)$mm[1];
+            $part = preg_replace('/;.*$/', '', $part);
+        }
+        // الجزء الأساس فقط: 'ar-SA' → 'ar'
+        $code = strtolower(substr(trim($part), 0, 2));
+        if (in_array($code, SUPPORTED_LANGS, true)) {
+            if (!isset($scores[$code]) || $scores[$code] < $q) $scores[$code] = $q;
+        }
+    }
+    if (!$scores) return null;
+    arsort($scores);
+    return array_key_first($scores);
+}
+
+/**
+ * يحدّد اللغة الحالية بالترتيب:
+ *   1) ?lang= في الرابط (اختيار صريح من المستخدم)
+ *   2) كوكي wc_lang (اختيار سابق محفوظ)
+ *   3) ترويسة Accept-Language من المتصفح (الزيارة الأولى) — يُحفَظ في كوكي
+ *   4) DEFAULT_LANG (احتياط نهائي للبوتات وغيرها)
  */
 function current_lang(): string {
-    if (isset($_GET['lang']) && in_array($_GET['lang'], ['ar', 'en', 'fr'], true)) {
+    // (1) اختيار صريح في الرابط
+    if (isset($_GET['lang']) && in_array($_GET['lang'], SUPPORTED_LANGS, true)) {
         $lang = $_GET['lang'];
-        // اضبط الكوكي فقط إذا تغيّرت اللغة فعلاً. إرسال Set-Cookie في كل طلب
-        // يجعل روابط ?lang= غير قابلة للتخزين في كاش الحافة (LiteSpeed/hcdn) فتضرب
-        // الأصل في كل ضغطة — وهو ما كان يسبّب البطء/504 على الروابط دون الصفحة العارية.
         if (($_COOKIE['wc_lang'] ?? '') !== $lang && !headers_sent()) {
             setcookie('wc_lang', $lang, [
                 'expires'  => time() + 31536000,
                 'path'     => '/',
                 'samesite' => 'Lax',
             ]);
-            $_COOKIE['wc_lang'] = $lang; // وحّد القيمة داخل نفس الطلب
+            $_COOKIE['wc_lang'] = $lang;
         }
         return $lang;
     }
-    if (isset($_COOKIE['wc_lang']) && in_array($_COOKIE['wc_lang'], ['ar', 'en', 'fr'], true)) {
+    // (2) كوكي محفوظ
+    if (isset($_COOKIE['wc_lang']) && in_array($_COOKIE['wc_lang'], SUPPORTED_LANGS, true)) {
         return $_COOKIE['wc_lang'];
     }
+    // (3) كشف تلقائي من المتصفح — وحفظه لزيارات لاحقة (تفاعل فوريّ)
+    $detected = detect_accept_lang();
+    if ($detected !== null) {
+        if (!headers_sent()) {
+            setcookie('wc_lang', $detected, [
+                'expires'  => time() + 31536000,
+                'path'     => '/',
+                'samesite' => 'Lax',
+            ]);
+            $_COOKIE['wc_lang'] = $detected;
+        }
+        return $detected;
+    }
+    // (4) احتياط
     return DEFAULT_LANG;
 }
 

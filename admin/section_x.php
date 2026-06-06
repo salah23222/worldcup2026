@@ -316,7 +316,9 @@ $gLog     = GroupTweets::recentLog(12);
         <option value="manual"><?= e($L('افتراضية (تعريف الموقع)','Default (site intro)')) ?></option>
         <option value="countdown"><?= e($L('عدّ تنازلي','Countdown')) ?></option>
         <option value="morning"><?= e($L('تنبيه الصباح','Morning preview')) ?></option>
+        <option value="trivia"><?= e($L('سؤال اليوم (تحدّي المعرفة)','Daily trivia')) ?></option>
         <option value="evening"><?= e($L('ملخّص المساء','Evening recap')) ?></option>
+        <option value="stats"><?= e($L('إحصائيات اليوم','Daily stats')) ?></option>
       </select>
     </div>
     <button type="submit" class="admin-btn admin-btn-primary" <?= $configured ? '' : 'disabled' ?>>
