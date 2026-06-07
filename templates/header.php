@@ -135,6 +135,10 @@ seo_head([
         </div>
       </div>
 
+      <!-- زر التطبيق (PWA) — بارز -->
+      <a class="nav-app-btn<?= nav_active('install-app.php') ?>" href="<?= e(url('install-app.php')) ?>">
+        📱 <?= e($lang === 'ar' ? 'حمّل التطبيق' : 'Get app') ?>
+      </a>
 <?php
       // رابط الحساب — يظهر فقط عندما يكون نظام الحسابات مفعّلاً.
       if (defined('DB_ENABLED') && DB_ENABLED):

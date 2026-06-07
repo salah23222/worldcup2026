@@ -1,0 +1,355 @@
+/* ============================================================
+   install-app.css — صفحة تثبيت التطبيق (PWA)
+   تصميم يحاكي شاشات iPhone/Android بـ CSS صرف، لا صور خارجيّة.
+   ============================================================ */
+
+/* ───── Hero ───── */
+.ia-hero {
+  text-align: center;
+  padding: 60px 18px 40px;
+  background:
+    radial-gradient(60% 100% at 50% 0%, rgba(255,194,51,.10) 0%, transparent 60%),
+    radial-gradient(40% 80% at 50% 100%, rgba(99,102,241,.08) 0%, transparent 70%);
+  border-radius: 16px;
+  margin-bottom: 40px;
+}
+.ia-hero-mark {
+  display: inline-grid; place-items: center;
+  width: 88px; height: 88px;
+  background: linear-gradient(135deg, var(--accent), #d4dded);
+  color: #0a1626;
+  font-family: var(--font-display); font-weight: 900;
+  font-size: 2.6rem;
+  border-radius: 22px;
+  box-shadow: 0 14px 40px rgba(255,194,51,.35),
+              0 0 0 8px rgba(255,255,255,.04);
+  letter-spacing: -.03em;
+  margin-bottom: 20px;
+  animation: ia-float 3s ease-in-out infinite;
+}
+@keyframes ia-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.ia-hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4.5vw, 2.6rem);
+  font-weight: 900; margin: 0 0 12px;
+  letter-spacing: -.02em;
+}
+.ia-hero-sub {
+  font-size: clamp(.95rem, 2.2vw, 1.1rem);
+  color: var(--text-dim); margin: 0 0 22px;
+}
+.ia-hero-badges {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center;
+}
+.ia-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: .85rem;
+}
+
+/* ───── أقسام عامّة ───── */
+.ia-section-h {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 800;
+  margin: 50px 0 24px;
+  text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+
+/* ───── Benefits ───── */
+.ia-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 40px;
+}
+.ia-benefit {
+  text-align: center;
+  padding: 18px 14px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: all .2s ease;
+}
+.ia-benefit:hover {
+  border-color: var(--accent-2);
+  background: rgba(255,255,255,.05);
+  transform: translateY(-2px);
+}
+.ia-b-ico { font-size: 1.8rem; margin-bottom: 4px; }
+.ia-benefit strong {
+  font-family: var(--font-display);
+  font-size: 1rem; color: var(--text);
+}
+.ia-benefit span:not(.ia-b-ico) {
+  font-size: .8rem; color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ───── خطوات التثبيت ───── */
+.ia-steps { margin-bottom: 50px; }
+.ia-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.ia-step {
+  position: relative;
+  text-align: center;
+  padding: 24px 16px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.ia-step-highlight {
+  border-color: var(--accent);
+  background: rgba(255,194,51,.06);
+  box-shadow: 0 8px 30px rgba(255,194,51,.12);
+}
+.ia-step-num {
+  position: absolute; top: -16px; inset-inline-start: 50%;
+  transform: translateX(-50%);
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a1626;
+  font-family: var(--font-display); font-weight: 900;
+  font-size: 1.1rem;
+  border-radius: 50%;
+  box-shadow: 0 4px 14px rgba(255,194,51,.4);
+}
+.ia-step h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem; font-weight: 800;
+  margin: 16px 0 8px;
+}
+.ia-step p {
+  font-size: .85rem; color: var(--text-dim);
+  line-height: 1.5; margin: 0;
+}
+
+/* ───── محاكاة شاشة الجوال ───── */
+.ia-phone-mock {
+  display: flex; justify-content: center;
+  margin-bottom: 16px;
+}
+.ia-phone-screen {
+  width: 180px; height: 320px;
+  background: #0a1626;
+  border-radius: 24px;
+  border: 6px solid #1a2638;
+  box-shadow:
+    0 12px 32px rgba(0,0,0,.4),
+    0 0 0 1px rgba(255,255,255,.05) inset;
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.ia-mock-bar {
+  background: #1a2638;
+  padding: 6px 12px;
+  font-size: .65rem;
+  color: #9fb0c8;
+  border-bottom: 1px solid #2a3648;
+  text-align: center;
+}
+.ia-mock-url { font-family: monospace; }
+.ia-mock-content {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 14px;
+  gap: 10px;
+}
+.ia-mock-content p {
+  font-size: .75rem; color: var(--text-dim); margin: 0;
+}
+.ia-mock-26 {
+  width: 56px; height: 56px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), #d4dded);
+  color: #0a1626;
+  font-family: var(--font-display); font-weight: 900;
+  font-size: 1.6rem;
+  border-radius: 14px;
+  letter-spacing: -.03em;
+}
+
+/* خطوة 2 iOS: قائمة المشاركة */
+.ia-mock-share-menu {
+  justify-content: flex-start; padding-top: 20px;
+}
+.ia-share-icon { font-size: 2.5rem; margin-bottom: 4px; }
+.ia-share-label {
+  font-size: .8rem !important; color: var(--text) !important;
+  font-weight: 700;
+}
+.ia-share-tip {
+  margin-top: 18px;
+  padding: 8px 12px;
+  background: rgba(255,194,51,.15);
+  border: 1px solid rgba(255,194,51,.4);
+  border-radius: 8px;
+  font-size: .68rem !important;
+  text-align: center;
+  color: var(--accent) !important;
+}
+
+.ia-mock-share-arrow {
+  position: absolute;
+  inset-inline-start: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  font-size: 1.6rem;
+  color: var(--accent);
+  animation: ia-bounce 1.4s ease-in-out infinite;
+}
+@keyframes ia-bounce {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 5px); }
+}
+
+/* خطوة 3: قائمة الإضافة */
+.ia-mock-add {
+  justify-content: flex-start; padding-top: 14px; gap: 4px;
+}
+.ia-add-row {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(255,255,255,.04);
+  border-radius: 8px;
+  font-size: .68rem;
+  display: flex; justify-content: space-between; align-items: center;
+  color: var(--text-dim);
+}
+.ia-add-highlight {
+  background: rgba(255,194,51,.2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  animation: ia-pulse 1.6s ease-in-out infinite;
+}
+@keyframes ia-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,194,51,.4); }
+  50%      { box-shadow: 0 0 0 6px rgba(255,194,51,0); }
+}
+
+/* Android — شريط الاقتراح */
+.ia-banner-prompt {
+  width: 100%;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px;
+  background: rgba(255,255,255,.07);
+  border-radius: 10px;
+  margin-top: 10px;
+}
+.ia-mock-26-small {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), #d4dded);
+  color: #0a1626;
+  font-family: var(--font-display); font-weight: 900;
+  font-size: .9rem;
+  border-radius: 8px; flex: 0 0 auto;
+}
+.ia-banner-prompt > div {
+  flex: 1; display: flex; flex-direction: column; line-height: 1.2;
+}
+.ia-banner-prompt strong { font-size: .68rem; color: var(--text); }
+.ia-banner-prompt small  { font-size: .58rem; color: var(--text-dim); }
+.ia-mini-btn {
+  background: var(--accent); color: #0a1626;
+  border: 0; border-radius: 6px;
+  font-size: .65rem; font-weight: 800;
+  padding: 5px 10px; cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.ia-mock-homescreen {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+}
+
+/* ───── نتيجة الخطوات ───── */
+.ia-step-result {
+  margin-top: 24px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(34,197,94,.15), rgba(34,197,94,.05));
+  border: 1px solid rgba(34,197,94,.3);
+  border-radius: 12px;
+  text-align: center;
+  font-size: .95rem;
+}
+.ia-step-result strong { color: #22c55e; }
+
+/* ───── FAQ ───── */
+.ia-faq { margin-bottom: 40px; }
+.ia-faq-item {
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  padding: 0;
+  overflow: hidden;
+}
+.ia-faq-item summary {
+  padding: 16px 20px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .98rem;
+  list-style: none;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.ia-faq-item summary::after {
+  content: '+'; font-size: 1.4rem; color: var(--accent);
+  transition: transform .2s;
+}
+.ia-faq-item[open] summary::after { transform: rotate(45deg); }
+.ia-faq-item p {
+  padding: 0 20px 18px;
+  margin: 0;
+  font-size: .9rem; color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ───── Final CTA ───── */
+.ia-final-cta {
+  text-align: center;
+  padding: 40px 20px;
+  background:
+    radial-gradient(60% 100% at 50% 50%, rgba(255,194,51,.10) 0%, transparent 70%),
+    rgba(10,22,38,.4);
+  border-radius: 16px;
+  margin-bottom: 30px;
+}
+.ia-final-cta h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem; font-weight: 900;
+  margin: 0 0 10px;
+}
+.ia-final-cta p {
+  color: var(--text-dim); margin: 0 0 22px;
+}
+.ia-cta-buttons {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+
+/* ───── استجابة الجوال ───── */
+@media (max-width: 760px) {
+  .ia-steps-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .ia-phone-screen { width: 200px; height: 360px; }
+  .ia-benefits-grid { gap: 10px; }
+  .ia-hero { padding: 40px 16px 30px; }
+  .ia-hero-mark { width: 72px; height: 72px; font-size: 2.2rem; }
+}

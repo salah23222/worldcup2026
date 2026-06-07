@@ -2055,6 +2055,28 @@ button.sponsor-empty:hover { border-color: var(--accent-2); color: var(--text); 
   transform: translateY(-1px);
 }
 
+/* زر «حمّل التطبيق» في القائمة العلوية */
+.nav-app-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 13px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a1626 !important;
+  font-weight: 800;
+  border-radius: 9px;
+  text-decoration: none;
+  transition: all .18s ease;
+  font-size: .9rem;
+  letter-spacing: -.01em;
+}
+.nav-app-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255,194,51,.35);
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+}
+.nav-app-btn.active {
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.2);
+}
+
 /* ───── شريط ترويجي «اطلب موقعك» ───── */
 .hire-bar {
   border-top: 1px solid var(--border);
