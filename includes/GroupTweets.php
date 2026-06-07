@@ -89,9 +89,10 @@ class GroupTweets
             $lines[] = "{$medal} {$flag} {$name} · {$pts} " . ($ar ? "نقطة" : "pts") . " · {$gdStr}";
         }
 
-        // الـ CTA + الرابط + الوسوم
+        // الـ CTA + الرابط + الوسوم — مع هاشتاك المجموعة #مجموعة_A
         $url  = self::link("groups.php?lang={$lang}");
-        $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        $tags = class_exists('Hashtags') ? Hashtags::forGroup($group)
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26');
         $cta  = $ar ? "كل المجموعات والتفاصيل 👇" : "Full standings & details 👇";
 
         // إضافة حماس للمرحلة النهائيّة (المتأهّلون)

@@ -108,7 +108,9 @@ class MatchTweets
         $hm  = $ts ? date('H:i', $ts) : '';
         $ground = trim((string)($m['ground'] ?? ''));
         $url    = self::link('match.php?id=' . (int)$m['_index'] . '&lang=' . $lang);
-        $tags   = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        // هاشتاكات ذكيّة: #الفريق1 #الفريق2 #المضيف + الأساس القصير
+        $tags   = class_exists('Hashtags') ? Hashtags::forMatch($m)
+                : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26');
         $vs     = $ar ? 'ضدّ' : 'vs';
 
         if ($ar) {
@@ -141,7 +143,9 @@ class MatchTweets
         $g1  = (int)$m['score']['ft'][0];
         $g2  = (int)$m['score']['ft'][1];
         $url = self::link('match.php?id=' . (int)$m['_index'] . '&lang=' . $lang);
-        $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        // هاشتاكات ذكيّة: #الفريق1 #الفريق2 #المضيف + الأساس القصير
+        $tags = class_exists('Hashtags') ? Hashtags::forMatch($m)
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26');
 
         // النتيجة الأولى — السطر الأهم
         $score = "{$f1} {$n1} {$g1} - {$g2} {$n2} {$f2}";

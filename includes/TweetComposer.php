@@ -83,7 +83,7 @@ class TweetComposer
                 ? "🚨 الكرة على وشك أن تتحرّك! آخر فرصة لتوقّعاتك 👇"
                 : "🚨 The ball is about to roll! Last chance to lock your picks 👇";
         }
-        return self::sign($msg, $link);
+        return self::sign($msg, $link, 'countdown');
     }
 
     private static function morning(bool $ar): string
@@ -95,7 +95,7 @@ class TweetComposer
             $msg = $ar
                 ? "☕ يوم راحة في المونديال — راجع توقّعاتك وتفقّد ترتيبك 📊"
                 : "☕ Quiet day at the World Cup — review your picks and check the standings 📊";
-            return self::sign($msg, self::link('leaderboard.php'));
+            return self::sign($msg, self::link('leaderboard.php'), 'morning');
         }
         $headline = $ar
             ? "🔥 اليوم {$n} مباراة في المونديال ⚽"
@@ -105,7 +105,7 @@ class TweetComposer
             $lines[] = self::matchLine($m, $ar, withTime: true);
         }
         $foot = $ar ? "كل التفاصيل بتوقيتك المحلي 👇" : "All times in your local timezone 👇";
-        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link);
+        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link, 'morning');
     }
 
     private static function evening(bool $ar): string
@@ -118,7 +118,7 @@ class TweetComposer
             $msg = $ar
                 ? "📺 المباريات لا تزال مستعرة — تابعها مباشرة 👇"
                 : "📺 Matches still in play — follow them live 👇";
-            return self::sign($msg, self::link('matches.php'));
+            return self::sign($msg, self::link('matches.php'), 'evening');
         }
         $headline = $ar ? "⚽ نتائج اليوم 🏆" : "⚽ Today's results 🏆";
         $lines    = [];
@@ -126,7 +126,7 @@ class TweetComposer
             $lines[] = self::matchLine($m, $ar, withTime: false);
         }
         $foot = $ar ? "كيف توقّعتها؟ تحقّق من ترتيبك 👇" : "How did your picks fare? Check your rank 👇";
-        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link);
+        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link, 'evening');
     }
 
     /** stats — هدّافون + بطاقات + إجمالي أهداف (يُلغى إذا 0 مباريات منتهية). */
@@ -137,7 +137,7 @@ class TweetComposer
             $msg = $ar
                 ? "📊 البطولة بانتظار أوّل صافرة! تابع كل الإحصائيات لحظة بلحظة 👇"
                 : "📊 Tournament awaits its first whistle! Follow every stat live 👇";
-            return self::sign($msg, self::link("stats.php?lang={$lang}"));
+            return self::sign($msg, self::link("stats.php?lang={$lang}"), 'stats');
         }
 
         $head = $ar
@@ -176,7 +176,7 @@ class TweetComposer
 
         $foot = $ar ? "كل الأرقام والمتصدّرين 👇" : "Full numbers & leaders 👇";
         $body = $head . "\n" . implode("\n", $bullets) . "\n" . $foot;
-        return self::sign($body, self::link("stats.php?lang={$lang}"));
+        return self::sign($body, self::link("stats.php?lang={$lang}"), 'stats');
     }
 
     /** recap — صباحاً 09:00: نتائج آخر 24 ساعة (تشمل مباريات الليل في النطاق الأمريكي). */
@@ -189,7 +189,7 @@ class TweetComposer
             $msg = $ar
                 ? "☀️ صباح كرة القدم! لا نتائج جديدة منذ الأمس — استعد لمباريات اليوم 📅"
                 : "☀️ Football morning! No fresh results since yesterday — gear up for today's games 📅";
-            return self::sign($msg, $link);
+            return self::sign($msg, $link, 'recap');
         }
         $head  = $ar ? "☀️ صباح الكرة — نتائج الليل 🌙⚽" : "☀️ Morning recap — overnight scores 🌙⚽";
         $lines = [];
@@ -199,7 +199,7 @@ class TweetComposer
         $foot = $ar
             ? "كيف توقّعتها؟ ابدأ يومك بالترتيب 👇"
             : "How did your picks fare? Start your day with the standings 👇";
-        return self::sign($head . "\n" . implode("\n", $lines) . "\n" . $foot, self::link('leaderboard.php'));
+        return self::sign($head . "\n" . implode("\n", $lines) . "\n" . $foot, self::link('leaderboard.php'), 'recap');
     }
 
     /** trivia — سؤال اليوم + رابط trivia.php (يستخدم الكاش اليومي للذكاء). */
@@ -208,14 +208,15 @@ class TweetComposer
         $q = null;
         if (class_exists('AiContent')) $q = AiContent::dailyTrivia($lang);
         $link = self::link("trivia.php?lang={$lang}");
-        $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        // هاشتاكات خاصّة بـ trivia (مرحلة + #تحدّي_المعرفة + أساس)
+        $tags = class_exists('Hashtags') ? Hashtags::forDailySlot('trivia')
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26');
 
         if (!is_array($q) || empty($q['q'])) {
-            // احتياط: إن لم يتوفّر سؤال اليوم لأي سبب
             $msg = $ar
                 ? "🧠 سؤال اليوم بانتظارك في تحدّي المعرفة! 3 نقاط للإجابة الصحيحة 👇"
                 : "🧠 Today's trivia challenge awaits! 3 points for the correct answer 👇";
-            return self::sign($msg, $link);
+            return self::sign($msg, $link, 'trivia');
         }
 
         $question = trim((string)$q['q']);
@@ -239,7 +240,7 @@ class TweetComposer
 
         // النسخة المختصرة (بدون خيارات)
         $msg = $head . "\n" . $question . "\n" . $cta;
-        return self::sign($msg, $link);
+        return self::sign($msg, $link, 'trivia');
     }
 
     private static function manual(bool $ar): string
@@ -298,9 +299,14 @@ class TweetComposer
         return mb_chr($cp, 'UTF-8');
     }
 
-    private static function sign(string $msg, string $link): string
+    private static function sign(string $msg, string $link, ?string $slot = null): string
     {
-        $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        // هاشتاكات ذكيّة حسب الفترة: مرحلة + slot + أساس قصير
+        if ($slot !== null && class_exists('Hashtags')) {
+            $tags = Hashtags::forDailySlot($slot);
+        } else {
+            $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
+        }
         $full = $msg . "\n" . $link . "\n" . $tags;
         if (mb_strlen($full, 'UTF-8') <= 280) return $full;
         $budget = 280 - mb_strlen("\n" . $link . "\n" . $tags, 'UTF-8') - 1;
