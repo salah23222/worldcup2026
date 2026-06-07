@@ -132,6 +132,45 @@ $lang       = current_lang();
 
   </div>
 
+  <!-- ──────── شريط ترويجي: «اطلب موقعك» ──────── -->
+  <?php
+    $cPhone = defined('CONTACT_PHONE') ? trim((string)CONTACT_PHONE) : '';
+    $cMail  = defined('CONTACT_EMAIL') ? CONTACT_EMAIL : 'info@wcup2026.org';
+    $waNum  = $cPhone !== '' ? preg_replace('/\D/', '', $cPhone) : '';
+    $waMsg  = rawurlencode($lang === 'ar'
+              ? 'مرحباً، شفت موقع wcup2026.org وحاب أطلب موقعاً مشابهاً 👋'
+              : 'Hi! I saw wcup2026.org and would like to order a similar site 👋');
+  ?>
+  <div class="hire-bar">
+    <div class="wrap hire-bar-inner">
+      <div class="hire-bar-content">
+        <span class="hire-bar-icon" aria-hidden="true">💼</span>
+        <div class="hire-bar-text">
+          <strong><?= e($lang === 'ar' ? 'تريد موقعاً مثل هذا؟' : 'Want a website like this?') ?></strong>
+          <span><?= e($lang === 'ar'
+                ? 'مواقع رياضيّة وتجاريّة احترافيّة · ذكاء اصطناعي · نشر تلقائي على X · بميزانية معقولة'
+                : 'Professional sports & business sites · AI · auto-publishing on X · affordable') ?></span>
+        </div>
+      </div>
+      <div class="hire-bar-actions">
+        <?php if ($waNum !== ''): ?>
+          <a class="hire-btn hire-btn-wa" href="https://wa.me/<?= e($waNum) ?>?text=<?= $waMsg ?>" target="_blank" rel="noopener" aria-label="WhatsApp">
+            <span aria-hidden="true">💬</span>
+            <span><?= e($lang === 'ar' ? 'واتساب' : 'WhatsApp') ?></span>
+          </a>
+        <?php endif; ?>
+        <a class="hire-btn hire-btn-mail" href="mailto:<?= e($cMail) ?>?subject=<?= rawurlencode($lang === 'ar' ? 'طلب موقع' : 'Website request') ?>">
+          <span aria-hidden="true">✉️</span>
+          <span><?= e($lang === 'ar' ? 'بريد إلكتروني' : 'Email') ?></span>
+        </a>
+        <button type="button" class="hire-btn hire-btn-cta" data-contact-open>
+          <span aria-hidden="true">🚀</span>
+          <span><?= e($lang === 'ar' ? 'اطلب موقعك الآن' : 'Order your site') ?></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ──────── شريط حقوق سفلي ──────── -->
   <div class="footer-bottom">
     <div class="wrap footer-bottom-inner">
