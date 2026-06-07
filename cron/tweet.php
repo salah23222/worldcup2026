@@ -1,27 +1,23 @@
 <?php
 /**
- * cron/tweet.php — النشر التلقائي على X (تويتر) — يُشغَّل عبر Cron.
+ * cron/tweet.php — النشر التلقائي على X (تويتر) — يُشغَّل عبر Cron كل 15 دقيقة.
  * ============================================================
- * شغّله مرّة في الساعة. السكربت يقرّر بنفسه:
- *   - هل هذه ساعة فترة معروفة (morning/evening/countdown)؟
- *   - هل نُشرت اليوم؟ (claimSlot يمنع التكرار)
- *   - هل المفاتيح موجودة؟
- * إن تحقّقت الشروط: يبني النصّ وينشر، ويسجّل النتيجة.
+ *   A) فترات يوميّة (morning/countdown/trivia/evening/stats) — AR + EN
+ *   B) قبل المباراة بـ 30–75 دقيقة                            — AR + EN
+ *   C) بعد المباراة + تقرير AI                                 — AR + EN
+ *   D) ترتيب المجموعات بعد كل جولة                              — AR + EN
+ *   E) أخبار جديدة من /news.php                                — AR + EN
  *
- * التشغيل (Hostinger Cron) — مرّة في الساعة على رأس الساعة:
- *   0 * * * * php /home/USER/domains/wcup2026.org/public_html/cron/tweet.php
- *
- * خيارات (CLI):
- *   --slot=morning|evening|countdown|manual   (تجاوز الفترة الحالية)
- *   --force                                   (تجاوز bot bucket «مرّة في اليوم»)
- *   --dry-run                                 (يطبع النصّ فقط، لا ينشر)
- * عبر المتصفّح (إن لزم):  cron/tweet.php?token=INSTALL_TOKEN
+ * بين كل تغريدتَين: نوم X_MIN_SPACING+2 ثانية (افتراضي 17ث) لاحترام الفاصل.
+ * تشغيل (Hostinger):
+ *   *​/15 * * * *  /usr/bin/php /home/USER/domains/wcup2026.org/public_html/cron/tweet.php
  * ============================================================
  */
 require __DIR__ . '/../includes/bootstrap.php';
 while (ob_get_level() > 0) { ob_end_clean(); }
+@set_time_limit(0);
 
-// --- قراءة الخيارات (CLI أو متصفّح بـtoken) ---
+// --- خيارات (CLI أو متصفّح بـtoken) ---
 $cli = (PHP_SAPI === 'cli');
 $args = [];
 if ($cli) {
@@ -37,33 +33,56 @@ if ($cli) {
     $args = $_GET;
 }
 
-$dry   = isset($args['dry-run']) || isset($args['dry']);
-$force = isset($args['force']);
-$slot  = (string)($args['slot'] ?? '');
+$dry         = isset($args['dry-run']) || isset($args['dry']);
+$force       = isset($args['force']);
+$slot        = (string)($args['slot'] ?? '');
 $skipDaily   = isset($args['no-daily']);
 $skipMatches = isset($args['no-matches']);
 
-$log = function (string $m) { echo $m . "\n"; };
+$log  = function (string $m) { echo $m . "\n"; @flush(); };
+$pace = max(1, (defined('X_MIN_SPACING') ? (int)X_MIN_SPACING : 15) + 2);
 
-// ---- 0) الحارس: المفاتيح ----
-if (!XPublisher::configured()) {
-    $log('[tweet] X keys not configured. exit.');
-    exit(0);
-}
+// (0) الحارس: المفاتيح
+if (!XPublisher::configured()) { $log('[tweet] X keys not configured. exit.'); exit(0); }
 
-// ---- 0.5) حارس الحماية: لو الحساب موقوف يدويّاً أو تلقائياً → خروج فوري ----
+// (0.5) RateGuard: لو الحساب موقوف → خروج فوري
 $gStats = RateGuard::stats();
 if ($gStats['paused']) {
     $log('[guard] account paused until ' . date('Y-m-d H:i:s', $gStats['pause_until'])
-        . ' (fails=' . $gStats['fails_streak'] . '). exit.');
+       . ' (fails=' . $gStats['fails_streak'] . '). exit.');
     exit(0);
 }
 $log('[guard] hourly=' . $gStats['hourly_used'] . '/' . $gStats['hourly_cap']
-    . ' daily=' . $gStats['daily_used'] . '/' . $gStats['daily_cap']);
+   . ' daily=' . $gStats['daily_used'] . '/' . $gStats['daily_cap']
+   . ' spacing=' . $pace . 's');
 
 $sent = 0; $failed = 0;
 
-// ═══════════════════ A) الفترات اليوميّة (09:00/10:00/21:00/22:00) — AR + EN ═══════════════════
+/**
+ * Helper موحَّد للنشر مع احترام الفاصل الأدنى.
+ *   - يستدعي $sender (closure) يعيد ['ok','id','error'].
+ *   - قبل كل استدعاء عدا الأوّل: ينام $pace ثانية لتفادي rate_guard:spacing.
+ *   - يحدّث $sent/$failed و يطبع السطر اللازم.
+ */
+$send = function (string $tag, string $label, callable $sender) use (&$sent, &$failed, $log, $dry, $pace) {
+    if ($dry) {
+        $log("[{$tag}] would tweet {$label}");
+        return ['ok' => false, 'skipped' => 'dry'];
+    }
+    // نام لاحترام الفاصل (يُتجاوَز للتغريدة الأولى لأن $sent==0)
+    if ($sent > 0) sleep($pace);
+    $r = $sender();
+    if (!empty($r['ok'])) {
+        $log("[{$tag}] OK {$label} id=" . (string)$r['id']);
+        $sent++;
+    } else {
+        $log("[{$tag}] FAIL {$label} " . (string)($r['error'] ?? '?'));
+        $failed++;
+    }
+    return $r;
+};
+
+// ═══════════════════ A) الفترات اليوميّة (AR + EN) ═══════════════════
 if (!$skipDaily) {
     $dailySlot = $slot !== '' ? $slot : (TweetComposer::currentSlot() ?? '');
     if ($dailySlot === '') {
@@ -77,18 +96,13 @@ if (!$skipDaily) {
             }
             $text = TweetComposer::build($dailySlot, $lg);
             $log('[daily] slot=' . $slotKey . ' chars=' . mb_strlen($text, 'UTF-8'));
-            if ($dry) {
-                $log('[daily] dry-run:'); $log('---'); $log($text); $log('---');
-                continue;
-            }
-            $r = XPublisher::tweet($text);
-            if ($r['ok']) { $log('[daily] OK id=' . $r['id']); $sent++; }
-            else          { $log('[daily] FAIL ' . $r['error']); $failed++; }
+            if ($dry) { $log('[daily] dry-run:'); $log('---'); $log($text); $log('---'); continue; }
+            $send('daily', $slotKey, fn() => XPublisher::tweet($text));
         }
     }
 }
 
-// ═══════════════════ B) قَبل المباراة (AR + EN لكل مباراة قادمة) ═══════════════════
+// ═══════════════════ B) قَبل المباراة ═══════════════════
 if (!$skipMatches) {
     $pre = MatchTweets::pendingPre();
     $log('[pre]  candidates=' . count($pre));
@@ -96,18 +110,12 @@ if (!$skipMatches) {
         if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[pre] cap reached, stop.'); break; }
         $m = $job['match']; $lg = $job['lang'];
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
-        if ($dry) {
-            $log('[pre] would tweet ' . $label);
-            $log('---'); $log(MatchTweets::buildPre($m, $lg)); $log('---');
-            continue;
-        }
-        $r = MatchTweets::sendPre($m, $lg);
-        if ($r['ok']) { $log('[pre] OK ' . $label . ' id=' . $r['id']); $sent++; }
-        else          { $log('[pre] FAIL ' . $label . ' ' . $r['error']); $failed++; }
+        if ($dry) { $log('[pre] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPre($m, $lg)); $log('---'); continue; }
+        $send('pre', $label, fn() => MatchTweets::sendPre($m, $lg));
     }
 }
 
-// ═══════════════════ C) بعد المباراة (تقرير AI + تغريدة AR + EN) ═══════════════════
+// ═══════════════════ C) بعد المباراة + تقرير AI ═══════════════════
 if (!$skipMatches) {
     $post = MatchTweets::pendingPost();
     $log('[post] candidates=' . count($post));
@@ -115,36 +123,24 @@ if (!$skipMatches) {
         if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[post] cap reached, stop.'); break; }
         $m = $job['match']; $lg = $job['lang'];
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
-        if ($dry) {
-            $log('[post] would tweet ' . $label);
-            $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---');
-            continue;
-        }
-        $r = MatchTweets::sendPost($m, $lg);
-        if ($r['ok']) { $log('[post] OK ' . $label . ' id=' . $r['id']); $sent++; }
-        else          { $log('[post] FAIL ' . $label . ' ' . $r['error']); $failed++; }
+        if ($dry) { $log('[post] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---'); continue; }
+        $send('post', $label, fn() => MatchTweets::sendPost($m, $lg));
     }
 }
 
-// ═══════════════════ D) ترتيب المجموعات بعد كل جولة (AR + EN) ═══════════════════
+// ═══════════════════ D) ترتيب المجموعات ═══════════════════
 if (!$skipMatches) {
     $gq = GroupTweets::pending();
     $log('[group] candidates=' . count($gq));
     foreach ($gq as $job) {
         if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[group] cap reached, stop.'); break; }
         $label = $job['group'] . ' · ' . $job['milestone'] . ' [' . $job['lang'] . ']';
-        if ($dry) {
-            $log('[group] would tweet ' . $label);
-            $log('---'); $log(GroupTweets::buildStandings($job['group'], $job['milestone'], $job['lang'])); $log('---');
-            continue;
-        }
-        $r = GroupTweets::sendStandings($job['group'], $job['milestone'], $job['lang']);
-        if ($r['ok']) { $log('[group] OK ' . $label . ' id=' . $r['id']); $sent++; }
-        else          { $log('[group] FAIL ' . $label . ' ' . $r['error']); $failed++; }
+        if ($dry) { $log('[group] would tweet ' . $label); $log('---'); $log(GroupTweets::buildStandings($job['group'], $job['milestone'], $job['lang'])); $log('---'); continue; }
+        $send('group', $label, fn() => GroupTweets::sendStandings($job['group'], $job['milestone'], $job['lang']));
     }
 }
 
-// ═══════════════════ E) أخبار جديدة من /news.php (AR + EN) ═══════════════════
+// ═══════════════════ E) أخبار جديدة ═══════════════════
 if (!$skipMatches) {
     if (!NewsTweets::inWindow()) {
         $log('[news] outside publish window (08:00–23:00) — skip.');
@@ -152,7 +148,6 @@ if (!$skipMatches) {
         $nq = NewsTweets::pending();
         $log('[news] candidates=' . count($nq));
         $nsent = 0;
-        // نوزّع بالعدالة: AR و EN، أحدث أولاً، حتى MAX_PER_RUN
         foreach ($nq as $job) {
             if ($nsent >= NewsTweets::MAX_PER_RUN) break;
             $label = '[' . $job['lang'] . '] ' . mb_substr($job['item']['title'] ?? '', 0, 60, 'UTF-8');
@@ -162,9 +157,8 @@ if (!$skipMatches) {
                 $nsent++;
                 continue;
             }
-            $r = NewsTweets::sendOne($job['item'], $job['lang'], $job['id']);
-            if ($r['ok']) { $log('[news] OK ' . $label . ' id=' . $r['id']); $sent++; $nsent++; }
-            else          { $log('[news] FAIL ' . $label . ' ' . $r['error']); $failed++; }
+            $r = $send('news', $label, fn() => NewsTweets::sendOne($job['item'], $job['lang'], $job['id']));
+            if (!empty($r['ok'])) $nsent++;
         }
     }
 }
