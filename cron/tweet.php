@@ -47,7 +47,7 @@ $log  = function (string $m) { echo $m . "\n"; @flush(); };
 $pace = max(1, (defined('X_MIN_SPACING') ? (int)X_MIN_SPACING : 15) + 2);
 
 // بصمة نسخة الكود — تساعد على التحقّق من أن النسخة الصحيحة فعلاً تُشغَّل
-$log('[version] tweet.php v2.1-drain-sleep (' . date('Y-m-d H:i:s') . ' Asia/Dubai)');
+$log('[version] tweet.php v2.2-preemptive-wait (' . date('Y-m-d H:i:s') . ' Asia/Dubai)');
 
 // (0) الحارس: المفاتيح
 if (!XPublisher::configured()) { $log('[tweet] X keys not configured. exit.'); exit(0); }
@@ -67,17 +67,38 @@ $sent = 0; $failed = 0;
 
 /**
  * Helper موحَّد للنشر مع احترام الفاصل الأدنى.
- *   - يستدعي $sender (closure) يعيد ['ok','id','error'].
- *   - قبل كل استدعاء عدا الأوّل: ينام $pace ثانية لتفادي rate_guard:spacing.
- *   - يحدّث $sent/$failed و يطبع السطر اللازم.
+ *   - قبل كل محاولة: يفحص RateGuard مسبقاً.
+ *     • لو spacing ≤ 30s: ينام بقدر wait+1 ثم يحاول (ضمان نجاح).
+ *     • لو hourly/daily cap أو موقوف: يطبع BLOCKED ويخرج فوراً (تجنّب الفشل المتراكم).
+ *   - يحدّث $sent/$failed ويطبع نتيجة كل محاولة.
+ *
+ * هذا يُصلح حالة «أوّل تغريدة فشلت → $sent ظلّ 0 → لا نوم → الكل يفشل».
  */
-$send = function (string $tag, string $label, callable $sender) use (&$sent, &$failed, $log, $dry, $pace) {
+$blocked = false;   // عند رفعها = توقّف عن المحاولة لبقيّة الـ run
+$send = function (string $tag, string $label, callable $sender) use (&$sent, &$failed, &$blocked, $log, $dry, $pace) {
     if ($dry) {
         $log("[{$tag}] would tweet {$label}");
         return ['ok' => false, 'skipped' => 'dry'];
     }
-    // نام لاحترام الفاصل (يُتجاوَز للتغريدة الأولى لأن $sent==0)
-    if ($sent > 0) sleep($pace);
+    if ($blocked) {
+        $log("[{$tag}] SKIP {$label} (guard blocked earlier in this run)");
+        return ['ok' => false, 'error' => 'guard_blocked'];
+    }
+    // فحص استباقي للحارس
+    $g = RateGuard::check();
+    if (!$g['ok']) {
+        if ($g['reason'] === 'spacing' && (int)$g['wait'] <= max(30, $pace + 5)) {
+            $sleepFor = max(1, (int)$g['wait'] + 1);
+            $log("[{$tag}] wait {$sleepFor}s (spacing) before {$label}");
+            sleep($sleepFor);
+        } else {
+            // hourly_cap / daily_cap / paused → لا فائدة من المحاولة
+            $log("[{$tag}] BLOCKED {$label} guard:" . $g['reason'] . " wait=" . $g['wait'] . 's');
+            $blocked = true;
+            $failed++;
+            return ['ok' => false, 'error' => 'guard:' . $g['reason']];
+        }
+    }
     $r = $sender();
     if (!empty($r['ok'])) {
         $log("[{$tag}] OK {$label} id=" . (string)$r['id']);
@@ -85,6 +106,10 @@ $send = function (string $tag, string $label, callable $sender) use (&$sent, &$f
     } else {
         $log("[{$tag}] FAIL {$label} " . (string)($r['error'] ?? '?'));
         $failed++;
+        // لو الفشل من الحارس نفسه → ارفع علم blocked لتفادي 24 محاولة فاشلة
+        if (!empty($r['error']) && strpos((string)$r['error'], 'rate_guard:') === 0) {
+            $blocked = true;
+        }
     }
     return $r;
 };
