@@ -47,7 +47,46 @@ $log  = function (string $m) { echo $m . "\n"; @flush(); };
 $pace = max(1, (defined('X_MIN_SPACING') ? (int)X_MIN_SPACING : 15) + 2);
 
 // بصمة نسخة الكود — تساعد على التحقّق من أن النسخة الصحيحة فعلاً تُشغَّل
-$log('[version] tweet.php v2.2-preemptive-wait (' . date('Y-m-d H:i:s') . ' Asia/Dubai)');
+$log('[version] tweet.php v2.3-test-schedule (' . date('Y-m-d H:i:s') . ' Asia/Dubai)');
+
+// ═══════════════════ وضع الاختبار: معاينة كل الجدول دفعة واحدة ═══════════════════
+// استخدام: cron/tweet.php?token=...&test-schedule=1
+// يعرض كل التغريدات الست × لغتَين = 12 معاينة بدون أي نشر، ثم يخرج.
+if (isset($args['test-schedule'])) {
+    $log('');
+    $log('╔══════════════════════════════════════════════════════════════╗');
+    $log('║  اختبار شامل لجدول النشر — 6 فترات × 2 لغة = 12 تغريدة      ║');
+    $log('╚══════════════════════════════════════════════════════════════╝');
+    $log('');
+
+    $plan = TweetComposer::schedulePlan(true);
+    foreach ($plan as $row) {
+        $log('');
+        $log('╔══════════════════════════════════════════════════════════════');
+        $log('║  ⏰ ' . $row['time'] . '  ·  ' . strtoupper($row['slot']) . '  ·  ' . $row['title']);
+        $log('║  📋 ' . $row['note']);
+        $log('║  📅 ' . $row['when']);
+        $log('╚══════════════════════════════════════════════════════════════');
+
+        foreach (['ar', 'en'] as $lang) {
+            $text = TweetComposer::build($row['slot'], $lang);
+            $chars = mb_strlen($text, 'UTF-8');
+            $status = $chars <= 280 ? '✓' : '⚠️ تجاوز 280!';
+            $log('');
+            $log('─── [' . $lang . '] · ' . $chars . ' حرف ' . $status . ' ───');
+            $log($text);
+        }
+        $log('');
+    }
+
+    $log('');
+    $log('═════════════════════════ النتيجة ═════════════════════════');
+    $log('  ✅ كل المعاينات أُنجزت — لم تُنشَر أي تغريدة فعلاً');
+    $log('  📊 المجموع: 12 تغريدة (6 فترات × عربيّ وإنجليزيّ)');
+    $log('  🕒 المُولِّد: ' . date('Y-m-d H:i:s') . ' Asia/Dubai');
+    $log('═══════════════════════════════════════════════════════════');
+    exit(0);
+}
 
 // (0) الحارس: المفاتيح
 if (!XPublisher::configured()) { $log('[tweet] X keys not configured. exit.'); exit(0); }

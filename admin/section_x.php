@@ -259,10 +259,25 @@ $dColor = $dPct >= 90 ? '#dc2626' : ($dPct >= 70 ? '#f59e0b' : '#16a34a');
     <br><code>*/15 * * * * php /home/USER/domains/wcup2026.org/public_html/cron/tweet.php</code>
   </p>
 
-  <!-- زر إفراغ الطابور الكامل (يتجاوز سقف الـ run، لكن RateGuard ساعة/يوم يظلّان فعّالَين) -->
+  <!-- زر اختبار شامل للجدول — يعرض كل التغريدات الست × لغتَين بدون نشر -->
   <?php
+    $testUrl  = rtrim(SITE_URL, '/') . '/cron/tweet.php?token=' . urlencode(INSTALL_TOKEN) . '&test-schedule=1';
     $drainUrl = rtrim(SITE_URL, '/') . '/cron/tweet.php?token=' . urlencode(INSTALL_TOKEN) . '&drain=1';
   ?>
+  <div style="margin-top:16px;padding:14px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.25);border-radius:10px">
+    <strong>🧪 <?= e($L('اختبار شامل لجدول النشر', 'Test full schedule')) ?></strong>
+    <p class="admin-muted" style="margin:6px 0 10px">
+      <?= e($L('يعرض كل التغريدات الـ12 (6 فترات × عربيّ وإنجليزيّ) دفعة واحدة — بدون نشر فعليّ.',
+               'Shows all 12 tweets (6 slots × AR/EN) in one preview — no actual posting.')) ?>
+    </p>
+    <a class="admin-btn admin-btn-primary" href="<?= e($testUrl) ?>" target="_blank" rel="noopener">
+      🧪 <?= e($L('افتح صفحة الاختبار', 'Open test page')) ?>
+    </a>
+    <p class="admin-muted" style="font-size:.85em;margin-top:8px">
+      <?= e($L('فحص فوريّ بدون نشر — مثالي للتحقّق من المحتوى والأوقات.',
+               'Instant preview without publishing — ideal for verifying content and timing.')) ?>
+    </p>
+  </div>
   <div style="margin-top:16px;padding:14px;background:rgba(255,194,51,.07);border:1px solid rgba(255,194,51,.25);border-radius:10px">
     <strong>⚡ <?= e($L('إفراغ الطابور بالكامل', 'Drain queue now')) ?></strong>
     <p class="admin-muted" style="margin:6px 0 10px">
