@@ -530,10 +530,11 @@ $gLog     = GroupTweets::recentLog(12);
       <select name="slot" class="admin-input">
         <option value="manual"><?= e($L('افتراضية (تعريف الموقع)','Default (site intro)')) ?></option>
         <option value="countdown"><?= e($L('عدّ تنازلي','Countdown')) ?></option>
-        <option value="morning"><?= e($L('تنبيه الصباح','Morning preview')) ?></option>
+        <option value="recap"><?= e($L('صباح الكرة (نتائج الليل)','Morning recap')) ?></option>
+        <option value="morning"><?= e($L('مباريات اليوم','Today\'s matches')) ?></option>
         <option value="trivia"><?= e($L('سؤال اليوم (تحدّي المعرفة)','Daily trivia')) ?></option>
-        <option value="evening"><?= e($L('ملخّص المساء','Evening recap')) ?></option>
         <option value="stats"><?= e($L('إحصائيات اليوم','Daily stats')) ?></option>
+        <option value="evening"><?= e($L('نتائج المساء','Evening results')) ?></option>
       </select>
     </div>
     <button type="submit" class="admin-btn admin-btn-primary" <?= $configured ? '' : 'disabled' ?>>

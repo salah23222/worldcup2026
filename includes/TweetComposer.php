@@ -20,11 +20,12 @@ class TweetComposer
 {
     /** فترات النشر اليومية وساعاتها (Asia/Dubai). */
     private const SLOT_HOURS = [
-        'morning'   => 9,
-        'countdown' => 10,
-        'trivia'    => 16,
-        'evening'   => 21,
-        'stats'     => 22,
+        'recap'     => 9,    // نتائج مباريات الليل (تنبيه صباحي للجمهور)
+        'countdown' => 16,   // عدّ تنازلي عصراً قبل المباريات
+        'morning'   => 17,   // معاينة مباريات اليوم (تحضير الجمهور)
+        'trivia'    => 18,   // سؤال اليوم في وقت ذروة التفاعل
+        'stats'     => 22,   // ملخّص رقمي قبل المباريات الليلية
+        'evening'   => 23,   // نتائج آخر مباريات المساء
     ];
 
     /** رمز فترة النشر للوقت الحالي. null = لا فترة فعّالة. */
@@ -34,16 +35,18 @@ class TweetComposer
         $h   = (int)date('G', $now);
         $started = DataService::tournamentStarted();
 
-        // قبل البطولة: نُفعّل countdown + trivia فقط (المعرفة قبل المباريات تُحسّن التفاعل)
+        // قبل البطولة: countdown + trivia فقط (الباقي يحتاج بيانات مباريات)
         if (!$started) {
             if ($h === self::SLOT_HOURS['countdown']) return 'countdown';
             if ($h === self::SLOT_HOURS['trivia'])    return 'trivia';
             return null;
         }
-        // أثناء البطولة
-        foreach (['morning', 'trivia', 'evening', 'stats'] as $s) {
+        // أثناء البطولة: كل الفترات الست
+        foreach (['recap', 'morning', 'trivia', 'evening', 'stats'] as $s) {
             if ($h === self::SLOT_HOURS[$s]) return $s;
         }
+        // countdown متاحة طوال البطولة كذلك (تعرض «اقتربت النهاية» أو ما تبقى لها)
+        if ($h === self::SLOT_HOURS['countdown']) return 'countdown';
         return null;
     }
 
@@ -58,6 +61,7 @@ class TweetComposer
             case 'evening':   return self::evening($ar);
             case 'stats':     return self::stats($ar, $lang);
             case 'trivia':    return self::trivia($ar, $lang);
+            case 'recap':     return self::recap($ar);
             case 'manual':
             default:          return self::manual($ar);
         }
@@ -173,6 +177,29 @@ class TweetComposer
         $foot = $ar ? "كل الأرقام والمتصدّرين 👇" : "Full numbers & leaders 👇";
         $body = $head . "\n" . implode("\n", $bullets) . "\n" . $foot;
         return self::sign($body, self::link("stats.php?lang={$lang}"));
+    }
+
+    /** recap — صباحاً 09:00: نتائج آخر 24 ساعة (تشمل مباريات الليل في النطاق الأمريكي). */
+    private static function recap(bool $ar): string
+    {
+        // آخر النتائج المنتهية (تشمل ما لُعب الليلة الماضية بتوقيت Asia/Dubai)
+        $results = DataService::latestResults(3);
+        $link    = self::link('matches.php');
+        if (!$results) {
+            $msg = $ar
+                ? "☀️ صباح كرة القدم! لا نتائج جديدة منذ الأمس — استعد لمباريات اليوم 📅"
+                : "☀️ Football morning! No fresh results since yesterday — gear up for today's games 📅";
+            return self::sign($msg, $link);
+        }
+        $head  = $ar ? "☀️ صباح الكرة — نتائج الليل 🌙⚽" : "☀️ Morning recap — overnight scores 🌙⚽";
+        $lines = [];
+        foreach (array_slice($results, 0, 3) as $m) {
+            $lines[] = self::matchLine($m, $ar, withTime: false);
+        }
+        $foot = $ar
+            ? "كيف توقّعتها؟ ابدأ يومك بالترتيب 👇"
+            : "How did your picks fare? Start your day with the standings 👇";
+        return self::sign($head . "\n" . implode("\n", $lines) . "\n" . $foot, self::link('leaderboard.php'));
     }
 
     /** trivia — سؤال اليوم + رابط trivia.php (يستخدم الكاش اليومي للذكاء). */
@@ -292,20 +319,23 @@ class TweetComposer
     public static function schedulePlan(bool $ar): array
     {
         return [
-            ['time' => '09:00', 'slot' => 'morning',   'title' => $ar ? 'تنبيه الصباح' : 'Morning preview',
+            ['time' => '09:00', 'slot' => 'recap',     'title' => $ar ? 'صباح الكرة — نتائج الليل' : 'Morning recap — overnight scores',
+             'note'  => $ar ? 'نتائج آخر مباريات الليل + رابط الترتيب' : 'Overnight results + leaderboard link',
+             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
+            ['time' => '16:00', 'slot' => 'countdown', 'title' => $ar ? 'العدّ التنازلي' : 'Countdown',
+             'note'  => $ar ? 'كم يوم متبقٍ + رابط التوقّعات' : 'Days remaining + predictions link',
+             'when'  => $ar ? 'قبل البطولة وأثناءها' : 'Pre + during tournament'],
+            ['time' => '17:00', 'slot' => 'morning',   'title' => $ar ? 'مباريات اليوم' : 'Today\'s matches',
              'note'  => $ar ? 'أبرز 3 مباريات اليوم + رابط الجدول' : 'Top 3 matches today + schedule link',
              'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
-            ['time' => '10:00', 'slot' => 'countdown', 'title' => $ar ? 'العدّ التنازلي' : 'Countdown',
-             'note'  => $ar ? 'كم يوم متبقٍ + رابط التوقّعات' : 'Days remaining + predictions link',
-             'when'  => $ar ? 'قبل البطولة فقط' : 'Pre-tournament only'],
-            ['time' => '16:00', 'slot' => 'trivia',    'title' => $ar ? 'سؤال اليوم' : 'Daily trivia',
+            ['time' => '18:00', 'slot' => 'trivia',    'title' => $ar ? 'سؤال اليوم' : 'Daily trivia',
              'note'  => $ar ? 'سؤال معرفة + خيارات + رابط trivia.php (3 نقاط للإجابة)' : 'Question + options + link to trivia.php (3 pts)',
              'when'  => $ar ? 'يومياً' : 'Every day'],
-            ['time' => '21:00', 'slot' => 'evening',   'title' => $ar ? 'ملخّص المساء' : 'Evening recap',
-             'note'  => $ar ? 'نتائج اليوم + رابط الترتيب' : 'Today\'s results + leaderboard link',
-             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
             ['time' => '22:00', 'slot' => 'stats',     'title' => $ar ? 'إحصائيات اليوم' : 'Daily stats',
              'note'  => $ar ? 'الهدّافون + البطاقات + إجمالي الأهداف' : 'Top scorers + cards + total goals',
+             'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
+            ['time' => '23:00', 'slot' => 'evening',   'title' => $ar ? 'نتائج المساء' : 'Evening results',
+             'note'  => $ar ? 'نتائج آخر مباريات المساء + رابط الترتيب' : 'Late-evening results + leaderboard link',
              'when'  => $ar ? 'أثناء البطولة' : 'During tournament'],
         ];
     }
