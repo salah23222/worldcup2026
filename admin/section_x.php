@@ -258,6 +258,25 @@ $dColor = $dPct >= 90 ? '#dc2626' : ($dPct >= 70 ? '#f59e0b' : '#16a34a');
              'Suggested Cron line (every 15 min — to catch pre-match windows accurately):')) ?>
     <br><code>*/15 * * * * php /home/USER/domains/wcup2026.org/public_html/cron/tweet.php</code>
   </p>
+
+  <!-- زر إفراغ الطابور الكامل (يتجاوز سقف الـ run، لكن RateGuard ساعة/يوم يظلّان فعّالَين) -->
+  <?php
+    $drainUrl = rtrim(SITE_URL, '/') . '/cron/tweet.php?token=' . urlencode(INSTALL_TOKEN) . '&drain=1';
+  ?>
+  <div style="margin-top:16px;padding:14px;background:rgba(255,194,51,.07);border:1px solid rgba(255,194,51,.25);border-radius:10px">
+    <strong>⚡ <?= e($L('إفراغ الطابور بالكامل', 'Drain queue now')) ?></strong>
+    <p class="admin-muted" style="margin:6px 0 10px">
+      <?= e($L('ينشر كل التغريدات المعلّقة (يومية + أخبار + مباريات) دفعة واحدة، مع احترام فاصل 17ث بين كل تغريدة وسقفَي حماية الحساب (12/ساعة · 50/يوم).',
+               'Publishes every pending tweet (daily + news + matches) in one go, respecting 17s spacing and account-safety caps (12/h · 50/day).')) ?>
+    </p>
+    <a class="admin-btn admin-btn-primary" href="<?= e($drainUrl) ?>" target="_blank" rel="noopener">
+      🚀 <?= e($L('افتح صفحة الإفراغ في تبويب جديد', 'Open drain page in new tab')) ?>
+    </a>
+    <p class="admin-muted" style="font-size:.85em;margin-top:8px">
+      <?= e($L('سيستغرق ~85ث لكل 6 تغريدات. حافظ على التبويب مفتوحاً حتى يكتمل.',
+               '~85s per 6 tweets. Keep the tab open until done.')) ?>
+    </p>
+  </div>
 </div>
 
 <!-- ============ تغريدات كل مباراة (قبل + بعد، AR+EN) ============ -->

@@ -38,6 +38,10 @@ $force       = isset($args['force']);
 $slot        = (string)($args['slot'] ?? '');
 $skipDaily   = isset($args['no-daily']);
 $skipMatches = isset($args['no-matches']);
+// drain = أفرغ الطابور (يرفع MAX_PER_RUN — لكن RateGuard ساعة/يوم يظلّان فعّالَين)
+$drain       = isset($args['drain']);
+$capPerRun   = $drain ? 999 : (defined('MAX_PER_RUN') ? MAX_PER_RUN : MatchTweets::MAX_PER_RUN);
+$capNews     = $drain ? 999 : NewsTweets::MAX_PER_RUN;
 
 $log  = function (string $m) { echo $m . "\n"; @flush(); };
 $pace = max(1, (defined('X_MIN_SPACING') ? (int)X_MIN_SPACING : 15) + 2);
@@ -107,7 +111,7 @@ if (!$skipMatches) {
     $pre = MatchTweets::pendingPre();
     $log('[pre]  candidates=' . count($pre));
     foreach ($pre as $job) {
-        if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[pre] cap reached, stop.'); break; }
+        if ($sent >= $capPerRun) { $log('[pre] cap reached, stop.'); break; }
         $m = $job['match']; $lg = $job['lang'];
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
         if ($dry) { $log('[pre] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPre($m, $lg)); $log('---'); continue; }
@@ -120,7 +124,7 @@ if (!$skipMatches) {
     $post = MatchTweets::pendingPost();
     $log('[post] candidates=' . count($post));
     foreach ($post as $job) {
-        if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[post] cap reached, stop.'); break; }
+        if ($sent >= $capPerRun) { $log('[post] cap reached, stop.'); break; }
         $m = $job['match']; $lg = $job['lang'];
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
         if ($dry) { $log('[post] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---'); continue; }
@@ -133,7 +137,7 @@ if (!$skipMatches) {
     $gq = GroupTweets::pending();
     $log('[group] candidates=' . count($gq));
     foreach ($gq as $job) {
-        if ($sent >= MatchTweets::MAX_PER_RUN) { $log('[group] cap reached, stop.'); break; }
+        if ($sent >= $capPerRun) { $log('[group] cap reached, stop.'); break; }
         $label = $job['group'] . ' · ' . $job['milestone'] . ' [' . $job['lang'] . ']';
         if ($dry) { $log('[group] would tweet ' . $label); $log('---'); $log(GroupTweets::buildStandings($job['group'], $job['milestone'], $job['lang'])); $log('---'); continue; }
         $send('group', $label, fn() => GroupTweets::sendStandings($job['group'], $job['milestone'], $job['lang']));
@@ -149,7 +153,7 @@ if (!$skipMatches) {
         $log('[news] candidates=' . count($nq));
         $nsent = 0;
         foreach ($nq as $job) {
-            if ($nsent >= NewsTweets::MAX_PER_RUN) break;
+            if ($nsent >= $capNews) break;
             $label = '[' . $job['lang'] . '] ' . mb_substr($job['item']['title'] ?? '', 0, 60, 'UTF-8');
             if ($dry) {
                 $log('[news] would tweet ' . $label);
