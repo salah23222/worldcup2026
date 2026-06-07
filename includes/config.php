@@ -160,8 +160,10 @@ define('X_ACCESS_TOKEN',   (string)cfg_secret('X_ACCESS_TOKEN',   '', $__local))
 define('X_ACCESS_SECRET',  (string)cfg_secret('X_ACCESS_SECRET',  '', $__local));
 // اسم الحساب (يُعرَض في لوحة التحكم — تجميلي فقط).
 define('X_HANDLE',         (string)cfg_secret('X_HANDLE',         'wcup2026', $__local));
-// الوسوم الرسمية المُلحَقة بكل تغريدة (FIFA الرسمية + هوية الموقع).
-define('X_HASHTAGS',       '#WeAre26 #FIFAWorldCup26');
+// الوسوم الرسمية المُلحَقة بكل تغريدة — عربيّة + إنجليزيّة لتغطية الجمهورَين.
+// • #كأس_العالم_2026 + #المونديال = اتجاه قويّ في العالم العربي
+// • #WeAre26 (FIFA الرسمي) + #FIFAWorldCup26 = وصول دولي + indexing FIFA
+define('X_HASHTAGS',       '#كأس_العالم_2026 #المونديال #WeAre26 #FIFAWorldCup26');
 
 // ---------- حدود حماية حساب X من الإيقاف (RateGuard) ----------
 // محافظة لكن واقعيّة — تسمح بـ ~10-12 تغريدة/ساعة (مساحة محترمة)، تبقى بعيدة
