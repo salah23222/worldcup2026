@@ -159,7 +159,8 @@ if (!$skipDaily) {
     if ($dailySlot === '') {
         $log('[daily] no slot active at ' . date('H:i') . '.');
     } else {
-        foreach (['ar', 'en'] as $lg) {
+        $langs = defined('X_LANGS') && is_array(X_LANGS) && X_LANGS ? X_LANGS : ['ar', 'en'];
+        foreach ($langs as $lg) {
             $slotKey = $dailySlot . '_' . $lg;
             if (!$force && !XPublisher::claimSlot($slotKey)) {
                 $log('[daily] ' . $slotKey . ' already posted today.');

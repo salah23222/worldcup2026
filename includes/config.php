@@ -175,6 +175,11 @@ define('X_HASHTAGS_CORE',  '#كأس_العالم_2026 #FIFAWorldCup26');
 define('X_HOURLY_CAP',  (int)cfg_secret('X_HOURLY_CAP',  12, $__local));
 define('X_DAILY_CAP',   (int)cfg_secret('X_DAILY_CAP',   50, $__local));
 define('X_MIN_SPACING', (int)cfg_secret('X_MIN_SPACING', 15, $__local));
+// X_LANGS — اللغات المنشورة. الافتراضي ['ar','en']. لتوفير 50% اجعلها ['ar'] فقط.
+// مثال في config.local.php:  'X_LANGS' => ['ar'],
+$__xLangs = cfg_secret('X_LANGS', ['ar', 'en'], $__local);
+if (!is_array($__xLangs)) $__xLangs = ['ar', 'en'];
+define('X_LANGS', $__xLangs);
 
 // ---------- (اختياري) بوت تيليجرام ----------
 // فارغ = البوت معطّل تماماً (نقطة الويبهوك ترد 503 ولا تتصل بأي شيء).
