@@ -36,8 +36,9 @@ class TweetComposer
         $h   = (int)date('G', $now);
         $started = DataService::tournamentStarted();
 
-        // قبل البطولة: countdown + trivia فقط (الباقي يحتاج بيانات مباريات)
+        // قبل البطولة: news + countdown + trivia (التسويق والتذكير قبل الانطلاق)
         if (!$started) {
+            if ($h === self::SLOT_HOURS['news'])      return 'news';
             if ($h === self::SLOT_HOURS['countdown']) return 'countdown';
             if ($h === self::SLOT_HOURS['trivia'])    return 'trivia';
             return null;
