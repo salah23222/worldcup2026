@@ -49,6 +49,45 @@ $pace = max(1, (defined('X_MIN_SPACING') ? (int)X_MIN_SPACING : 15) + 2);
 // بصمة نسخة الكود — تساعد على التحقّق من أن النسخة الصحيحة فعلاً تُشغَّل
 $log('[version] tweet.php v2.3-test-schedule (' . date('Y-m-d H:i:s') . ' Asia/Dubai)');
 
+// ═══════════════════ وضع التنظيف: مسح طوابير الحالة ═══════════════════
+// cron/tweet.php?token=...&clear-state=news       → يصمت كل أخبار الـ RSS الحاليّة
+// cron/tweet.php?token=...&clear-state=all        → ينظّف news + match + group state
+if (isset($args['clear-state'])) {
+    $what = strtolower((string)$args['clear-state']);
+    $log('');
+    $log('╔══════════════════════════════════════════════════════════════╗');
+    $log('║  تنظيف حالة الطوابير — ' . $what . str_repeat(' ', max(0, 30 - mb_strlen($what,'UTF-8'))) . '║');
+    $log('╚══════════════════════════════════════════════════════════════╝');
+    $log('');
+
+    if ($what === 'news' || $what === 'all') {
+        // علِّم كل أخبار /news.php الحالية كـ "تم بثّها" → لن تظهر في الطابور
+        $marked = 0;
+        if (class_exists('News') && class_exists('NewsTweets')) {
+            foreach (['ar', 'en'] as $lang) {
+                $items = News::latest(50, $lang);
+                foreach ($items as $it) {
+                    $id = !empty($it['id']) ? (string)$it['id'] : substr(md5((string)($it['link'] ?? '')), 0, 12);
+                    if ($id === '') continue;
+                    NewsTweets::markSent($id, $lang, (string)($it['title'] ?? ''), 'cleared');
+                    $marked++;
+                }
+            }
+        }
+        $log('[clear] news: ' . $marked . ' خبر تم تعليمه (لن يُبثّ).');
+    }
+
+    if ($what === 'all') {
+        // نظّف ملف rate-guard (يستأنف من 0)
+        @unlink(rtrim(CACHE_DIR, '/') . '/x_rate.json');
+        $log('[clear] x_rate.json: محذوف');
+    }
+
+    $log('');
+    $log('✅ تم. النظام جاهز يبدأ من الصفر.');
+    exit(0);
+}
+
 // ═══════════════════ وضع الاختبار: معاينة كل الجدول دفعة واحدة ═══════════════════
 // استخدام: cron/tweet.php?token=...&test-schedule=1
 // يعرض كل التغريدات الست × لغتَين = 12 معاينة بدون أي نشر، ثم يخرج.
