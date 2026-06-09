@@ -116,6 +116,103 @@ class Digest
         return is_array($d) ? array_slice($d, 0, $n) : [];
     }
 
+    // ════════════════════════════════════════════════════════════
+    //  🆕 نظام الطابور (async) — يحلّ مشكلة timeout على Hostinger
+    // ════════════════════════════════════════════════════════════
+
+    /** مسار ملفّ الطابور. */
+    private static function queueFile(): string
+    {
+        return rtrim(CACHE_DIR, '/') . '/digest_queue.json';
+    }
+
+    /** يقرأ الطابور الحالي. الشكل: ['type'=>..., 'created'=>ts, 'pending'=>[users], 'done'=>[ids], 'failed'=>[ids]]. */
+    public static function queueRead(): ?array
+    {
+        $f = self::queueFile();
+        if (!is_file($f)) return null;
+        $d = json_decode((string)@file_get_contents($f), true);
+        return is_array($d) ? $d : null;
+    }
+
+    /** يحفظ الطابور (atomic). */
+    private static function queueWrite(array $q): bool
+    {
+        $f = self::queueFile();
+        if (!is_dir(dirname($f))) @mkdir(dirname($f), 0755, true);
+        $tmp = $f . '.tmp';
+        if (@file_put_contents($tmp, json_encode($q, JSON_UNESCAPED_UNICODE)) === false) return false;
+        return @rename($tmp, $f);
+    }
+
+    /** يحذف الطابور (عند الانتهاء). */
+    public static function queueClear(): bool
+    {
+        $f = self::queueFile();
+        return !is_file($f) || @unlink($f);
+    }
+
+    /**
+     * queueEnqueue() — يبني طابور إرسال جديد لكل المستلِمين (أو المتوقّعين فقط).
+     * يعود فوراً — لا إرسال هنا. الإرسال الفعلي عبر queueProcess() دفعةً دفعة.
+     */
+    public static function queueEnqueue(bool $predictorsOnly = false): array
+    {
+        $recips = self::recipients($predictorsOnly);
+        $q = [
+            'type'    => $predictorsOnly ? 'digest-predictors' : 'digest',
+            'created' => time(),
+            'pending' => $recips,
+            'total'   => count($recips),
+            'sent'    => 0,
+            'fail'    => 0,
+        ];
+        self::queueWrite($q);
+        return $q;
+    }
+
+    /**
+     * queueProcess() — يُرسل دفعة من الطابور (افتراضياً 10 رسائل) ثم يحفظ.
+     * يُستدعى من cron (للأتمتة) أو من admin (للمعالجة الفوريّة).
+     * يعود: ['sent','fail','remaining','done']
+     */
+    public static function queueProcess(int $batch = 10): array
+    {
+        $q = self::queueRead();
+        if (!$q || empty($q['pending'])) {
+            return ['sent' => 0, 'fail' => 0, 'remaining' => 0, 'done' => true];
+        }
+
+        @set_time_limit(180);
+        $h     = self::highlights();
+        $stand = Predictions::standingsByUser();
+        $sent  = 0; $fail = 0;
+        $batch = max(1, min(50, $batch));
+
+        for ($i = 0; $i < $batch && !empty($q['pending']); $i++) {
+            $u = array_shift($q['pending']);
+            if (!is_array($u) || empty($u['email'])) continue;
+            $mail = self::buildEmail($u, $h, $stand[$u['id']] ?? null);
+            $ok   = Mailer::send($u['email'], $mail['subject'], $mail['html'], $mail['text']);
+            $ok ? $sent++ : $fail++;
+            usleep(150000); // 0.15ث بين الرسائل (ضمن نفس الدفعة فقط)
+        }
+
+        $q['sent'] += $sent;
+        $q['fail'] += $fail;
+        $remaining = count($q['pending']);
+
+        if ($remaining === 0) {
+            // اكتمل الطابور — سجّل النتيجة + احذفه
+            self::log($q['type'], (int)$q['sent'], (int)$q['fail'], (int)$q['total']);
+            self::queueClear();
+            return ['sent' => $sent, 'fail' => $fail, 'remaining' => 0, 'done' => true];
+        }
+
+        self::queueWrite($q);
+        return ['sent' => $sent, 'fail' => $fail, 'remaining' => $remaining, 'done' => false];
+    }
+
     /** عناصر مشتركة بين كل الرسائل (تُحسب مرة واحدة). */
     public static function highlights(): array
     {

@@ -56,6 +56,18 @@ if ($test !== '') {
     exit;
 }
 
+// 🆕 معالجة الطابور أوّلاً — لو يوجد إرسال يدوي معلّق من admin
+$queue = Digest::queueRead();
+if ($queue && !empty($queue['pending'])) {
+    $log("[queue] found " . count($queue['pending']) . " pending — processing batch...");
+    $r = Digest::queueProcess(20); // 20 رسالة لكل تشغيل cron
+    $log("[queue] batch: sent={$r['sent']} fail={$r['fail']} remaining={$r['remaining']}" . ($r['done'] ? ' DONE' : ''));
+    if (!$r['done']) {
+        // ما زال الطابور قيد التنفيذ — لا تشغّل النشرة الدوريّة هذه الجلسة
+        exit;
+    }
+}
+
 // --- بوّابة نافذة البطولة (تتوقّف بعد النهائي) ---
 if (!$force && !Digest::windowOpen()) { $log('window closed (البطولة انتهت)'); exit; }
 

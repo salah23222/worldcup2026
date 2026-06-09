@@ -31,38 +31,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $do === 'sendtest') {
     }
 }
 
-// 🆕 إرسال للجميع / للمتوقّعين فقط
+// 🆕 وضع الإرسال في الطابور (async) — لا يحجز المتصفّح
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($do === 'sendall' || $do === 'sendpredictors')) {
     if (!Database::available()) {
         $notice = $L('قاعدة البيانات غير متاحة.', 'Database not available.');
     } else {
-        @set_time_limit(300);
         $predOnly = ($do === 'sendpredictors');
-        $h        = Digest::highlights();
-        $recips   = Digest::recipients($predOnly);
-        $stand    = Predictions::standingsByUser();
-        $sent = $fail = 0;
-        foreach ($recips as $u) {
-            $mail = Digest::buildEmail($u, $h, $stand[$u['id']] ?? null);
-            $ok = Mailer::send($u['email'], $mail['subject'], $mail['html'], $mail['text']);
-            $ok ? $sent++ : $fail++;
-            usleep(200000); // ~0.2ث بين الرسائل
-        }
-        Digest::log($predOnly ? 'digest-predictors' : 'digest', $sent, $fail, count($recips));
-        $noticeOk = ($fail === 0 && $sent > 0);
+        $q = Digest::queueEnqueue($predOnly);
+        $noticeOk = true;
         $notice = sprintf(
-            $L('تم الإرسال: %d نجح · %d فشل · %d إجمالي', 'Sent: %d ok · %d failed · %d total'),
-            $sent, $fail, count($recips)
+            $L('✓ تم إدراج %d رسالة في الطابور — اضغط «معالجة الآن» أو سيتم الإرسال تلقائياً عبر الـCron.',
+               '✓ Queued %d emails — click "Process now" or let Cron handle it automatically.'),
+            (int)$q['total']
         );
     }
 }
 
+// 🆕 معالجة دفعة من الطابور (10 رسائل)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $do === 'queueprocess') {
+    $r = Digest::queueProcess(10);
+    $noticeOk = ($r['fail'] === 0);
+    $notice = sprintf(
+        $L('دفعة: %d نجح · %d فشل · %d متبقّون %s',
+           'Batch: %d ok · %d failed · %d remaining %s'),
+        (int)$r['sent'], (int)$r['fail'], (int)$r['remaining'],
+        $r['done'] ? ($ar ? '✓ اكتمل الطابور!' : '✓ Queue complete!') : ''
+    );
+}
+
+// 🆕 إلغاء الطابور
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $do === 'queueclear') {
+    Digest::queueClear();
+    $noticeOk = true;
+    $notice = $L('تم إلغاء الطابور.', 'Queue cleared.');
+}
+
 $smtp     = Mailer::smtpConfigured();
 $logRows  = Digest::recentLog(20);
-// 🆕 إحصاءات المشتركين
 $rcptAll  = Database::available() ? count(Digest::recipients(false)) : 0;
 $rcptPred = Database::available() ? count(Digest::recipients(true))  : 0;
 $winOpen  = Digest::windowOpen();
+$queue    = Digest::queueRead();   // 🆕 طابور قيد التنفيذ (لو موجود)
 ?>
 
 <!-- معاينة الرسالة (popup يفتحها زر «معاينة») -->
@@ -161,6 +170,50 @@ endif; ?>
     </form>
   </div>
 </div>
+
+<!-- ============ 🆕 الطابور (إن وُجد) ============ -->
+<?php if ($queue):
+    $pendingN  = is_array($queue['pending'] ?? null) ? count($queue['pending']) : 0;
+    $total     = (int)($queue['total'] ?? 0);
+    $sentSoFar = (int)($queue['sent'] ?? 0);
+    $failSoFar = (int)($queue['fail'] ?? 0);
+    $progress  = $total > 0 ? round((($sentSoFar + $failSoFar) / $total) * 100) : 0;
+?>
+<div class="admin-card" style="border-inline-start:4px solid #f59e0b;background:rgba(245,158,11,.06)">
+  <h2><?= e($L('⏳ طابور إرسال قيد التنفيذ', 'Send queue in progress')) ?></h2>
+
+  <div style="background:#1a2940;border-radius:10px;overflow:hidden;height:24px;margin:12px 0;position:relative">
+    <div style="background:linear-gradient(90deg,#36c08f,#f7e09a);height:100%;width:<?= $progress ?>%;transition:width .3s"></div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);font-size:14px"><?= $progress ?>%</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px">
+    <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:#36c08f"><?= $sentSoFar ?></div><div style="font-size:12px;color:#9fb3d1"><?= e($L('نجح','Sent')) ?></div></div>
+    <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:#ef4444"><?= $failSoFar ?></div><div style="font-size:12px;color:#9fb3d1"><?= e($L('فشل','Failed')) ?></div></div>
+    <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:#f59e0b"><?= $pendingN ?></div><div style="font-size:12px;color:#9fb3d1"><?= e($L('متبقّ','Remaining')) ?></div></div>
+    <div style="text-align:center"><div style="font-size:24px;font-weight:900;color:#cbd5e1"><?= $total ?></div><div style="font-size:12px;color:#9fb3d1"><?= e($L('إجمالي','Total')) ?></div></div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <form method="post" action="admin.php" style="display:inline">
+      <input type="hidden" name="tab" value="email">
+      <input type="hidden" name="do" value="queueprocess">
+      <?= Admin::csrfField() ?>
+      <button type="submit" class="admin-btn admin-btn-primary">⚡ <?= e($L('معالجة 10 الآن','Process 10 now')) ?></button>
+    </form>
+    <form method="post" action="admin.php" style="display:inline" onsubmit="return confirm('<?= e($L('إلغاء كل المتبقّين؟','Cancel remaining?')) ?>')">
+      <input type="hidden" name="tab" value="email">
+      <input type="hidden" name="do" value="queueclear">
+      <?= Admin::csrfField() ?>
+      <button type="submit" class="admin-btn">🗑 <?= e($L('إلغاء الطابور','Cancel queue')) ?></button>
+    </form>
+  </div>
+
+  <p class="admin-muted" style="margin-top:14px;font-size:13px">
+    💡 <?= e($L('الـCron يعالج الطابور تلقائياً كل تشغيل. أو اضغط الزرّ لإرسال 10 رسائل فوراً.','Cron processes the queue each run, or click the button to send 10 now.')) ?>
+  </p>
+</div>
+<?php endif; ?>
 
 <!-- ============ إرسال تجريبي ============ -->
 <div class="admin-card">
