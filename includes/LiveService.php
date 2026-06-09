@@ -546,9 +546,27 @@ class LiveService
     }
 
     /**
+     * 🆕 BUILTIN_REFEREES — تعيينات FIFA الرسمية مُضمَّنة في الكود.
+     * تعمل فوراً دون رفع ملفّ JSON. أيّ ملفّ يدوي يبقى الأولوية الأعلى.
+     * عند إعلان FIFA لمباراة جديدة → أضِف سطراً هنا واحفظ → سترفع PHP فقط.
+     * المصدر: https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-officials-appointed-referees
+     */
+    private const BUILTIN_REFEREES = [
+        'Mexico|South Africa'             => ['main' => ['name' => 'WILTON SAMPAIO', 'country_ar' => 'البرازيل', 'flag' => 'br']],
+        'South Korea|Czech Republic'      => ['main' => ['name' => 'MOHAMED Amin',   'country_ar' => 'مصر',      'flag' => 'eg']],
+        'Canada|Bosnia and Herzegovina'   => ['main' => ['name' => 'TELLO Facundo',  'country_ar' => 'الأرجنتين','flag' => 'ar']],
+        'United States|Paraguay'          => ['main' => ['name' => 'MAKKELIE Danny', 'country_ar' => 'هولندا',   'flag' => 'nl']],
+        // ⚽ أضِف هنا أيّ مباراة جديدة عند إعلان FIFA — صيغة: "Team1|Team2"
+    ];
+
+    /**
      * officialsFor() — يعيد طاقم التحكيم الكامل لمباراة معيّنة:
      *   ['main' => [name,country_ar,flag], 'assistants' => [...], 'var' => ..., 'fourth' => ...]
-     * المصدر بالترتيب: الملف اليدوي (أولوية) → API-Football. يدعم الشكلَين القديم (string) والجديد (object).
+     * المصدر بالترتيب:
+     *   1) data/referees-manual.json (أولوية قصوى — أنت تتجاوز)
+     *   2) BUILTIN_REFEREES const (مُضمَّن — يعمل بدون رفع JSON)
+     *   3) API-Football
+     * كلّ ما سبق يُثرى تلقائياً بمساعدَين + علم + دولة من Wikipedia.
      */
     public static function officialsFor(array $match): array
     {
@@ -578,7 +596,20 @@ class LiveService
         }
 
         // ────────────────────────────────────────────────
-        // (2) API-Football → اسم الحكم الرئيسي فقط
+        // (2) 🆕 BUILTIN — تعيينات FIFA مُضمَّنة في الكود
+        // ────────────────────────────────────────────────
+        $bi = self::BUILTIN_REFEREES[$t1 . '|' . $t2] ?? (self::BUILTIN_REFEREES[$t2 . '|' . $t1] ?? null);
+        if (is_array($bi)) {
+            return self::enrich([
+                'main'       => self::normalizeOfficial($bi['main']       ?? null),
+                'assistants' => self::normalizeOfficials($bi['assistants'] ?? null),
+                'var'        => self::normalizeOfficial($bi['var']        ?? null),
+                'fourth'     => self::normalizeOfficial($bi['fourth']     ?? null),
+            ]);
+        }
+
+        // ────────────────────────────────────────────────
+        // (3) API-Football → اسم الحكم الرئيسي فقط
         // ────────────────────────────────────────────────
         if (self::isEnabled()) {
             $map = self::fixturesMap();
