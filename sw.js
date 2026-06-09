@@ -10,8 +10,8 @@
    ============================================================ */
 'use strict';
 
-/* رفعنا رقم النسخة (v8 → v9) ليُفعَّل التحديث ويُنظَّف الكاش القديم تلقائياً. */
-var CACHE = 'wc2026-v9';
+/* رفعنا رقم النسخة (v9 → v10) لإجبار المتصفّحات على تحميل sw.js الجديد. */
+var CACHE = 'wc2026-v10';
 
 /* قشرة التطبيق المُسبقة التخزين (نفس النطاق فقط — الخطوط/الأعلام عبر نطاقات أخرى نتجاهلها). */
 var SHELL = [
@@ -176,8 +176,10 @@ self.addEventListener('fetch', function (e) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   if (url.origin !== self.location.origin) return;
 
-  // نداءات الـAPI: شبكة فقط — لا نخزّنها إطلاقاً (محتوى شخصي/متغيّر، CSRF).
-  if (/^\/api\//i.test(url.pathname)) return;
+  // نداءات الـAPI و cron — شبكة فقط، نتجاوزها تماماً.
+  // (الـAPI: محتوى شخصي/CSRF · cron: قد يستغرق ثوانٍ لجلب الحكام/الأخبار)
+  if (/^\/api\//i.test(url.pathname))  return;
+  if (/^\/cron\//i.test(url.pathname)) return;
 
   var isNav = (req.mode === 'navigate') ||
               (req.headers.get('accept') || '').indexOf('text/html') !== -1;
