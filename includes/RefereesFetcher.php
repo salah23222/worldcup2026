@@ -1,0 +1,255 @@
+<?php
+/**
+ * RefereesFetcher.php — جلب أوتوماتيكي لطاقم التحكيم من Wikipedia.
+ * ============================================================
+ * استراتيجيّة:
+ *   1) Wikipedia tabular data → قائمة 52 حكم + 88 مساعد + جنسيّاتهم
+ *   2) خريطة دولة → كود علم (ISO2) + اسم عربي
+ *   3) عند معرفة الحكم الرئيسي (من manual/API-Football)، يتمّ
+ *      إثراؤه تلقائياً بمساعديه + علمه + دولته بالعربية.
+ *
+ * نتيجة: عند إعلان FIFA لحكم → اسم واحد فقط في referees-manual.json
+ *        ↓
+ *        النظام يجلب تلقائياً مساعديه + العَلَم + الدولة ع.
+ *
+ * كاش: 7 أيّام (القائمة لا تتغيّر — تُعلَن مرّة واحدة).
+ * ============================================================
+ */
+if (!defined('WC2026')) { exit('Access denied'); }
+
+class RefereesFetcher
+{
+    const WIKI_URL  = 'https://en.wikipedia.org/w/api.php?action=parse&page=2026_FIFA_World_Cup_officials&format=json&prop=wikitext&redirects=true';
+    const CACHE_TTL = 604800; // 7 أيّام
+
+    /** يقرأ قائمة الحكام المُحلَّلة (من الكاش أو يجلبها من Wikipedia). */
+    public static function all(): array
+    {
+        $cacheFile = self::cachePath();
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile) < self::CACHE_TTL)) {
+            $d = json_decode((string)@file_get_contents($cacheFile), true);
+            if (is_array($d)) return $d;
+        }
+        return self::refresh();
+    }
+
+    /** يفرض جلباً جديداً من Wikipedia + يحفظ النتيجة. */
+    public static function refresh(): array
+    {
+        $raw = self::httpGet(self::WIKI_URL);
+        if ($raw === null) return [];
+        $json = json_decode($raw, true);
+        $wt   = $json['parse']['wikitext']['*'] ?? '';
+        if ($wt === '') return [];
+
+        $list = self::parseTable($wt);
+        if (!$list) return [];
+
+        $cacheFile = self::cachePath();
+        if (!is_dir(dirname($cacheFile))) @mkdir(dirname($cacheFile), 0755, true);
+        @file_put_contents($cacheFile, json_encode($list, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+        return $list;
+    }
+
+    /**
+     * lookup($name) — يبحث عن حكم بأيّ صيغة اسم:
+     *   "WILTON SAMPAIO" / "Wilton Sampaio" / "MOHAMED Amin" / "Amin Mohamed"
+     * يعيد ['name', 'country', 'country_ar', 'flag', 'assistants' => [...]] أو null.
+     */
+    public static function lookup(string $name): ?array
+    {
+        $name = trim($name);
+        if ($name === '') return null;
+        $tokens = self::tokens($name);
+        if (!$tokens) return null;
+
+        $all = self::all();
+        $best = null; $bestScore = 0;
+        foreach ($all as $r) {
+            $rTokens = self::tokens($r['name'] ?? '');
+            $score   = count(array_intersect($tokens, $rTokens));
+            if ($score > $bestScore) { $bestScore = $score; $best = $r; }
+        }
+        if (!$best || $bestScore < 2) return null;  // اشترط مطابقة كلمتَين على الأقل
+
+        $country   = (string)($best['country'] ?? '');
+        $countryAr = self::countryArabic($country);
+        $flag      = self::countryFlag($country);
+        $assistants = [];
+        foreach ($best['assistants'] ?? [] as $a) {
+            $aCountry = (string)($a['country'] ?? '');
+            $assistants[] = [
+                'name'       => (string)($a['name'] ?? ''),
+                'country_ar' => self::countryArabic($aCountry),
+                'flag'       => self::countryFlag($aCountry),
+            ];
+        }
+        return [
+            'name'       => (string)$best['name'],
+            'country'    => $country,
+            'country_ar' => $countryAr,
+            'flag'       => $flag,
+            'assistants' => $assistants,
+        ];
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  Parser
+    // ────────────────────────────────────────────────────────
+
+    private static function parseTable(string $wt): array
+    {
+        // قصّ قسم الجدول
+        if (!preg_match('/==Referees and assistant referees==(.*?)==Video/s', $wt, $m)) return [];
+        $tbl = $m[1];
+
+        // قسّم على |- (يفصل الصفوف)
+        $parts = preg_split('/\n\|-\n/', $tbl);
+        if (!is_array($parts)) return [];
+
+        $referees = [];
+        foreach ($parts as $p) {
+            // تخطّى صفّ الرأس (يبدأ بـ !)
+            if (preg_match('/^\s*!/', $p)) continue;
+
+            // اجمع خلايا الصفّ (كل سطر يبدأ بـ |)
+            $cells = []; $cur = '';
+            foreach (explode("\n", $p) as $line) {
+                if (strlen($line) > 0 && $line[0] === '|') {
+                    if ($cur !== '') $cells[] = trim($cur);
+                    $cur = ltrim($line, '|');
+                } elseif ($cur !== '') {
+                    $cur .= "\n" . $line;
+                }
+            }
+            if ($cur !== '') $cells[] = trim($cur);
+
+            // احذف rowspan="x"|
+            $cells = array_map(fn($c) => preg_replace('/^rowspan="?\d+"?\s*\|\s*/', '', $c), $cells);
+
+            // نريد آخر 4 خلايا [referee, assistants, matches, fourth]
+            if (count($cells) < 2) continue;
+            if (count($cells) >= 4) $cells = array_slice($cells, -4);
+            elseif (count($cells) === 3) $cells = array_merge($cells, ['']);
+            else $cells = array_merge($cells, ['', '']);
+
+            $refRaw  = $cells[0] ?? '';
+            $asstRaw = $cells[1] ?? '';
+            if ($refRaw === '' || stripos($refRaw, 'Vacant') !== false) continue;
+
+            $refClean = self::clean($refRaw);
+            if (!preg_match('/(.+?)\s*\(([^)]+)\)/', str_replace("\n", ' ', $refClean), $rm)) continue;
+
+            $assistants = [];
+            foreach (explode("\n", self::clean($asstRaw)) as $line) {
+                $line = trim($line);
+                if ($line === '') continue;
+                if (preg_match('/(.+?)\s*\(([^)]+)\)/', $line, $am)) {
+                    $assistants[] = ['name' => trim($am[1]), 'country' => trim($am[2])];
+                }
+            }
+            $referees[] = [
+                'name'       => trim($rm[1]),
+                'country'    => trim($rm[2]),
+                'assistants' => $assistants,
+            ];
+        }
+        return $referees;
+    }
+
+    /** يطبّع وسوم Wikipedia: [[a|b]]→b, {{ill|x|...}}→x, <br>→\n */
+    private static function clean(string $s): string
+    {
+        $s = preg_replace('/\[\[[^|\]]+\|([^\]]+)\]\]/u', '$1', $s);
+        $s = preg_replace('/\[\[([^\]]+)\]\]/u', '$1', $s);
+        $s = preg_replace('/\{\{ill\|([^|}]+)[^}]*\}\}/u', '$1', $s);
+        $s = preg_replace('/\{\{efn[^}]*\}\}/u', '', $s);
+        $s = preg_replace("/''([^']+)''/u", '$1', $s);
+        $s = preg_replace('/\{\{[^}]+\}\}/u', '', $s);
+        $s = str_replace(['<br>', '<br/>', '<br />'], "\n", $s);
+        return trim($s);
+    }
+
+    /** يحوّل الاسم لقائمة tokens (lowercase, ≥3 أحرف). */
+    private static function tokens(string $name): array
+    {
+        $name = mb_strtolower($name, 'UTF-8');
+        $name = preg_replace('/[^a-z\s]/', ' ', $name);
+        $toks = preg_split('/\s+/', trim($name)) ?: [];
+        return array_values(array_filter($toks, fn($t) => strlen($t) >= 3));
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  دول: ISO2 + الاسم العربي
+    // ────────────────────────────────────────────────────────
+
+    private static function countryFlag(string $en): string
+    {
+        static $map = [
+            'United Arab Emirates'=>'ae','Qatar'=>'qa','Saudi Arabia'=>'sa','Australia'=>'au',
+            'China'=>'cn','Jordan'=>'jo','Uzbekistan'=>'uz','Japan'=>'jp','Iran'=>'ir',
+            'South Korea'=>'kr','Cameroon'=>'cm','Gabon'=>'ga','Mauritania'=>'mr','Angola'=>'ao',
+            'Algeria'=>'dz','Morocco'=>'ma','Egypt'=>'eg','South Africa'=>'za','El Salvador'=>'sv',
+            'Costa Rica'=>'cr','United States'=>'us','Jamaica'=>'jm','Trinidad and Tobago'=>'tt',
+            'Canada'=>'ca','Mexico'=>'mx','Nicaragua'=>'ni','Honduras'=>'hn','Panama'=>'pa',
+            'Guatemala'=>'gt','Argentina'=>'ar','Brazil'=>'br','Colombia'=>'co','Chile'=>'cl',
+            'Peru'=>'pe','Uruguay'=>'uy','Paraguay'=>'py','Venezuela'=>'ve','Ecuador'=>'ec',
+            'Bolivia'=>'bo','Germany'=>'de','France'=>'fr','Italy'=>'it','Spain'=>'es',
+            'Netherlands'=>'nl','Portugal'=>'pt','England'=>'gb-eng','Scotland'=>'gb-sct',
+            'Wales'=>'gb-wls','Romania'=>'ro','Poland'=>'pl','Slovenia'=>'si','Turkey'=>'tr',
+            'Norway'=>'no','Sweden'=>'se','Denmark'=>'dk','Belgium'=>'be','Switzerland'=>'ch',
+            'Austria'=>'at','Greece'=>'gr','Croatia'=>'hr','Serbia'=>'rs','Bulgaria'=>'bg',
+            'Russia'=>'ru','New Zealand'=>'nz','Fiji'=>'fj','Tahiti'=>'pf','Solomon Islands'=>'sb',
+            'Czech Republic'=>'cz','Slovakia'=>'sk','Ukraine'=>'ua','Israel'=>'il','Hungary'=>'hu',
+        ];
+        return $map[$en] ?? '';
+    }
+
+    private static function countryArabic(string $en): string
+    {
+        static $map = [
+            'United Arab Emirates'=>'الإمارات','Qatar'=>'قطر','Saudi Arabia'=>'السعودية',
+            'Australia'=>'أستراليا','China'=>'الصين','Jordan'=>'الأردن','Uzbekistan'=>'أوزبكستان',
+            'Japan'=>'اليابان','Iran'=>'إيران','South Korea'=>'كوريا الجنوبية','Cameroon'=>'الكاميرون',
+            'Gabon'=>'الغابون','Mauritania'=>'موريتانيا','Angola'=>'أنغولا','Algeria'=>'الجزائر',
+            'Morocco'=>'المغرب','Egypt'=>'مصر','South Africa'=>'جنوب أفريقيا','El Salvador'=>'السلفادور',
+            'Costa Rica'=>'كوستاريكا','United States'=>'الولايات المتحدة','Jamaica'=>'جامايكا',
+            'Trinidad and Tobago'=>'ترينيداد وتوباغو','Canada'=>'كندا','Mexico'=>'المكسيك',
+            'Nicaragua'=>'نيكاراغوا','Honduras'=>'هندوراس','Panama'=>'بنما','Guatemala'=>'غواتيمالا',
+            'Argentina'=>'الأرجنتين','Brazil'=>'البرازيل','Colombia'=>'كولومبيا','Chile'=>'تشيلي',
+            'Peru'=>'بيرو','Uruguay'=>'الأوروغواي','Paraguay'=>'باراغواي','Venezuela'=>'فنزويلا',
+            'Ecuador'=>'الإكوادور','Bolivia'=>'بوليفيا','Germany'=>'ألمانيا','France'=>'فرنسا',
+            'Italy'=>'إيطاليا','Spain'=>'إسبانيا','Netherlands'=>'هولندا','Portugal'=>'البرتغال',
+            'England'=>'إنجلترا','Scotland'=>'اسكتلندا','Wales'=>'ويلز','Romania'=>'رومانيا',
+            'Poland'=>'بولندا','Slovenia'=>'سلوفينيا','Turkey'=>'تركيا','Norway'=>'النرويج',
+            'Sweden'=>'السويد','Denmark'=>'الدنمارك','Belgium'=>'بلجيكا','Switzerland'=>'سويسرا',
+            'Austria'=>'النمسا','Greece'=>'اليونان','Croatia'=>'كرواتيا','Serbia'=>'صربيا',
+            'Bulgaria'=>'بلغاريا','Russia'=>'روسيا','New Zealand'=>'نيوزيلندا','Fiji'=>'فيجي',
+            'Czech Republic'=>'التشيك','Slovakia'=>'سلوفاكيا','Ukraine'=>'أوكرانيا','Israel'=>'إسرائيل',
+            'Hungary'=>'المجر',
+        ];
+        return $map[$en] ?? $en;
+    }
+
+    // ────────────────────────────────────────────────────────
+    //  HTTP + كاش
+    // ────────────────────────────────────────────────────────
+
+    private static function cachePath(): string
+    {
+        return rtrim(CACHE_DIR, '/\\') . '/wiki-referees.json';
+    }
+
+    private static function httpGet(string $url): ?string
+    {
+        $ctx = stream_context_create([
+            'http' => [
+                'method'  => 'GET',
+                'header'  => "User-Agent: wcup2026.org/1.0 (contact: salah232@gmail.com)\r\n",
+                'timeout' => 20,
+            ],
+        ]);
+        $r = @file_get_contents($url, false, $ctx);
+        return ($r === false) ? null : $r;
+    }
+}

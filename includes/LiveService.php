@@ -558,27 +558,28 @@ class LiveService
         $t2 = trim((string)($match['team2'] ?? ''));
         if ($t1 === '' || $t2 === '') return $empty;
 
-        // (1) الملف اليدوي
+        // ────────────────────────────────────────────────
+        // (1) الملف اليدوي — أولويّة قصوى
+        // ────────────────────────────────────────────────
         $manual = self::manualReferees();
         $entry  = $manual[$t1 . '|' . $t2] ?? ($manual[$t2 . '|' . $t1] ?? null);
         if ($entry !== null) {
-            // شكل قديم: قيمة نصّيّة فقط = اسم الحكم الرئيسي
             if (is_string($entry) && trim($entry) !== '') {
-                return ['main' => ['name' => trim($entry), 'country_ar' => '', 'flag' => ''],
-                        'assistants' => [], 'var' => null, 'fourth' => null];
+                return self::enrich(['main' => ['name' => trim($entry)]]);
             }
-            // شكل جديد: object كامل
             if (is_array($entry)) {
-                return [
+                return self::enrich([
                     'main'       => self::normalizeOfficial($entry['main']       ?? null),
                     'assistants' => self::normalizeOfficials($entry['assistants'] ?? null),
                     'var'        => self::normalizeOfficial($entry['var']        ?? null),
                     'fourth'     => self::normalizeOfficial($entry['fourth']     ?? null),
-                ];
+                ]);
             }
         }
 
-        // (2) API-Football (الحكم الرئيسي فقط — لا تُعطي API المساعدين/VAR)
+        // ────────────────────────────────────────────────
+        // (2) API-Football → اسم الحكم الرئيسي فقط
+        // ────────────────────────────────────────────────
         if (self::isEnabled()) {
             $map = self::fixturesMap();
             if ($map) {
@@ -586,13 +587,58 @@ class LiveService
                 if (is_array($hit)) {
                     $ref = isset($hit['referee']) ? trim((string)$hit['referee']) : '';
                     if ($ref !== '') {
-                        return ['main' => ['name' => $ref, 'country_ar' => '', 'flag' => ''],
-                                'assistants' => [], 'var' => null, 'fourth' => null];
+                        return self::enrich(['main' => ['name' => $ref]]);
                     }
                 }
             }
         }
         return $empty;
+    }
+
+    /**
+     * enrich() — يُثري طاقم تحكيم بمعلومات Wikipedia:
+     *   - يُضيف العَلَم + الدولة بالعربيّة للحكم الرئيسي
+     *   - يجلب المساعدَين تلقائياً من قائمة Wikipedia المُحلّلة (لو غير موجودَين)
+     * ✨ هذا هو سرّ «الأوتوماتيك» — اسم حكم واحد → طاقم كامل!
+     */
+    private static function enrich(array $crew): array
+    {
+        $out = [
+            'main'       => $crew['main']       ?? null,
+            'assistants' => $crew['assistants'] ?? [],
+            'var'        => $crew['var']        ?? null,
+            'fourth'     => $crew['fourth']     ?? null,
+        ];
+
+        $mainName = (string)($out['main']['name'] ?? '');
+        if ($mainName === '' || !class_exists('RefereesFetcher')) return $out;
+
+        $wiki = RefereesFetcher::lookup($mainName);
+        if (!$wiki) return $out;
+
+        // أكمل بيانات الحكم الرئيسي (دون استبدال ما هو مُحدَّد يدوياً)
+        if (empty($out['main']['country_ar']) && !empty($wiki['country_ar'])) {
+            $out['main']['country_ar'] = $wiki['country_ar'];
+        }
+        if (empty($out['main']['flag']) && !empty($wiki['flag'])) {
+            $out['main']['flag'] = $wiki['flag'];
+        }
+
+        // أكمل المساعدَين تلقائياً (لو لم يُحدَّدا يدوياً)
+        if (empty($out['assistants']) && !empty($wiki['assistants'])) {
+            $assts = [];
+            foreach ($wiki['assistants'] as $a) {
+                $n = trim((string)($a['name'] ?? ''));
+                if ($n === '') continue;
+                $assts[] = [
+                    'name'       => $n,
+                    'country_ar' => (string)($a['country_ar'] ?? ''),
+                    'flag'       => (string)($a['flag'] ?? ''),
+                ];
+            }
+            if ($assts) $out['assistants'] = $assts;
+        }
+        return $out;
     }
 
     /** يطبّع كائن «حكم واحد» — يضمن المفاتيح الثلاثة (name/country_ar/flag) أو null. */

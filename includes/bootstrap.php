@@ -27,6 +27,7 @@ require __DIR__ . '/Standings.php';
 require __DIR__ . '/Stats.php';
 require __DIR__ . '/Bracket.php';
 require __DIR__ . '/Referees.php';
+require __DIR__ . '/RefereesFetcher.php';
 require __DIR__ . '/TeamInfo.php';
 require __DIR__ . '/Scorers.php';
 require __DIR__ . '/Rankings.php';
