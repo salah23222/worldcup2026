@@ -309,9 +309,15 @@ class LiveService
         $match['_live_minute'] = $hit['elapsed'] ?? null;
         $match['_live_source'] = 'api-football';
 
-        // اسم الحكم (إن توفّر فقط)
+        // اسم الحكم (إن توفّر فقط) — من النتائج اللحظيّة
         if (!empty($hit['referee'])) {
             $match['referee'] = $hit['referee'];
+        }
+
+        // 🆕 احتياط: لو الحكم لم يصل من اللحظي، جرّب الخريطة الكاملة
+        if (empty($match['referee'])) {
+            $r = self::refereeFor($match);
+            if ($r !== null) $match['referee'] = $r;
         }
 
         // البطاقات (طلب إضافي مُخزَّن لكل مباراة، فقط للمباريات الجارية/المنتهية)
@@ -494,6 +500,30 @@ class LiveService
     }
 
     /**
+     * refereeFor() — يبحث عن الحكم في الخريطة الكاملة (تشمل المباريات القادمة).
+     * يُستدعى من applyTo() كاحتياط حين لا يُرسل الحكم في البث اللحظي.
+     * يعيد اسم الحكم (string) أو null.
+     */
+    public static function refereeFor(array $match): ?string
+    {
+        if (!self::isEnabled()) return null;
+        $t1 = trim((string)($match['team1'] ?? ''));
+        $t2 = trim((string)($match['team2'] ?? ''));
+        if ($t1 === '' || $t2 === '') return null;
+
+        $map = self::fixturesMap();
+        if (!$map) return null;
+
+        $key = self::normalizeKey($t1, $t2);
+        $rev = self::normalizeKey($t2, $t1);
+        $hit = $map[$key] ?? ($map[$rev] ?? null);
+        if (!is_array($hit)) return null;
+
+        $ref = isset($hit['referee']) ? trim((string)$hit['referee']) : '';
+        return $ref !== '' ? $ref : null;
+    }
+
+    /**
      * fixturesMap() — خريطة كل مباريات البطولة → fixture_id (للبحث خارج «مباريات اليوم»).
      * طلب API واحد كل 24 ساعة (الجدول لا يتغيّر بعد ضبطه). يُستهلك ~1 من حصّة 100 يومياً.
      * المفتاح: canon(home)+'|'+canon(away). القيمة: ['id' => int, 'home' => string].
@@ -524,10 +554,12 @@ class LiveService
             $home = (string)($fx['teams']['home']['name'] ?? '');
             $away = (string)($fx['teams']['away']['name'] ?? '');
             $fid  = (int)($fx['fixture']['id'] ?? 0);
+            $ref  = trim((string)($fx['fixture']['referee'] ?? ''));
             if ($home !== '' && $away !== '' && $fid > 0) {
                 $map[self::normalizeKey($home, $away)] = [
-                    'id'   => $fid,
-                    'home' => $home,
+                    'id'      => $fid,
+                    'home'    => $home,
+                    'referee' => $ref !== '' ? $ref : null,   // 🆕 يخزن الحكم لو متاح
                 ];
             }
         }
