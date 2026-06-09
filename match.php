@@ -326,21 +326,94 @@ seo_sportsevent($m);
   </section>
 
   <!-- ============ تفاصيل الحكام والمعلومات الموسّعة ============ -->
+  <?php
+  // طاقم التحكيم الكامل — يجمع officials من LiveService.applyTo + fallback لـ$m['referee']
+  $officials = is_array($m['officials'] ?? null) ? $m['officials'] : [];
+  $offMain   = $officials['main']       ?? null;
+  $offAsst   = is_array($officials['assistants'] ?? null) ? $officials['assistants'] : [];
+  $offVar    = $officials['var']        ?? null;
+  $offFourth = $officials['fourth']     ?? null;
+
+  // ساعدة: يرسم اسم حكم + علم + دولة (لو متوفر)
+  $renderOff = function(?array $o) use ($ar): string {
+      if (!$o || empty($o['name'])) return '<span class="ref-tbd">'.e($ar ? 'يُعلَن قبل المباراة' : 'TBA').'</span>';
+      $flag = !empty($o['flag']) ? '<img src="https://flagcdn.com/w20/'.e($o['flag']).'.png" alt="" class="ref-flag" loading="lazy"> ' : '';
+      $cn   = !empty($o['country_ar']) ? ' <small class="ref-country">('.e($o['country_ar']).')</small>' : '';
+      return $flag . e($o['name']) . $cn;
+  };
+  ?>
   <section class="md-section">
-    <h3 class="section-head">📋 <?= e($L('معلومات إضافية','More info')) ?></h3>
+    <h3 class="section-head">📋 <?= e($L('طاقم التحكيم والمعلومات الموسّعة','Match officials & info')) ?></h3>
     <ul class="md-info md-info-stacked">
       <li>
-        <span class="md-info-k"><?= e($L('الحكم الرئيسي','Main referee')) ?></span>
-        <span class="md-info-v"><?= !empty($m['referee']) ? e($m['referee']) : '<span class="ref-tbd">'.e($L('يُعلَن قبل المباراة','TBA')).'</span>' ?></span>
+        <span class="md-info-k">🧑‍⚖️ <?= e($L('الحكم الرئيسي','Main referee')) ?></span>
+        <span class="md-info-v">
+          <?php if ($offMain): ?>
+            <?= $renderOff($offMain) ?>
+          <?php elseif (!empty($m['referee'])): ?>
+            <?= e($m['referee']) ?>
+          <?php else: ?>
+            <span class="ref-tbd"><?= e($L('يُعلَن قبل المباراة','TBA')) ?></span>
+          <?php endif; ?>
+        </span>
       </li>
       <li>
-        <span class="md-info-k"><?= e($L('الحكام المساعدون','Assistant referees')) ?></span>
-        <span class="md-info-v"><span class="ref-tbd"><?= e($L('يُعلَنون قبل المباراة','TBA before kickoff')) ?></span></span>
+        <span class="md-info-k">🚩 <?= e($L('الحكام المساعدون','Assistant referees')) ?></span>
+        <span class="md-info-v">
+          <?php if ($offAsst): ?>
+            <?php foreach ($offAsst as $i => $a): ?>
+              <?= $renderOff($a) ?><?= ($i < count($offAsst)-1) ? ' · ' : '' ?>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <span class="ref-tbd"><?= e($L('يُعلَنون قبل المباراة','TBA before kickoff')) ?></span>
+          <?php endif; ?>
+        </span>
       </li>
       <li>
-        <span class="md-info-k"><?= e($L('حكم الفيديو (VAR)','Video referee (VAR)')) ?></span>
-        <span class="md-info-v"><span class="ref-tbd"><?= e($L('يُعلَن قبل المباراة','TBA before kickoff')) ?></span></span>
+        <span class="md-info-k">📺 <?= e($L('حكم الفيديو (VAR)','Video referee (VAR)')) ?></span>
+        <span class="md-info-v"><?= $renderOff($offVar) ?></span>
       </li>
+      <li>
+        <span class="md-info-k">⏱ <?= e($L('الحكم الرابع','Fourth official')) ?></span>
+        <span class="md-info-v"><?= $renderOff($offFourth) ?></span>
+      </li>
+
+      <?php
+      // ملخّص البطاقات (لو متوفر من LiveService.cards)
+      if (!empty($m['cards']) && is_array($m['cards'])):
+          $y1 = $y2 = $r1 = $r2 = 0;
+          foreach ($m['cards'] as $c) {
+              $isT1 = ((int)($c['team'] ?? 1) === 1);
+              if (($c['type'] ?? '') === 'red') { $isT1 ? $r1++ : $r2++; }
+              else                              { $isT1 ? $y1++ : $y2++; }
+          }
+      ?>
+      <li>
+        <span class="md-info-k">🟨 <?= e($L('بطاقات صفراء','Yellow cards')) ?></span>
+        <span class="md-info-v"><?= $y1 ?> — <?= $y2 ?></span>
+      </li>
+      <?php if ($r1 || $r2): ?>
+      <li>
+        <span class="md-info-k">🟥 <?= e($L('بطاقات حمراء','Red cards')) ?></span>
+        <span class="md-info-v"><?= $r1 ?> — <?= $r2 ?></span>
+      </li>
+      <?php endif; ?>
+      <?php endif; ?>
+
+      <?php
+      // عدد مراجعات الـVAR (من الأحداث إن وُجدت)
+      $varCount = 0;
+      if (!empty($m['events']) && is_array($m['events'])) {
+          foreach ($m['events'] as $ev) {
+              if (stripos((string)($ev['type'] ?? ''), 'var') !== false) $varCount++;
+          }
+      }
+      if ($varCount > 0): ?>
+      <li>
+        <span class="md-info-k">🎥 <?= e($L('مراجعات الفيديو','VAR reviews')) ?></span>
+        <span class="md-info-v"><?= $varCount ?> <?= e($L('مراجعة','reviews')) ?></span>
+      </li>
+      <?php endif; ?>
     </ul>
   </section>
 

@@ -275,6 +275,18 @@ class LiveService
      */
     public static function applyTo(array $match): array
     {
+        // 🆕 officials/referee تُملأ دائماً — حتى للمباريات القادمة وبدون APIFOOTBALL_KEY
+        if (empty($match['officials'])) {
+            $o = self::officialsFor($match);
+            if ($o['main'] || $o['assistants'] || $o['var'] || $o['fourth']) {
+                $match['officials'] = $o;
+                // ابقَ متوافقاً مع الكود القديم الذي يقرأ $m['referee']
+                if (empty($match['referee']) && !empty($o['main']['name'])) {
+                    $match['referee'] = $o['main']['name'];
+                }
+            }
+        }
+
         if (!self::isEnabled()) return $match;
 
         $live = self::liveScores();
@@ -314,10 +326,31 @@ class LiveService
             $match['referee'] = $hit['referee'];
         }
 
-        // 🆕 احتياط: لو الحكم لم يصل من اللحظي، جرّب الخريطة الكاملة
+        // 🆕 احتياط: لو الحكم لم يصل من اللحظي، جرّب الخريطة الكاملة + officials
         if (empty($match['referee'])) {
             $r = self::refereeFor($match);
             if ($r !== null) $match['referee'] = $r;
+        }
+        if (empty($match['officials'])) {
+            $o = self::officialsFor($match);
+            if ($o['main'] || $o['assistants'] || $o['var'] || $o['fourth']) {
+                $match['officials'] = $o;
+            }
+        }
+
+        // 🆕 إحصائيات تفصيليّة من API-Football (للمباريات الجارية/المنتهية)
+        if ($hit['status'] === 'live' || $hit['status'] === 'finished') {
+            $stats = self::statsFor($match);
+            if ($stats) {
+                // لو reversed: اقلب القيم بين الفريقين
+                if ($reversed) {
+                    foreach ($stats as &$s) {
+                        $s['v'] = [(int)$s['v'][1], (int)$s['v'][0]];
+                    }
+                    unset($s);
+                }
+                $match['stats'] = $stats;
+            }
         }
 
         // البطاقات (طلب إضافي مُخزَّن لكل مباراة، فقط للمباريات الجارية/المنتهية)
@@ -507,29 +540,174 @@ class LiveService
      */
     public static function refereeFor(array $match): ?string
     {
+        $o = self::officialsFor($match);
+        $name = (string)($o['main']['name'] ?? '');
+        return $name !== '' ? $name : null;
+    }
+
+    /**
+     * officialsFor() — يعيد طاقم التحكيم الكامل لمباراة معيّنة:
+     *   ['main' => [name,country_ar,flag], 'assistants' => [...], 'var' => ..., 'fourth' => ...]
+     * المصدر بالترتيب: الملف اليدوي (أولوية) → API-Football. يدعم الشكلَين القديم (string) والجديد (object).
+     */
+    public static function officialsFor(array $match): array
+    {
+        $empty = ['main' => null, 'assistants' => [], 'var' => null, 'fourth' => null];
+
         $t1 = trim((string)($match['team1'] ?? ''));
         $t2 = trim((string)($match['team2'] ?? ''));
-        if ($t1 === '' || $t2 === '') return null;
+        if ($t1 === '' || $t2 === '') return $empty;
 
-        // (1) جرّب الملف اليدوي أوّلاً
+        // (1) الملف اليدوي
         $manual = self::manualReferees();
-        $key1 = $t1 . '|' . $t2;
-        $key2 = $t2 . '|' . $t1;
-        if (isset($manual[$key1]) && trim($manual[$key1]) !== '') return trim($manual[$key1]);
-        if (isset($manual[$key2]) && trim($manual[$key2]) !== '') return trim($manual[$key2]);
+        $entry  = $manual[$t1 . '|' . $t2] ?? ($manual[$t2 . '|' . $t1] ?? null);
+        if ($entry !== null) {
+            // شكل قديم: قيمة نصّيّة فقط = اسم الحكم الرئيسي
+            if (is_string($entry) && trim($entry) !== '') {
+                return ['main' => ['name' => trim($entry), 'country_ar' => '', 'flag' => ''],
+                        'assistants' => [], 'var' => null, 'fourth' => null];
+            }
+            // شكل جديد: object كامل
+            if (is_array($entry)) {
+                return [
+                    'main'       => self::normalizeOfficial($entry['main']       ?? null),
+                    'assistants' => self::normalizeOfficials($entry['assistants'] ?? null),
+                    'var'        => self::normalizeOfficial($entry['var']        ?? null),
+                    'fourth'     => self::normalizeOfficial($entry['fourth']     ?? null),
+                ];
+            }
+        }
 
-        // (2) جرّب API-Football
-        if (!self::isEnabled()) return null;
+        // (2) API-Football (الحكم الرئيسي فقط — لا تُعطي API المساعدين/VAR)
+        if (self::isEnabled()) {
+            $map = self::fixturesMap();
+            if ($map) {
+                $hit = $map[self::normalizeKey($t1, $t2)] ?? ($map[self::normalizeKey($t2, $t1)] ?? null);
+                if (is_array($hit)) {
+                    $ref = isset($hit['referee']) ? trim((string)$hit['referee']) : '';
+                    if ($ref !== '') {
+                        return ['main' => ['name' => $ref, 'country_ar' => '', 'flag' => ''],
+                                'assistants' => [], 'var' => null, 'fourth' => null];
+                    }
+                }
+            }
+        }
+        return $empty;
+    }
+
+    /** يطبّع كائن «حكم واحد» — يضمن المفاتيح الثلاثة (name/country_ar/flag) أو null. */
+    private static function normalizeOfficial($v): ?array
+    {
+        if (!is_array($v)) return null;
+        $n = trim((string)($v['name'] ?? ''));
+        if ($n === '' || strtoupper($n) === 'TBD' || $n === 'TBA') return null;
+        return [
+            'name'       => $n,
+            'country_ar' => trim((string)($v['country_ar'] ?? '')),
+            'flag'       => strtolower(trim((string)($v['flag'] ?? ''))),
+        ];
+    }
+
+    /** يطبّع مصفوفة المساعدَين — يحذف null/فارغ. */
+    private static function normalizeOfficials($arr): array
+    {
+        if (!is_array($arr)) return [];
+        $out = [];
+        foreach ($arr as $v) {
+            $n = self::normalizeOfficial($v);
+            if ($n !== null) $out[] = $n;
+        }
+        return $out;
+    }
+
+    /**
+     * statsFor() — يجلب إحصائيات مباراة من API-Football (/fixtures/statistics).
+     * يعيد مصفوفة بشكل قابل للعرض: [['k_ar', 'k_en', 'v'=>[home,away], 'unit'=>'']].
+     * يُخزَّن لـ60 ثانية أثناء المباراة، 24 ساعة بعد انتهائها.
+     */
+    public static function statsFor(array $match): array
+    {
+        if (!self::isEnabled()) return [];
+        $t1 = trim((string)($match['team1'] ?? ''));
+        $t2 = trim((string)($match['team2'] ?? ''));
+        if ($t1 === '' || $t2 === '') return [];
+
         $map = self::fixturesMap();
-        if (!$map) return null;
+        $hit = $map[self::normalizeKey($t1, $t2)] ?? ($map[self::normalizeKey($t2, $t1)] ?? null);
+        $fid = (int)($hit['id'] ?? 0);
+        if ($fid <= 0) return [];
 
-        $key = self::normalizeKey($t1, $t2);
-        $rev = self::normalizeKey($t2, $t1);
-        $hit = $map[$key] ?? ($map[$rev] ?? null);
-        if (!is_array($hit)) return null;
+        // كاش
+        $cacheFile = rtrim(CACHE_DIR, '/') . '/af-stats-' . $fid . '.json';
+        $ttl = (($match['_status'] ?? '') === 'finished') ? 86400 : 60;
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile) < $ttl)) {
+            $c = json_decode((string)@file_get_contents($cacheFile), true);
+            if (is_array($c)) return $c;
+        }
 
-        $ref = isset($hit['referee']) ? trim((string)$hit['referee']) : '';
-        return $ref !== '' ? $ref : null;
+        $url = 'https://' . APIFOOTBALL_HOST . '/fixtures/statistics?fixture=' . $fid;
+        $raw = self::httpGet($url, ['x-apisports-key: ' . APIFOOTBALL_KEY]);
+        if ($raw === null) return [];
+        $json = json_decode($raw, true);
+        if (!is_array($json) || empty($json['response'])) return [];
+
+        // الاستجابة: مصفوفتان (home, away) لكلٍّ منها قائمة statistics.type/value
+        $homeName = (string)($hit['home'] ?? $t1);
+        $homeData = []; $awayData = [];
+        foreach ($json['response'] as $team) {
+            $isHome = ((string)($team['team']['name'] ?? '')) === $homeName;
+            $stats  = is_array($team['statistics'] ?? null) ? $team['statistics'] : [];
+            foreach ($stats as $s) {
+                $type = (string)($s['type'] ?? '');
+                $val  = $s['value'] ?? null;
+                if ($isHome) $homeData[$type] = $val;
+                else         $awayData[$type] = $val;
+            }
+        }
+
+        // قائمة الأنواع المرغوبة + ترجمتها
+        $catalog = [
+            ['Ball Possession',     'الاستحواذ',        'Possession',          '%'],
+            ['Total Shots',         'إجمالي التسديدات', 'Shots',               ''],
+            ['Shots on Goal',       'تسديدات على المرمى','Shots on target',    ''],
+            ['Shots off Goal',      'تسديدات خارجة',    'Shots off target',    ''],
+            ['Blocked Shots',       'تسديدات مصدودة',   'Blocked shots',       ''],
+            ['Shots insidebox',     'تسديدات داخل المنطقة','Inside box',       ''],
+            ['Shots outsidebox',    'تسديدات خارج المنطقة','Outside box',      ''],
+            ['Corner Kicks',        'ركلات ركنية',      'Corners',             ''],
+            ['Offsides',            'تسلّل',             'Offsides',            ''],
+            ['Fouls',               'الأخطاء',          'Fouls',               ''],
+            ['Yellow Cards',        'بطاقات صفراء',     'Yellow cards',        ''],
+            ['Red Cards',           'بطاقات حمراء',     'Red cards',           ''],
+            ['Goalkeeper Saves',    'تصدّيات الحارس',    'Saves',              ''],
+            ['Total passes',        'تمريرات',          'Passes',              ''],
+            ['Passes accurate',     'تمريرات دقيقة',    'Accurate passes',     ''],
+            ['Passes %',            'دقّة التمرير',     'Pass accuracy',       '%'],
+        ];
+        $out = [];
+        foreach ($catalog as [$type, $kar, $ken, $unit]) {
+            $vh = self::statValue($homeData[$type] ?? null, $unit);
+            $va = self::statValue($awayData[$type] ?? null, $unit);
+            if ($vh === null && $va === null) continue;
+            if ($vh === 0 && $va === 0)       continue;
+            $out[] = ['k' => $kar, 'k_en' => $ken, 'v' => [(int)$vh, (int)$va], 'unit' => $unit];
+        }
+
+        if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+        @file_put_contents($cacheFile, json_encode($out, JSON_UNESCAPED_UNICODE));
+        return $out;
+    }
+
+    /** يحوّل قيمة API-Football («57%», 18, null) لعدد صحيح. */
+    private static function statValue($v, string $unit): ?int
+    {
+        if ($v === null) return null;
+        if (is_string($v)) {
+            $v = trim($v);
+            if ($v === '') return null;
+            $v = (int)preg_replace('/[^0-9\-]/', '', $v);
+        }
+        return (int)$v;
     }
 
     /** يقرأ ملف التعيينات اليدويّة (يُحدَّث عند إعلان FIFA كل مباراة). */

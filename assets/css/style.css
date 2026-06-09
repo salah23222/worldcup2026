@@ -1604,6 +1604,8 @@ a.ref-item:hover { border-color: var(--accent); transform: translateY(-2px); }
   display:block; margin-top:6px; font-size:.78rem; font-weight:700; color:var(--accent-2);
 }
 .ref-tbd { color:var(--text-faint); letter-spacing:2px; }
+.ref-flag { width:18px; height:auto; vertical-align:-3px; border-radius:2px; margin-inline-end:3px; box-shadow:0 0 0 1px rgba(255,255,255,.15); }
+.ref-country { color:var(--text-dim); font-weight:400; font-size:.85em; margin-inline-start:2px; }
 .mc-ref { text-align:center; font-size:.74rem; color:var(--text-dim); margin-bottom:8px; }
 
 /* بطاقات المباراة (الإنذارات/الطرد) */
