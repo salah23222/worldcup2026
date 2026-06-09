@@ -342,10 +342,17 @@ class TweetComposer
         return $msg . "\n" . $link . "\n" . $tags;
     }
 
-    private static function link(string $page = ''): string
+    private static function link(string $page = '', bool $bustCache = true): string
     {
         $base = defined('SITE_URL') && SITE_URL !== '' ? rtrim(SITE_URL, '/') : 'https://wcup2026.org';
-        return $base . ($page !== '' ? '/' . ltrim($page, '/') : '');
+        $url  = $base . ($page !== '' ? '/' . ltrim($page, '/') : '');
+        // ✨ يُجبر تويتر/فيسبوك على إعادة سحب OG-image كل يوم
+        // (تجنّب الكاش الفارغ القديم — كل URL جديد = صورة معاينة جميلة جديدة).
+        if ($bustCache && $page !== '') {
+            $sep = (strpos($url, '?') === false) ? '?' : '&';
+            $url .= $sep . 'd=' . date('Ymd');
+        }
+        return $url;
     }
 
     // ───────────────────── خطّة النشر للوحة الإدارة ─────────────────────
