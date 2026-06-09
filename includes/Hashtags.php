@@ -78,14 +78,15 @@ class Hashtags
     /** هاشتاك خاصّ بكل فترة يوميّة. */
     public static function dailySlot(string $slot): ?string
     {
+        // هاشتاكان لكل فترة: عربيّ (وصول محلي) + إنجليزيّ (وصول عالمي)
         static $map = [
-            'recap'     => '#صباح_المونديال',
-            'news'      => '#أخبار_المونديال',
-            'countdown' => '#عدّ_تنازلي_المونديال',
-            'morning'   => '#مباريات_اليوم',
-            'trivia'    => '#تحدّي_المعرفة',
-            'stats'     => '#إحصائيات_المونديال',
-            'evening'   => '#نتائج_اليوم',
+            'recap'     => '#صباح_المونديال #WorldCupMorning',
+            'news'      => '#أخبار_المونديال #WorldCupNews',
+            'countdown' => '#عدّ_تنازلي_المونديال #WorldCupCountdown',
+            'morning'   => '#مباريات_اليوم #MatchDay',
+            'trivia'    => '#تحدّي_المعرفة #WorldCupTrivia',
+            'stats'     => '#إحصائيات_المونديال #WorldCupStats',
+            'evening'   => '#نتائج_اليوم #WorldCupResults',
         ];
         return $map[$slot] ?? null;
     }
@@ -133,15 +134,16 @@ class Hashtags
         return implode(' ', array_unique($tags));
     }
 
-    /** هاشتاكات فترة يوميّة: مرحلة + فترة + أساس كامل (4). */
+    /** هاشتاكات فترة يوميّة: مرحلة + فترة + أساس عالمي (5-6 هاشتاكات). */
     public static function forDailySlot(string $slot): string
     {
         $tags = [];
         if ($ph = self::phase())          $tags[] = $ph;
         if ($st = self::dailySlot($slot)) $tags[] = $st;
-        // أساس قصير ليبقى الإجمالي ~4-5 هاشتاكات
+        // أساس مختلط — وصول عربي + عالمي
         $tags[] = '#كأس_العالم_2026';
         $tags[] = '#FIFAWorldCup26';
+        $tags[] = '#WorldCup2026';   // 🌍 ترند عالمي قويّ
         return implode(' ', array_unique($tags));
     }
 

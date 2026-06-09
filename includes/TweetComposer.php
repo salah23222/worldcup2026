@@ -79,12 +79,12 @@ class TweetComposer
         $link  = self::link('predict.php');
         if ($days !== null && $days > 0) {
             $msg = $ar
-                ? "⏳ باقٍ {$days} يوم على انطلاق كأس العالم 2026 ⚽🔥\nجهّز توقّعاتك الآن واصعد على القمّة 👇"
-                : "⏳ {$days} days until FIFA World Cup 2026 ⚽🔥\nLock your predictions now and climb to the top 👇";
+                ? "⏳ {$days} أيّام ⚽🔥 تفصلنا عن أكبر بطولة في التاريخ\n🇨🇦 🇲🇽 🇺🇸 · 48 منتخب · 104 مباراة · 16 مدينة\nجهّز توقّعاتك الآن 🏆 👇"
+                : "⏳ {$days} days ⚽🔥 until the biggest tournament ever\n🇨🇦 🇲🇽 🇺🇸 · 48 teams · 104 matches · 16 cities\nLock your predictions now 🏆 👇";
         } else {
             $msg = $ar
-                ? "🚨 الكرة على وشك أن تتحرّك! آخر فرصة لتوقّعاتك 👇"
-                : "🚨 The ball is about to roll! Last chance to lock your picks 👇";
+                ? "🚨 الكرة على وشك أن تتحرّك! آخر فرصة لتوقّعاتك 🌍⚽👇"
+                : "🚨 The ball is about to roll! Last chance to lock your picks 🌍⚽👇";
         }
         return self::sign($msg, $link, 'countdown');
     }
@@ -188,22 +188,21 @@ class TweetComposer
         $link = self::link("news.php?lang={$lang}");
         if ($ar) {
             $variants = [
-                "📰 شاهد آخر أخبار كأس العالم 2026 بتحديثات لحظيّة 👇",
-                "🚨 أهم أخبار المونديال اليوم — لا يفوتك خبر! 👇",
-                "📰 آخر مستجدّات كأس العالم 2026 على موقعنا · تحديثات يوميّة 👇",
-                "🔥 كل أخبار المونديال في مكان واحد — اقرأها كاملة 👇",
-                "📰 تابع نبض المونديال — تحديثات لحظيّة من كل المصادر 👇",
+                "📰 آخر أخبار المونديال 🇨🇦 🇲🇽 🇺🇸 — تحديث لحظيّ من كل المصادر العربيّة والعالميّة 🌍 👇",
+                "🚨 أهم عناوين كأس العالم 2026 اليوم — لا يفوتك خبر 🏆⚽ 👇",
+                "📰 كل ما يحدث في طريق المونديال 🌎 · تحديثات يوميّة من العالم 👇",
+                "🔥 نبض كأس العالم 🌍⚽ — كل الأخبار في مكان واحد 👇",
+                "📰 من كندا إلى المكسيك إلى أمريكا 🇨🇦🇲🇽🇺🇸 — تحديثات مستمرّة 🌟 👇",
             ];
         } else {
             $variants = [
-                "📰 Catch up on all World Cup 2026 news with live updates 👇",
-                "🚨 Today's biggest tournament headlines — don't miss any 👇",
-                "📰 All FIFA World Cup 2026 news in one place · daily updates 👇",
-                "🔥 Every World Cup story, gathered & curated 👇",
-                "📰 Follow the pulse of the tournament — live updates from all sources 👇",
+                "📰 All World Cup 2026 news 🇨🇦 🇲🇽 🇺🇸 — live updates from across the globe 🌍 👇",
+                "🚨 Today's biggest tournament headlines 🏆⚽ — don't miss anything 👇",
+                "📰 The road to the World Cup 🌎 · daily global updates 👇",
+                "🔥 Heart of the tournament 🌍⚽ — every story, all in one place 👇",
+                "📰 From Canada to Mexico to USA 🇨🇦🇲🇽🇺🇸 — continuous updates 🌟 👇",
             ];
         }
-        // اختر بناءً على اليوم (متغيّر يومياً ولكنه ثابت في اليوم نفسه)
         $idx = (int)date('z') % count($variants);
         return self::sign($variants[$idx], $link, 'news');
     }
