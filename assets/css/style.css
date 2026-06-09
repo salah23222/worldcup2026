@@ -1607,6 +1607,17 @@ a.ref-item:hover { border-color: var(--accent); transform: translateY(-2px); }
 .ref-flag { width:18px; height:auto; vertical-align:-3px; border-radius:2px; margin-inline-end:3px; box-shadow:0 0 0 1px rgba(255,255,255,.15); }
 .ref-country { color:var(--text-dim); font-weight:400; font-size:.85em; margin-inline-start:2px; }
 .mc-ref { text-align:center; font-size:.74rem; color:var(--text-dim); margin-bottom:8px; }
+.md-countdown-banner {
+    background: linear-gradient(135deg, rgba(54,192,143,.12), rgba(54,192,143,.04));
+    border-inline-start: 3px solid var(--accent-2);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: .9rem;
+    margin-bottom: 14px;
+    line-height: 1.7;
+}
+.md-countdown-banner strong { color: var(--accent-2); font-weight:800; }
 
 /* بطاقات المباراة (الإنذارات/الطرد) */
 .md-cards { margin-top:22px; }
