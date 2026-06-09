@@ -500,17 +500,26 @@ class LiveService
     }
 
     /**
-     * refereeFor() — يبحث عن الحكم في الخريطة الكاملة (تشمل المباريات القادمة).
-     * يُستدعى من applyTo() كاحتياط حين لا يُرسل الحكم في البث اللحظي.
+     * refereeFor() — يبحث عن الحكم بالترتيب:
+     *   1) data/referees-manual.json  (أولويّة قصوى — تُضاف يدوياً عند إعلان FIFA)
+     *   2) API-Football fixturesMap   (تلقائي حين تُحدّث API-Football بياناتها)
      * يعيد اسم الحكم (string) أو null.
      */
     public static function refereeFor(array $match): ?string
     {
-        if (!self::isEnabled()) return null;
         $t1 = trim((string)($match['team1'] ?? ''));
         $t2 = trim((string)($match['team2'] ?? ''));
         if ($t1 === '' || $t2 === '') return null;
 
+        // (1) جرّب الملف اليدوي أوّلاً
+        $manual = self::manualReferees();
+        $key1 = $t1 . '|' . $t2;
+        $key2 = $t2 . '|' . $t1;
+        if (isset($manual[$key1]) && trim($manual[$key1]) !== '') return trim($manual[$key1]);
+        if (isset($manual[$key2]) && trim($manual[$key2]) !== '') return trim($manual[$key2]);
+
+        // (2) جرّب API-Football
+        if (!self::isEnabled()) return null;
         $map = self::fixturesMap();
         if (!$map) return null;
 
@@ -521,6 +530,23 @@ class LiveService
 
         $ref = isset($hit['referee']) ? trim((string)$hit['referee']) : '';
         return $ref !== '' ? $ref : null;
+    }
+
+    /** يقرأ ملف التعيينات اليدويّة (يُحدَّث عند إعلان FIFA كل مباراة). */
+    private static function manualReferees(): array
+    {
+        static $cache = null;
+        if ($cache !== null) return $cache;
+        $f = __DIR__ . '/../data/referees-manual.json';
+        if (!is_file($f)) { $cache = []; return $cache; }
+        $d = json_decode((string)@file_get_contents($f), true);
+        if (!is_array($d)) { $cache = []; return $cache; }
+        // امسح الحقول الإداريّة (_README, _last_updated, ...)
+        foreach (array_keys($d) as $k) {
+            if (strpos($k, '_') === 0) unset($d[$k]);
+        }
+        $cache = $d;
+        return $cache;
     }
 
     /**
