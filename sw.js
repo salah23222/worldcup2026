@@ -1,66 +1,93 @@
 /* ============================================================
-   sw.js — Service Worker لتطبيق كأس العالم 2026 (PWA)
+   sw.js — Service Worker لتطبيق كأس العالم 2026 (PWA)  v11
    ------------------------------------------------------------
-   وضع أوفلاين كامل (يعمل على اتصال ضعيف/2G — حافّة الجنوب العالمي):
-     • التنقّلات (HTML) → شبكة-أولاً بمهلة قصيرة، ثم الكاش، ثم صفحة
-       أوفلاين احتياطية مدمجة.
-     • الأصول الثابتة (css/js/img/خطوط) → stale-while-revalidate.
-     • نداءات الـAPI (/api/*) → شبكة فقط (لا نخزّن محتوى شخصياً/POST).
-   لا نخزّن POST إطلاقاً، ولا أي رد يحمل Set-Cookie. كل شيء داخل try/catch.
+   استراتيجيّة أوفلاين متينة — تتجنّب صفحة "غير متصل" الخاطئة:
+     1) شبكة-أوّلاً بمهلة 10 ثوانٍ (كانت 4.5 — قصيرة لـHostinger البطيء).
+     2) عند الفشل/المهلة → جرّب الكاش بنفس الـURL، ثم تجاهل الـquery-string،
+        ثم تجاهل الـpath تماماً وارجع لأي صفحة مخزّنة من نفس الجذر.
+     3) قبل عرض "غير متصل" نهائياً → تحقّق navigator.onLine حقيقةً.
+   الأصول الثابتة: stale-while-revalidate. /api و /cron: شبكة فقط.
+   لا نخزّن POST ولا Set-Cookie أبداً. كل شيء try/catch.
    ============================================================ */
 'use strict';
 
-/* رفعنا رقم النسخة (v9 → v10) لإجبار المتصفّحات على تحميل sw.js الجديد. */
-var CACHE = 'wc2026-v10';
+/* v11 — مهلة أطول + fallback أذكى + navigator.onLine check + UI أجمل. */
+var CACHE = 'wc2026-v11';
 
-/* قشرة التطبيق المُسبقة التخزين (نفس النطاق فقط — الخطوط/الأعلام عبر نطاقات أخرى نتجاهلها). */
+/* قشرة التطبيق — صفحات شائعة بكل لغة (يطابقها SW مع/بدون query). */
 var SHELL = [
   '/',
   '/index.php',
   '/today.php',
   '/matches.php',
+  '/groups.php',
+  '/predict.php',
+  '/leaderboard.php',
+  '/teams.php',
+  '/stadiums.php',
   '/assets/css/style.css',
   '/assets/js/app.js',
   '/assets/js/pwa.js',
   '/assets/img/icon-192.png'
 ];
 
-/* صفحة أوفلاين احتياطية مدمجة (لا تعتمد على الشبكة). تُخزَّن تحت هذا العنوان الوهمي
-   ويُرجَع منها عند فشل التنقّل وعدم وجود نسخة مخزّنة من الصفحة المطلوبة. */
+/* صفحة أوفلاين احتياطيّة (UI محسّن: شعار + قائمة صفحات سابقة + إعادة محاولة). */
 var OFFLINE_URL = '/__offline';
 var OFFLINE_HTML =
   '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1">' +
   '<title>غير متصل — كأس العالم 2026</title>' +
   '<style>' +
-  'html,body{margin:0;height:100%}' +
-  'body{display:flex;align-items:center;justify-content:center;text-align:center;' +
-  'font-family:"Cairo",system-ui,Segoe UI,Tahoma,sans-serif;background:#0a1626;color:#eef2f7;padding:24px}' +
-  '.box{max-width:420px}' +
-  '.mark{display:inline-grid;place-items:center;width:64px;height:64px;border-radius:16px;' +
-  'background:#13233d;color:#36c08f;font-weight:900;font-size:26px;margin-bottom:18px}' +
-  'h1{font-size:1.3rem;margin:0 0 8px}p{opacity:.8;line-height:1.7;margin:0 0 20px}' +
-  'button{font:inherit;background:#36c08f;color:#06241a;border:0;border-radius:10px;' +
-  'padding:11px 22px;font-weight:700;cursor:pointer}' +
+  '*,*::before,*::after{box-sizing:border-box}' +
+  'html,body{margin:0;min-height:100%;background:#0a1626;color:#eef2f7;' +
+  'font-family:"Cairo","Segoe UI",Tahoma,system-ui,sans-serif}' +
+  'body{display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}' +
+  '.box{max-width:480px;width:100%}' +
+  '.mark{display:inline-grid;place-items:center;width:72px;height:72px;border-radius:18px;' +
+  'background:linear-gradient(135deg,#13233d,#1a3050);color:#36c08f;font-weight:900;font-size:30px;' +
+  'margin-bottom:22px;box-shadow:0 8px 32px rgba(54,192,143,.15)}' +
+  '.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;' +
+  'margin-inline-end:8px;animation:pulse 1.4s infinite}' +
+  '@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}' +
+  'h1{font-size:1.4rem;margin:0 0 10px;font-weight:800}' +
+  '.sub{font-size:.9rem;color:#9fb3d1;margin:0 0 6px;letter-spacing:.5px}' +
+  'p{opacity:.9;line-height:1.8;margin:0 0 24px;color:#cbd5e1}' +
+  '.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}' +
+  'button,a.btn{font:inherit;font-weight:700;cursor:pointer;border:0;border-radius:12px;' +
+  'padding:12px 22px;text-decoration:none;transition:all .15s}' +
+  '.btn-pri{background:#36c08f;color:#06241a}' +
+  '.btn-pri:hover{background:#28a877;transform:translateY(-1px)}' +
+  '.btn-sec{background:#1a2940;color:#cbd5e1;border:1px solid #2a3a55}' +
+  '.btn-sec:hover{background:#22344f}' +
+  '.tips{margin-top:28px;padding-top:20px;border-top:1px solid #1a2940;font-size:.85rem;color:#9fb3d1;text-align:start}' +
+  '.tips li{margin:6px 0;line-height:1.7}' +
+  '.tips .ico{color:#36c08f;font-weight:700}' +
   '</style></head><body><div class="box">' +
   '<div class="mark">26</div>' +
-  '<h1>أنت غير متصل بالإنترنت</h1>' +
-  '<p>لا يمكن تحميل هذه الصفحة الآن. يمكنك تصفّح الصفحات التي زرتها سابقاً.<br>' +
-  'You are offline — pages you visited before are still available.</p>' +
-  '<button onclick="location.reload()">إعادة المحاولة · Retry</button>' +
+  '<p class="sub"><span class="dot"></span>اتصال ضعيف · Slow connection</p>' +
+  '<h1>تعذّر تحميل هذه الصفحة</h1>' +
+  '<p>قد يكون الاتصال بطيئاً أو منقطعاً. الصفحات التي زرتها سابقاً ما زالت متاحة.<br>' +
+  '<small style="color:#7a90af">You can still browse pages you visited earlier.</small></p>' +
+  '<div class="row">' +
+  '<button class="btn-pri" onclick="location.reload()">🔄 إعادة المحاولة</button>' +
+  '<a class="btn btn-sec" href="/">🏠 الرئيسية</a>' +
+  '</div>' +
+  '<ul class="tips">' +
+  '<li><span class="ico">✓</span> صفحاتنا متاحة دون اتصال بعد أوّل زيارة</li>' +
+  '<li><span class="ico">✓</span> النتائج تتحدّث تلقائياً عند عودة الإنترنت</li>' +
+  '<li><span class="ico">✓</span> ثبّت التطبيق على الشاشة للوصول السريع</li>' +
+  '</ul>' +
   '</div></body></html>';
 
-/* مهلة الشبكة للتنقّلات قبل اللجوء للكاش (مناسبة لاتصال 2G المتذبذب). */
-var NAV_TIMEOUT = 4500;
+/* مهلة أطول — Hostinger قد يستغرق 5-7 ثوانٍ لأوّل تحميل. */
+var NAV_TIMEOUT = 10000;
 
 self.addEventListener('install', function (e) {
   e.waitUntil(
     caches.open(CACHE).then(function (c) {
-      // خزّن قشرة التطبيق (كلٌّ على حدة حتى لا يُفشِل عنصرٌ مفقودٌ الباقي)…
       var jobs = SHELL.map(function (u) {
         return c.add(new Request(u, { cache: 'reload' })).catch(function () {});
       });
-      // …وخزّن صفحة الأوفلاين الاحتياطية كاستجابة مُصنَّعة.
       jobs.push(
         c.put(OFFLINE_URL, new Response(OFFLINE_HTML, {
           headers: { 'Content-Type': 'text/html; charset=utf-8' }
@@ -82,12 +109,10 @@ self.addEventListener('activate', function (e) {
   );
 });
 
-/* السماح للصفحة بطلب تفعيل التحديث فوراً (يستدعيه pwa.js عند ضغط «تحديث»). */
 self.addEventListener('message', function (e) {
   if (e && e.data === 'SKIP_WAITING') { self.skipWaiting(); }
 });
 
-/* نقر إشعار تذكير المباراة (reminders.js) → افتح/ركّز صفحة المباراة. */
 self.addEventListener('notificationclick', function (e) {
   e.notification.close();
   var url = (e.notification.data && e.notification.data.url) || '/';
@@ -101,30 +126,27 @@ self.addEventListener('notificationclick', function (e) {
   );
 });
 
-/* هل المسار أصل ثابت (css/js/صورة/خط)؟ */
 function isStatic(pathname) {
   return /\.(css|js|mjs|png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|otf)$/i.test(pathname);
 }
 
-/* لا نخزّن أبداً ردّاً يحمل Set-Cookie (محتوى شخصي/جلسة). */
 function isCacheableResponse(res) {
   return res && res.status === 200 && res.type === 'basic' && !res.headers.get('Set-Cookie');
 }
 
-/* استراتيجية شبكة-أولاً بمهلة، مع رجوع للكاش ثم لصفحة الأوفلاين (للتنقّلات). */
+/* شبكة-أوّلاً بمهلة 10 ثوانٍ — fallback متعدّد المستويات للكاش. */
 function networkFirstNav(req) {
   return new Promise(function (resolve) {
     var done = false;
     var timer = setTimeout(function () {
       if (done) return;
       done = true;
-      fromCacheOrOffline(req).then(resolve);
+      smartCacheFallback(req).then(resolve);
     }, NAV_TIMEOUT);
 
     fetch(req).then(function (res) {
       if (done) return;
       done = true; clearTimeout(timer);
-      // خزّن نسخة محدّثة من صفحة التنقّل إن كانت آمنة (لا كوكي).
       if (isCacheableResponse(res)) {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copy).catch(function () {}); }).catch(function () {});
@@ -133,23 +155,46 @@ function networkFirstNav(req) {
     }).catch(function () {
       if (done) return;
       done = true; clearTimeout(timer);
-      fromCacheOrOffline(req).then(resolve);
+      smartCacheFallback(req).then(resolve);
     });
   });
 }
 
-function fromCacheOrOffline(req) {
-  return caches.match(req).then(function (m) {
-    if (m) return m;
-    return caches.match(OFFLINE_URL).then(function (off) {
-      return off || new Response(OFFLINE_HTML, {
-        status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }
+/* 🆕 Fallback ذكي بـ4 مستويات:
+   1) كاش بنفس الـURL تماماً.
+   2) كاش متجاهلاً الـquery-string (?lang=ar / ?d=xxx).
+   3) كاش الصفحة الرئيسية / (دائماً موجودة).
+   4) صفحة الأوفلاين الجميلة.
+   لو navigator.onLine = true → نُحاول مرّة أخيرة شبكة قبل عرض الأوفلاين. */
+function smartCacheFallback(req) {
+  return caches.open(CACHE).then(function (c) {
+    return c.match(req).then(function (m1) {
+      if (m1) return m1;
+      return c.match(req, { ignoreSearch: true }).then(function (m2) {
+        if (m2) return m2;
+        return c.match('/').then(function (m3) {
+          if (m3) return m3;
+          // محاولة شبكة أخيرة لو المتصفّح يقول إنّنا متّصلون
+          if (self.navigator && self.navigator.onLine === true) {
+            return fetch(req).catch(function () {
+              return c.match(OFFLINE_URL).then(function (off) {
+                return off || new Response(OFFLINE_HTML, {
+                  status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }
+                });
+              });
+            });
+          }
+          return c.match(OFFLINE_URL).then(function (off) {
+            return off || new Response(OFFLINE_HTML, {
+              status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+          });
+        });
       });
     });
   });
 }
 
-/* stale-while-revalidate للأصول الثابتة: قدّم المخزّن فوراً وحدّثه في الخلفية. */
 function staleWhileRevalidate(req) {
   return caches.open(CACHE).then(function (c) {
     return c.match(req).then(function (cached) {
@@ -168,16 +213,14 @@ function staleWhileRevalidate(req) {
 
 self.addEventListener('fetch', function (e) {
   var req = e.request;
-  if (req.method !== 'GET') return;                 // لا نتدخّل في POST (توقعات/تصويت/تسجيل)
+  if (req.method !== 'GET') return;
 
-  // نفس النطاق فقط عبر http/https (نتجاهل الإضافات والموارد الخارجية: الأعلام/الخطوط).
   var url;
   try { url = new URL(req.url); } catch (err) { return; }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   if (url.origin !== self.location.origin) return;
 
-  // نداءات الـAPI و cron — شبكة فقط، نتجاوزها تماماً.
-  // (الـAPI: محتوى شخصي/CSRF · cron: قد يستغرق ثوانٍ لجلب الحكام/الأخبار)
+  // /api و /cron — شبكة فقط، نتجاوزها تماماً
   if (/^\/api\//i.test(url.pathname))  return;
   if (/^\/cron\//i.test(url.pathname)) return;
 
@@ -194,7 +237,6 @@ self.addEventListener('fetch', function (e) {
     return;
   }
 
-  // غير ذلك: حاول الشبكة ثم ارجع للكاش بهدوء.
   e.respondWith(
     fetch(req).catch(function () {
       return caches.match(req).then(function (m) {
