@@ -310,6 +310,13 @@ class LiveService
             }
         }
 
+        // 🆕 تقرير ما بعد المباراة: المباريات المنتهية (لها score من openfootball)
+        // تستعيد إحصائياتها من الأرشيف الدائم حتى بعد خروجها من لوحة ESPN اليوميّة.
+        if (empty($match['stats']) && isset($match['score']['ft'])) {
+            $arch = self::readStatsArchive($match);
+            if ($arch) $match['stats'] = $arch;
+        }
+
         // النتائج اللحظية تعمل حتى بدون مفتاح API-Football (احتياط ESPN المجاني) —
         // أما الإحصائيات/البطاقات/التشكيلات فتتحقق دوالها من المفتاح بنفسها.
         $live = self::liveScores();
@@ -361,7 +368,7 @@ class LiveService
             }
         }
 
-        // 🆕 إحصائيات تفصيليّة من API-Football (للمباريات الجارية/المنتهية)
+        // 🆕 إحصائيات تفصيليّة (للمباريات الجارية/المنتهية)
         if ($hit['status'] === 'live' || $hit['status'] === 'finished') {
             $stats = self::statsFor($match);
             if ($stats) {
@@ -373,6 +380,9 @@ class LiveService
                     unset($s);
                 }
                 $match['stats'] = $stats;
+                // 🆕 أرشفة دائمة (باتجاه team1/team2) — المباراة تخرج من لوحة
+                // ESPN اليوميّة بعد يومها، والأرشيف يُبقي تقرير ما بعد المباراة للأبد.
+                self::writeStatsArchive($match, $stats);
             }
         }
 
@@ -584,6 +594,7 @@ class LiveService
     /**
      * espnLineup() — التشكيلة الرسمية من ESPN، مُحوَّلة لاتجاه team1/team2.
      * يعيد null لو لم تصدر بعد (ESPN ينشرها قبل الانطلاق بساعة تقريباً).
+     * تُؤرشَف دائماً — تقرير ما بعد المباراة يبقى بعد خروجها من لوحة اليوم.
      */
     private static function espnLineup(array $match): ?array
     {
@@ -592,21 +603,62 @@ class LiveService
         $t2 = trim((string)($match['team2'] ?? ''));
         if ($t1 === '' || $t2 === '') return null;
 
-        $live = self::liveScores();
-        if (!is_array($live) || !$live) return null;
         $k1 = self::normalizeKey($t1, $t2);
-        $k2 = self::normalizeKey($t2, $t1);
-        $hit = $live[$k1] ?? ($live[$k2] ?? null);
-        if (!is_array($hit) || empty($hit['espn_id'])) return null;
+        $archive = rtrim(CACHE_DIR, '/') . '/match-lineup-' . md5($k1) . '.json';
+
+        $live = self::liveScores();
+        $hit  = null;
+        if (is_array($live) && $live) {
+            $k2  = self::normalizeKey($t2, $t1);
+            $hit = $live[$k1] ?? ($live[$k2] ?? null);
+        }
+        if (!is_array($hit) || empty($hit['espn_id'])) {
+            // المباراة خرجت من لوحة اليوم → آخر تشكيلة رسمية مؤرشفة
+            if (is_file($archive)) {
+                $a = json_decode((string)@file_get_contents($archive), true);
+                if (is_array($a) && !empty($a['team1'])) return $a;
+            }
+            return null;
+        }
 
         $lu = EspnLive::lineupFor((string)$hit['espn_id']);
         if ($lu === null) return null;
 
         // مضيف ESPN = team1 عندنا إذا طابق المفتاح المباشر، وإلا معكوس
-        $reversed = !isset($live[$k1]) && isset($live[$k2]);
-        return $reversed
+        $reversed = !isset($live[$k1]);
+        $out = $reversed
             ? ['team1' => $lu['away'], 'team2' => $lu['home']]
             : ['team1' => $lu['home'], 'team2' => $lu['away']];
+
+        if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+        @file_put_contents($archive, json_encode($out, JSON_UNESCAPED_UNICODE));
+        return $out;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  🆕 أرشيف ما بعد المباراة (دائم — لا TTL)
+    // ════════════════════════════════════════════════════════════
+
+    /** مسار أرشيف إحصائيات دائم لمباراة (مخزَّنة باتجاه team1/team2). */
+    private static function statsArchivePath(array $match): string
+    {
+        $key = self::normalizeKey(trim((string)($match['team1'] ?? '')), trim((string)($match['team2'] ?? '')));
+        return rtrim(CACHE_DIR, '/') . '/match-stats-' . md5($key) . '.json';
+    }
+
+    private static function readStatsArchive(array $match): array
+    {
+        $f = self::statsArchivePath($match);
+        if (!is_file($f)) return [];
+        $d = json_decode((string)@file_get_contents($f), true);
+        return is_array($d) ? $d : [];
+    }
+
+    private static function writeStatsArchive(array $match, array $stats): void
+    {
+        if (!$stats) return;
+        if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+        @file_put_contents(self::statsArchivePath($match), json_encode($stats, JSON_UNESCAPED_UNICODE));
     }
 
     private static function manualLineup(array $match): ?array
