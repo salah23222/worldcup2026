@@ -918,9 +918,11 @@ class LiveService
     private const BUILTIN_REFEREES = [
         'Mexico|South Africa'             => ['main' => ['name' => 'WILTON SAMPAIO', 'country_ar' => 'البرازيل', 'flag' => 'br']],
         'South Korea|Czech Republic'      => ['main' => ['name' => 'MOHAMED Amin',   'country_ar' => 'مصر',      'flag' => 'eg']],
-        'Canada|Bosnia and Herzegovina'   => ['main' => ['name' => 'TELLO Facundo',  'country_ar' => 'الأرجنتين','flag' => 'ar']],
-        'United States|Paraguay'          => ['main' => ['name' => 'MAKKELIE Danny', 'country_ar' => 'هولندا',   'flag' => 'nl']],
-        // ⚽ أضِف هنا أيّ مباراة جديدة عند إعلان FIFA — صيغة: "Team1|Team2"
+        // ⚠️ أسماء openfootball الفعليّة: "Bosnia & Herzegovina" و"USA"
+        'Canada|Bosnia & Herzegovina'     => ['main' => ['name' => 'TELLO Facundo',  'country_ar' => 'الأرجنتين','flag' => 'ar']],
+        'USA|Paraguay'                    => ['main' => ['name' => 'MAKKELIE Danny', 'country_ar' => 'هولندا',   'flag' => 'nl']],
+        // ⚽ أضِف هنا أيّ مباراة عند إعلان FIFA — صيغة: "Team1|Team2" بأسماء openfootball
+        //    (ESPN يجلب التعيينات تلقائياً أيضاً — هذا للتجاوز اليدوي السريع فقط)
     ];
 
     /**
@@ -981,7 +983,14 @@ class LiveService
         }
 
         // ────────────────────────────────────────────────
-        // (3) API-Football → اسم الحكم الرئيسي فقط
+        // (3) 🆕 ESPN — تعيينات FIFA الفعليّة لكل مباراة، تلقائياً
+        //     (تظهر فور نشرها قرب موعد المباراة، وتُؤرشَف للأبد)
+        // ────────────────────────────────────────────────
+        $espn = self::espnOfficials($match, $t1, $t2);
+        if ($espn !== null) return self::enrich($espn);
+
+        // ────────────────────────────────────────────────
+        // (4) API-Football → اسم الحكم الرئيسي فقط
         // ────────────────────────────────────────────────
         if (self::isEnabled()) {
             $map = self::fixturesMap();
@@ -1040,6 +1049,24 @@ class LiveService
                 ];
             }
             if ($assts) $out['assistants'] = $assts;
+        }
+
+        // 🆕 أكمل علم/دولة أيّ عضو ناقص (مساعدو ESPN/VAR/الرابع يصلون بأسماء فقط)
+        if (method_exists('RefereesFetcher', 'lookupAny')) {
+            $fill = function (?array $o): ?array {
+                if (!$o || !empty($o['flag']) || empty($o['name'])) return $o;
+                $hit = RefereesFetcher::lookupAny((string)$o['name']);
+                if ($hit) {
+                    if (empty($o['country_ar'])) $o['country_ar'] = $hit['country_ar'];
+                    $o['flag'] = $hit['flag'];
+                }
+                return $o;
+            };
+            $out['var']    = $fill($out['var']);
+            $out['fourth'] = $fill($out['fourth']);
+            foreach ($out['assistants'] as $i => $a) {
+                $out['assistants'][$i] = $fill($a);
+            }
         }
         return $out;
     }
@@ -1195,6 +1222,46 @@ class LiveService
             $v = (int)preg_replace('/[^0-9\-]/', '', $v);
         }
         return (int)$v;
+    }
+
+    /**
+     * espnOfficials() — طاقم التحكيم من ESPN لمباراة معيّنة، مع أرشيف دائم.
+     * بوّابة زمنيّة: لا نستعلم لمباريات أبعد من يومين مستقبلاً (التعيين لم
+     * يُنشَر) ولا أقدم من 30 يوماً (الأرشيف يغطّيها) — يحمي صفحات القوائم.
+     */
+    private static function espnOfficials(array $match, string $t1, string $t2): ?array
+    {
+        if (!class_exists('EspnLive')) return null;
+
+        $k1 = self::normalizeKey($t1, $t2);
+        $archive = rtrim(CACHE_DIR, '/') . '/match-officials-' . md5($k1) . '.json';
+        if (is_file($archive)) {
+            $a = json_decode((string)@file_get_contents($archive), true);
+            if (is_array($a) && !empty($a['main']['name'])) return $a;
+            // ملفّ فارغ = حاولنا ولم يُنشَر التعيين بعد → أعد المحاولة كل ساعة فقط
+            if (time() - filemtime($archive) < 3600) return null;
+        }
+
+        // معرّف ESPN: من لوحة اليوم، أو الخريطة المؤرّخة ضمن النافذة الزمنيّة
+        $eid = '';
+        $k2 = self::normalizeKey($t2, $t1);
+        $live = self::liveScores();
+        $hit = is_array($live) ? ($live[$k1] ?? ($live[$k2] ?? null)) : null;
+        if (is_array($hit) && !empty($hit['espn_id'])) $eid = (string)$hit['espn_id'];
+        if ($eid === '') {
+            $ts = DataService::matchTimestamp($match);
+            if ($ts === null || $ts > time() + 2 * 86400 || $ts < time() - 30 * 86400) return null;
+            $date = preg_replace('/\D/', '', (string)($match['date'] ?? ''));
+            if (strlen($date) !== 8) return null;
+            $eid = EspnLive::idFor($k1, $date);
+            if ($eid === '') $eid = EspnLive::idFor($k2, $date);
+            if ($eid === '') return null;
+        }
+
+        $o = EspnLive::officialsFor($eid);
+        // خزّن حتى النتيجة الفارغة — يمنع إعادة الاستعلام مع كل طلب صفحة
+        @file_put_contents($archive, json_encode($o ?: [], JSON_UNESCAPED_UNICODE));
+        return ($o && !empty($o['main']['name'])) ? $o : null;
     }
 
     /** يقرأ ملف التعيينات اليدويّة (يُحدَّث عند إعلان FIFA كل مباراة). */

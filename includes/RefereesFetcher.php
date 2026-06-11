@@ -122,6 +122,31 @@ class RefereesFetcher
         ];
     }
 
+    /**
+     * lookupAny($name) — يبحث في «كل» أسماء القائمة: الحكام والمساعدين معاً.
+     * يفيد لإثراء مساعدي ESPN وحكّام VAR/الرابع بعلَمهم ودولتهم.
+     * يعيد ['country_ar','flag'] أو null.
+     */
+    public static function lookupAny(string $name): ?array
+    {
+        $tokens = self::tokens($name);
+        if (count($tokens) < 2) return null;
+
+        $best = null; $bestScore = 0;
+        foreach (self::all() as $r) {
+            // الحكم الرئيسي
+            $score = count(array_intersect($tokens, self::tokens($r['name'] ?? '')));
+            if ($score > $bestScore) { $bestScore = $score; $best = (string)($r['country'] ?? ''); }
+            // مساعدوه
+            foreach ($r['assistants'] ?? [] as $a) {
+                $score = count(array_intersect($tokens, self::tokens($a['name'] ?? '')));
+                if ($score > $bestScore) { $bestScore = $score; $best = (string)($a['country'] ?? ''); }
+            }
+        }
+        if ($best === null || $bestScore < 2) return null;
+        return ['country_ar' => self::countryArabic($best), 'flag' => self::countryFlag($best)];
+    }
+
     // ────────────────────────────────────────────────────────
     //  Parser
     // ────────────────────────────────────────────────────────

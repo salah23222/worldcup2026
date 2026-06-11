@@ -164,6 +164,38 @@ class EspnLive
     }
 
     /**
+     * officialsFor($eventId) — طاقم التحكيم من gameInfo.officials.
+     * ESPN ينشر التعيينات الرسمية (حسب إعلان FIFA) قرب موعد كل مباراة.
+     * يعيد ['main','assistants','var','fourth'] بأسماء فقط — الإثراء
+     * (علم + دولة) يتمّ في LiveService::enrich عبر قائمة Wikipedia.
+     */
+    public static function officialsFor(string $eventId): ?array
+    {
+        $j = self::summary($eventId);
+        $offs = $j['gameInfo']['officials'] ?? null;
+        if (!is_array($offs) || !$offs) return null;
+
+        $crew = ['main' => null, 'assistants' => [], 'var' => null, 'fourth' => null];
+        foreach ($offs as $o) {
+            $name = trim((string)($o['fullName'] ?? ($o['displayName'] ?? '')));
+            if ($name === '') continue;
+            $pos = strtolower((string)($o['position']['name'] ?? ($o['position']['displayName'] ?? '')));
+            $entry = ['name' => $name, 'country_ar' => '', 'flag' => ''];
+            // الترتيب مهم: "assistant referee" تحوي "referee" — افحص الأخصّ أوّلاً
+            if (strpos($pos, 'video') !== false || strpos($pos, 'var') !== false) {
+                if (!$crew['var']) $crew['var'] = $entry;
+            } elseif (strpos($pos, 'fourth') !== false) {
+                if (!$crew['fourth']) $crew['fourth'] = $entry;
+            } elseif (strpos($pos, 'assistant') !== false || strpos($pos, 'line') !== false) {
+                $crew['assistants'][] = $entry;
+            } elseif (strpos($pos, 'referee') !== false && !$crew['main']) {
+                $crew['main'] = $entry;
+            }
+        }
+        return !empty($crew['main']['name']) ? $crew : null;
+    }
+
+    /**
      * eventsFor($eventId) — الأهداف والبطاقات من keyEvents:
      *   ['goals' => [['side','name','minute','offset?','penalty?','owngoal?']],
      *    'cards' => [['side','minute','name','type'=>'yellow'|'red']]]
