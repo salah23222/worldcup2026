@@ -295,15 +295,8 @@ class Predictions
             if (isset($c['rows'])) return array_slice($c['rows'], 0, $limit);
         }
 
-        // نتائج المباريات المنتهية: index => [a1,a2]
-        $results = [];
-        foreach (DataService::allMatches() as $m) {
-            if (isset($m['score']['ft']) && is_array($m['score']['ft'])) {
-                $results[(int)$m['_index']] = [
-                    (int)$m['score']['ft'][0], (int)$m['score']['ft'][1],
-                ];
-            }
-        }
+        // نتائج المباريات المنتهية فقط: index => [a1,a2]
+        $results = self::finishedResults();
 
         // نمرّ على كل المستخدمين (لإدراج من يلعب التوقعات و/أو تحدّي المعرفة)
         $rows = [];
@@ -484,16 +477,29 @@ class Predictions
      * standingsByUser() — نقاط وترتيب كل مستخدم (لنشرة البريد). DB فقط.
      * يُرجّع [ user_id => ['points','rank','total','played','trivia'] ].
      */
+    /**
+     * 🆕 finishedResults() — نتائج المباريات «المنتهية» فقط: index => [a1,a2].
+     * مهم: لا تُحتسب نقاط على مباراة جارية — نتيجة ESPN اللحظيّة تُكتب في
+     * score.ft أثناء اللعب، والاحتساب على نتيجة جزئيّة يعطي نقاطاً خاطئة
+     * مؤقتاً. فور صافرة النهاية (status=finished) تُحتسب تلقائياً خلال ≤30ث.
+     */
+    private static function finishedResults(): array
+    {
+        $results = [];
+        foreach (DataService::allMatches() as $m) {
+            if (!isset($m['score']['ft']) || !is_array($m['score']['ft'])) continue;
+            $st = $m['_status'] ?? DataService::matchStatus($m);
+            if ($st !== 'finished') continue;
+            $results[(int)$m['_index']] = [(int)$m['score']['ft'][0], (int)$m['score']['ft'][1]];
+        }
+        return $results;
+    }
+
     public static function standingsByUser(): array
     {
         if (!self::useDb()) return [];
 
-        $results = [];
-        foreach (DataService::allMatches() as $m) {
-            if (isset($m['score']['ft']) && is_array($m['score']['ft'])) {
-                $results[(int)$m['_index']] = [(int)$m['score']['ft'][0], (int)$m['score']['ft'][1]];
-            }
-        }
+        $results = self::finishedResults();
 
         $pdo = Database::pdo();
         if ($pdo === null) return [];
