@@ -310,11 +310,11 @@ class LiveService
             }
         }
 
-        // 🆕 تقرير ما بعد المباراة: المباريات المنتهية (لها score من openfootball)
-        // تستعيد إحصائياتها من الأرشيف الدائم حتى بعد خروجها من لوحة ESPN اليوميّة.
-        if (empty($match['stats']) && isset($match['score']['ft'])) {
-            $arch = self::readStatsArchive($match);
-            if ($arch) $match['stats'] = $arch;
+        // 🆕 تقرير ما بعد المباراة (دائم وذاتيّ الشفاء): المباريات المنتهية
+        // تستكمل إحصائياتها وأهدافها وبطاقاتها من الأرشيف المحلي، أو تجلبها
+        // من ESPN بمعرّف مؤرّخ (scoreboard?dates=) حتى بعد أيّام من اللعب.
+        if (isset($match['score']['ft']) && empty($match['_live'])) {
+            $match = self::ensureReport($match);
         }
 
         // النتائج اللحظية تعمل حتى بدون مفتاح API-Football (احتياط ESPN المجاني) —
@@ -383,6 +383,16 @@ class LiveService
                 // 🆕 أرشفة دائمة (باتجاه team1/team2) — المباراة تخرج من لوحة
                 // ESPN اليوميّة بعد يومها، والأرشيف يُبقي تقرير ما بعد المباراة للأبد.
                 self::writeStatsArchive($match, $stats);
+            }
+
+            // 🆕 أهداف (هدّاف+دقيقة) وبطاقات من ESPN keyEvents — تملأ صفحات
+            // الهدّافين والبطاقات فوراً دون انتظار تحديث openfootball المجتمعي.
+            if (!empty($hit['espn_id'])) {
+                $match = self::attachEspnEvents(
+                    $match, (string)$hit['espn_id'], $reversed,
+                    empty($match['cards']),
+                    empty($match['goals1']) && empty($match['goals2'])
+                );
             }
         }
 
@@ -659,6 +669,140 @@ class LiveService
         if (!$stats) return;
         if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
         @file_put_contents(self::statsArchivePath($match), json_encode($stats, JSON_UNESCAPED_UNICODE));
+    }
+
+    /** مسار أرشيف أحداث دائم (أهداف + بطاقات، باتجاه team1/team2). */
+    private static function eventsArchivePath(array $match): string
+    {
+        $key = self::normalizeKey(trim((string)($match['team1'] ?? '')), trim((string)($match['team2'] ?? '')));
+        return rtrim(CACHE_DIR, '/') . '/match-events-' . md5($key) . '.json';
+    }
+
+    private static function readEventsArchive(array $match): array
+    {
+        $f = self::eventsArchivePath($match);
+        if (!is_file($f)) return [];
+        $d = json_decode((string)@file_get_contents($f), true);
+        return is_array($d) ? $d : [];
+    }
+
+    private static function writeEventsArchive(array $match, array $events): void
+    {
+        if (empty($events['cards']) && empty($events['goals1']) && empty($events['goals2'])) return;
+        if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+        @file_put_contents(self::eventsArchivePath($match), json_encode($events, JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * attachEspnEvents() — يحوّل keyEvents (أهداف/بطاقات) لاتجاه team1/team2
+     * ويثبّتها على المباراة + يؤرشفها. لا يستبدل بيانات openfootball الموجودة.
+     */
+    private static function attachEspnEvents(array $m, string $eid, bool $reversed, bool $needCards, bool $needGoals): array
+    {
+        if ((!$needCards && !$needGoals) || !class_exists('EspnLive')) return $m;
+        $ev = EspnLive::eventsFor($eid);
+        $sideToTeam = fn(string $side): int => $reversed
+            ? (($side === 'home') ? 2 : 1)
+            : (($side === 'home') ? 1 : 2);
+
+        if ($needCards && !empty($ev['cards'])) {
+            $out = [];
+            foreach ($ev['cards'] as $c) {
+                $out[] = [
+                    'team'   => $sideToTeam((string)$c['side']),
+                    'minute' => (int)($c['minute'] ?? 0),
+                    'name'   => (string)($c['name'] ?? ''),
+                    'type'   => (($c['type'] ?? '') === 'red') ? 'red' : 'yellow',
+                ];
+            }
+            if ($out) $m['cards'] = $out;
+        }
+
+        if ($needGoals && !empty($ev['goals'])) {
+            $g1 = $g2 = [];
+            foreach ($ev['goals'] as $g) {
+                $e = ['name' => (string)($g['name'] ?? ''), 'minute' => (int)($g['minute'] ?? 0)];
+                if (!empty($g['offset']))  $e['offset']  = (int)$g['offset'];
+                if (!empty($g['penalty'])) $e['penalty'] = true;
+                if (!empty($g['owngoal'])) $e['owngoal'] = true;
+                ($sideToTeam((string)$g['side']) === 1) ? ($g1[] = $e) : ($g2[] = $e);
+            }
+            if ($g1) $m['goals1'] = $g1;
+            if ($g2) $m['goals2'] = $g2;
+        }
+
+        self::writeEventsArchive($m, [
+            'cards'  => $m['cards']  ?? [],
+            'goals1' => $m['goals1'] ?? [],
+            'goals2' => $m['goals2'] ?? [],
+        ]);
+        return $m;
+    }
+
+    /**
+     * ensureReport() — يضمن اكتمال تقرير مباراة منتهية:
+     *   (أ) من الأرشيف المحلي (كُتب يوم اللعب)
+     *   (ب) وإلا من ESPN بمعرّف مؤرّخ — يعمل حتى بعد أيّام من المباراة
+     * يغطّي: الإحصائيات + الأهداف بأسماء هدّافيها + البطاقات.
+     */
+    private static function ensureReport(array $m): array
+    {
+        $needStats = empty($m['stats']);
+        $needCards = empty($m['cards']);
+        $needGoals = empty($m['goals1']) && empty($m['goals2']);
+        if (!$needStats && !$needCards && !$needGoals) return $m;
+
+        // (أ) الأرشيف المحلي
+        if ($needStats) {
+            $a = self::readStatsArchive($m);
+            if ($a) { $m['stats'] = $a; $needStats = false; }
+        }
+        if ($needCards || $needGoals) {
+            $ea = self::readEventsArchive($m);
+            if ($ea) {
+                if ($needCards && !empty($ea['cards'])) { $m['cards'] = $ea['cards']; $needCards = false; }
+                if ($needGoals && (!empty($ea['goals1']) || !empty($ea['goals2']))) {
+                    if (!empty($ea['goals1'])) $m['goals1'] = $ea['goals1'];
+                    if (!empty($ea['goals2'])) $m['goals2'] = $ea['goals2'];
+                    $needGoals = false;
+                }
+            }
+        }
+        if (!$needStats && !$needCards && !$needGoals) return $m;
+
+        // (ب) جلب ذاتي من ESPN بمعرّف مؤرّخ
+        if (!class_exists('EspnLive')) return $m;
+        $t1 = trim((string)($m['team1'] ?? ''));
+        $t2 = trim((string)($m['team2'] ?? ''));
+        if ($t1 === '' || $t2 === '') return $m;
+        $date = preg_replace('/\D/', '', (string)($m['date'] ?? ''));   // YYYY-MM-DD → YYYYMMDD
+        if (strlen($date) !== 8) return $m;
+
+        $k1 = self::normalizeKey($t1, $t2);
+        $k2 = self::normalizeKey($t2, $t1);
+        $eid = EspnLive::idFor($k1, $date);
+        $reversed = false;
+        if ($eid === '') {
+            $eid = EspnLive::idFor($k2, $date);
+            $reversed = ($eid !== '');
+        }
+        if ($eid === '') return $m;
+
+        if ($needStats) {
+            $stats = EspnLive::statsFor($eid);
+            if ($stats) {
+                if ($reversed) {
+                    foreach ($stats as &$s) { $s['v'] = [(int)$s['v'][1], (int)$s['v'][0]]; }
+                    unset($s);
+                }
+                $m['stats'] = $stats;
+                self::writeStatsArchive($m, $stats);
+            }
+        }
+        if ($needCards || $needGoals) {
+            $m = self::attachEspnEvents($m, $eid, $reversed, $needCards, $needGoals);
+        }
+        return $m;
     }
 
     private static function manualLineup(array $match): ?array

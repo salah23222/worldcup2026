@@ -77,7 +77,136 @@ class EspnLive
                 '_src'       => 'espn',
             ];
         }
+
+        // 🆕 راكم خريطة key→espn_id الدائمة (تتيح جلب تقارير الأيّام الماضية لاحقاً)
+        $ids = [];
+        foreach ($out as $k => $v) {
+            if (!empty($v['espn_id'])) $ids[$k] = $v['espn_id'];
+        }
+        self::rememberIds($ids);
+
         return $out;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  🆕 خريطة معرّفات دائمة — key → espn_id (تتراكم يوماً بعد يوم)
+    // ════════════════════════════════════════════════════════════
+
+    private static function idsMapFile(): string
+    {
+        return rtrim(CACHE_DIR, '/') . '/espn-ids.json';
+    }
+
+    private static function rememberIds(array $pairs): void
+    {
+        if (!$pairs) return;
+        $f = self::idsMapFile();
+        $map = is_file($f) ? (json_decode((string)@file_get_contents($f), true) ?: []) : [];
+        $dirty = false;
+        foreach ($pairs as $k => $id) {
+            if (($map[$k] ?? '') !== $id) { $map[$k] = $id; $dirty = true; }
+        }
+        if ($dirty) {
+            if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+            @file_put_contents($f, json_encode($map, JSON_UNESCAPED_UNICODE));
+        }
+    }
+
+    /**
+     * idFor($key, $dateYmd) — معرّف ESPN لمباراة بأيّ تاريخ (ماضٍ أو حاضر).
+     * يقرأ الخريطة المتراكمة؛ ولو ناقصة يجلب لوحة ذلك اليوم
+     * (scoreboard?dates=YYYYMMDD — يعمل للأيّام الماضية) ويكمّلها ذاتياً.
+     */
+    public static function idFor(string $key, string $dateYmd = ''): string
+    {
+        $f = self::idsMapFile();
+        $map = is_file($f) ? (json_decode((string)@file_get_contents($f), true) ?: []) : [];
+        if (!empty($map[$key])) return (string)$map[$key];
+        if (!preg_match('/^\d{8}$/', $dateYmd)) return '';
+
+        // كاش لوحة اليوم المؤرّخ (6 ساعات — لوحات الماضي لا تتغيّر)
+        $dayFile = rtrim(CACHE_DIR, '/') . '/espn-day-' . $dateYmd . '.json';
+        $j = null;
+        if (is_file($dayFile) && (time() - filemtime($dayFile) < 21600)) {
+            $j = json_decode((string)@file_get_contents($dayFile), true);
+        }
+        if (!is_array($j)) {
+            $fail = $dayFile . '.fail';
+            if (is_file($fail) && (time() - filemtime($fail) < 600)) return '';
+            $timeout = defined('FETCH_TIMEOUT') ? max(1, (int)FETCH_TIMEOUT) : 5;
+            $raw = function_exists('http_get') ? http_get(self::URL . '?dates=' . $dateYmd, ['timeout' => $timeout]) : null;
+            $j = ($raw !== null) ? json_decode($raw, true) : null;
+            if (!is_array($j)) { @touch($fail); return ''; }
+            if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+            @file_put_contents($dayFile, json_encode($j, JSON_UNESCAPED_UNICODE));
+            @unlink($fail);
+        }
+
+        // استخرج key→id من لوحة ذلك اليوم وادمجها في الخريطة
+        $ids = [];
+        foreach (($j['events'] ?? []) as $ev) {
+            $comp = $ev['competitions'][0] ?? null;
+            if (!is_array($comp)) continue;
+            $h = $a = null;
+            foreach (($comp['competitors'] ?? []) as $c) {
+                if (($c['homeAway'] ?? '') === 'home') $h = $c;
+                elseif (($c['homeAway'] ?? '') === 'away') $a = $c;
+            }
+            if (!$h || !$a) continue;
+            $hn = trim((string)($h['team']['name'] ?? ''));
+            $an = trim((string)($a['team']['name'] ?? ''));
+            $id = (string)($ev['id'] ?? '');
+            if ($hn === '' || $an === '' || $id === '') continue;
+            $ids[LiveService::normalizeKey($hn, $an)] = $id;
+        }
+        self::rememberIds($ids);
+        return (string)($ids[$key] ?? '');
+    }
+
+    /**
+     * eventsFor($eventId) — الأهداف والبطاقات من keyEvents:
+     *   ['goals' => [['side','name','minute','offset?','penalty?','owngoal?']],
+     *    'cards' => [['side','minute','name','type'=>'yellow'|'red']]]
+     * side = 'home'|'away' (بالنسبة لمضيف ESPN). تُستثنى ركلات الترجيح.
+     */
+    public static function eventsFor(string $eventId): array
+    {
+        $empty = ['goals' => [], 'cards' => []];
+        $j = self::summary($eventId);
+        if (!is_array($j)) return $empty;
+        $homeId = self::homeTeamId($j);
+        $goals = $cards = [];
+
+        foreach (($j['keyEvents'] ?? []) as $e) {
+            $tt = strtolower((string)($e['type']['type'] ?? ''));
+            $teamId = (string)($e['team']['id'] ?? '');
+            if ($teamId === '') continue;
+            $side = ($teamId === $homeId) ? 'home' : 'away';
+            $name = trim((string)($e['participants'][0]['athlete']['displayName'] ?? ''));
+
+            // الدقيقة من "45'+4'" أو "9'"
+            $minute = 0; $offset = 0;
+            if (preg_match('/(\d+)(?:\D+(\d+))?/', (string)($e['clock']['displayValue'] ?? ''), $mm)) {
+                $minute = (int)$mm[1];
+                $offset = (int)($mm[2] ?? 0);
+            }
+
+            if (!empty($e['scoringPlay']) && empty($e['shootout'])) {
+                $g = ['side' => $side, 'name' => $name, 'minute' => $minute];
+                if ($offset) $g['offset'] = $offset;
+                if (strpos($tt, 'pen') !== false) $g['penalty'] = true;
+                if (strpos($tt, 'own') !== false) {
+                    // الهدف العكسي يُحسب للفريق المنافس (لاعبه سجّل في مرماه)
+                    $g['owngoal'] = true;
+                    $g['side'] = ($side === 'home') ? 'away' : 'home';
+                }
+                $goals[] = $g;
+            } elseif ($tt === 'yellow-card' || $tt === 'red-card') {
+                $cards[] = ['side' => $side, 'minute' => $minute, 'name' => $name,
+                            'type' => ($tt === 'red-card') ? 'red' : 'yellow'];
+            }
+        }
+        return ['goals' => $goals, 'cards' => $cards];
     }
 
     // ════════════════════════════════════════════════════════════
