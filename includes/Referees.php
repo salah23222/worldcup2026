@@ -45,31 +45,101 @@ class Referees
         return $all[$i] ?? null;
     }
 
+    /** tokens لاتينية صغيرة (≥3 أحرف) — للمطابقة عبر اختلاف صيَغ الأسماء. */
+    private static function nameTokens(string $name): array
+    {
+        $name = mb_strtolower($name, 'UTF-8');
+        $name = preg_replace('/[^a-z\s]/', ' ', $name);
+        $toks = preg_split('/\s+/', trim((string)$name)) ?: [];
+        return array_values(array_filter($toks, fn($t) => strlen($t) >= 3));
+    }
+
+    /**
+     * sameRef() — هل الاسمان لنفس الحكم؟
+     * «WILTON SAMPAIO» تطابق «Wilton Pereira Sampaio» (تقاطع كلمتَين)،
+     * و«Ma Ning» تطابق «Ning Ma» (لقب واحد لكلَيهما).
+     */
+    public static function sameRef(string $a, string $b): bool
+    {
+        $ta = self::nameTokens($a);
+        $tb = self::nameTokens($b);
+        if (!$ta || !$tb) return false;
+        $i = count(array_intersect($ta, $tb));
+        return $i >= 2 || ($i >= 1 && count($ta) === 1 && count($tb) === 1);
+    }
+
     /**
      * matchesOfficiated() — عدد مباريات البطولة التي أدارها هذا الحكم.
-     * يُحسب تلقائياً بمطابقة $m['referee'] حرفياً مع اسم الحكم.
+     * مطابقة ذكيّة عبر sameRef (الأسماء تأتي بصيَغ مختلفة من المصادر).
      */
     public static function matchesOfficiated(string $name): int
     {
-        if ($name === '') return 0;
-        $count = 0;
-        foreach (DataService::allMatches() as $m) {
-            if (($m['referee'] ?? '') === $name) {
-                $count++;
-            }
-        }
-        return $count;
+        return count(self::matchesFor($name));
     }
 
     /** قائمة مباريات البطولة التي أُسنِدت لهذا الحكم (تظهر عند إعلان التعيينات) */
     public static function matchesFor(string $name): array
     {
+        $name = trim($name);
         if ($name === '') return [];
         $out = [];
         foreach (DataService::allMatches() as $m) {
-            if (($m['referee'] ?? '') === $name) $out[] = $m;
+            $r = trim((string)($m['referee'] ?? ''));
+            if ($r !== '' && self::sameRef($r, $name)) $out[] = $m;
         }
         return $out;
+    }
+
+    /**
+     * tournamentStats() — إحصائيات تحكيميّة محسوبة من بيانات مبارياتنا
+     * (لا يوجد مصدر مجاني موثوق لتقييم الحكام — نحسبها بأنفسنا من الواقع):
+     *   لكل حكم: مباريات أدارها · 🟨 · 🟥 · ركلات جزاء احتسبها · معدّل البطاقات.
+     */
+    public static function tournamentStats(): array
+    {
+        static $memo = null;
+        if ($memo !== null) return $memo;
+
+        $rows = [];
+        foreach (DataService::allMatches() as $m) {
+            if (($m['_status'] ?? '') !== 'finished') continue;
+            $ref = trim((string)($m['referee'] ?? ''));
+            if ($ref === '') continue;
+
+            $idx = null;
+            foreach ($rows as $k => $r) {
+                if (self::sameRef($ref, $r['name'])) { $idx = $k; break; }
+            }
+            if ($idx === null) {
+                $rows[] = ['name' => $ref, 'matches' => 0, 'yellow' => 0, 'red' => 0, 'pens' => 0];
+                $idx = array_key_last($rows);
+            } elseif (mb_strlen($ref, 'UTF-8') > mb_strlen($rows[$idx]['name'], 'UTF-8')) {
+                $rows[$idx]['name'] = $ref;   // فضّل الصيغة الأكمل للعرض
+            }
+
+            $rows[$idx]['matches']++;
+            foreach (($m['cards'] ?? []) as $c) {
+                (($c['type'] ?? '') === 'red') ? $rows[$idx]['red']++ : $rows[$idx]['yellow']++;
+            }
+            foreach ([($m['goals1'] ?? []), ($m['goals2'] ?? [])] as $side) {
+                foreach ((array)$side as $g) {
+                    if (!empty($g['penalty'])) $rows[$idx]['pens']++;
+                }
+            }
+        }
+
+        usort($rows, fn($a, $b) =>
+            [$b['matches'], $b['yellow'] + $b['red']] <=> [$a['matches'], $a['yellow'] + $a['red']]);
+        return $memo = $rows;
+    }
+
+    /** إحصائيات حكم واحد (بمطابقة ذكيّة) أو null لو لم يُدِر مباراة منتهية بعد. */
+    public static function statsFor(string $name): ?array
+    {
+        foreach (self::tournamentStats() as $r) {
+            if (self::sameRef($name, $r['name'])) return $r;
+        }
+        return null;
     }
 
     /**

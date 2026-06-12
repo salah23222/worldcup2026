@@ -77,6 +77,42 @@ tpl('header');
   </div>
 </div>
 
+<?php
+// 🆕 إحصائيات الحكم في البطولة — محسوبة من مبارياتنا الفعليّة
+$rs = Referees::statsFor($name);
+if ($rs && $rs['matches'] > 0):
+    $cardsTotal = $rs['yellow'] + $rs['red'];
+    $avg        = round($cardsTotal / $rs['matches'], 1);
+    // مؤشّر الصرامة: معدّل بطاقات/مباراة على مقياس 0–8
+    $pct = min(100, (int)round($avg / 8 * 100));
+    if     ($avg < 2)  { $sLabel = $lang === 'ar' ? 'هادئ'       : 'Lenient';     $sColor = '#36c08f'; }
+    elseif ($avg < 4)  { $sLabel = $lang === 'ar' ? 'متوازن'     : 'Balanced';    $sColor = '#f7e09a'; }
+    elseif ($avg < 6)  { $sLabel = $lang === 'ar' ? 'صارم'       : 'Strict';      $sColor = '#f59e0b'; }
+    else               { $sLabel = $lang === 'ar' ? 'صارم جداً'  : 'Very strict'; $sColor = '#ef4444'; }
+?>
+<section class="section">
+  <h2 class="section-title">📊 <?= e($lang === 'ar' ? 'إحصائياته في البطولة' : 'Tournament record') ?></h2>
+  <div class="ref-stats-grid">
+    <div class="ref-stat"><div class="ref-stat-v"><?= (int)$rs['matches'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'مباريات أدارها' : 'Matches') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v" style="color:#f7e09a">🟨 <?= (int)$rs['yellow'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات صفراء' : 'Yellow cards') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v" style="color:#ef4444">🟥 <?= (int)$rs['red'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات حمراء' : 'Red cards') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v">⚽ <?= (int)$rs['pens'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'ركلات جزاء احتسبها' : 'Penalties awarded') ?></div></div>
+  </div>
+  <div class="ref-strict">
+    <div class="ref-strict-head">
+      <span><?= e($lang === 'ar' ? 'مؤشّر الصرامة' : 'Strictness index') ?></span>
+      <strong style="color:<?= $sColor ?>"><?= e($sLabel) ?> · <?= e((string)$avg) ?> <?= e($lang === 'ar' ? 'بطاقة/مباراة' : 'cards/match') ?></strong>
+    </div>
+    <div class="ref-strict-bar"><span style="width:<?= $pct ?>%;background:<?= $sColor ?>"></span></div>
+  </div>
+  <p class="muted" style="font-size:.78rem;margin-top:8px">
+    <?= e($lang === 'ar'
+        ? 'تُحسب تلقائياً من المباريات المنتهية التي أدارها في كأس العالم 2026.'
+        : 'Computed automatically from his finished FIFA World Cup 2026 matches.') ?>
+  </p>
+</section>
+<?php endif; ?>
+
 <section class="section">
   <h2 class="section-title"><?= e($L['about']) ?></h2>
   <?php if (!empty($profile['bio'])): ?>

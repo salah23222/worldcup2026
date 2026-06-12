@@ -1636,6 +1636,14 @@ a.ref-item:hover { border-color: var(--accent); transform: translateY(-2px); }
 }
 .video-embed iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .video-credit { color: var(--text-dim); font-size:.78rem; text-align:center; margin-top:8px; }
+/* 📊 إحصائيات الحكم */
+.ref-stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:16px; }
+.ref-stat { background:#11203a; border:1px solid #243a68; border-radius:12px; padding:14px; text-align:center; }
+.ref-stat-v { font-size:1.6rem; font-weight:900; }
+.ref-stat-k { color:var(--text-dim); font-size:.8rem; margin-top:4px; }
+.ref-strict-head { display:flex; justify-content:space-between; align-items:center; font-size:.9rem; margin-bottom:6px; }
+.ref-strict-bar { background:#1a2940; border-radius:8px; height:12px; overflow:hidden; }
+.ref-strict-bar span { display:block; height:100%; border-radius:8px; transition:width .3s; }
 
 /* بطاقات المباراة (الإنذارات/الطرد) */
 .md-cards { margin-top:22px; }
