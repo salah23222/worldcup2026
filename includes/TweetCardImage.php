@@ -48,10 +48,11 @@ class TweetCardImage
 
         $title    = (string)($opt['title'] ?? 'مباريات اليوم');
         $subtitle = (string)($opt['subtitle'] ?? '');
+        $subEn    = (string)($opt['subtitle_en'] ?? '');   // 🆕 سطر إنجليزي (بطاقة ثنائيّة)
         $mode     = (($opt['mode'] ?? 'fixture') === 'result') ? 'result' : 'fixture';
 
         // كاش: نفس المحتوى = نفس الملف (لا إعادة توليد لكل تشغيل cron)
-        $key = sha1($title . '|' . $subtitle . '|' . $mode . '|' . json_encode(array_map(
+        $key = sha1('v2|' . $title . '|' . $subtitle . '|' . $subEn . '|' . $mode . '|' . json_encode(array_map(
             fn($m) => [$m['team1'] ?? '', $m['team2'] ?? '', $m['date'] ?? '', $m['time'] ?? '', $m['score']['ft'] ?? null],
             $matches
         ), JSON_UNESCAPED_UNICODE));
@@ -63,7 +64,8 @@ class TweetCardImage
             $n = count($matches);
             $W = self::W;
             $headH = ($subtitle !== '') ? 330 : 290;
-            $rowH  = 235;
+            if ($subEn !== '') $headH += 42;
+            $rowH  = 262;   // +27 لسطر أسماء الفريقين بالإنجليزية تحت كل شريط
             $footH = 130;
             $H = max(780, $headH + $n * $rowH + $footH);
 
@@ -106,6 +108,9 @@ class TweetCardImage
             self::centerText($im, $fontAr, 52, $W/2, 225, $white, ArabicText::shape($title));
             if ($subtitle !== '') {
                 self::centerText($im, $fontAr, 30, $W/2, 285, $light, ArabicText::shape($subtitle));
+            }
+            if ($subEn !== '') {
+                self::centerText($im, $fontEn, 22, $W/2, ($subtitle !== '' ? 327 : 285), $gold, $subEn);
             }
 
             // ── صفوف المباريات ──
@@ -194,11 +199,13 @@ class TweetCardImage
         self::fitText($im, $fontAr, 27, 17, $f2x + $fw + 14, $bx1 - 18, $barY + 72, $c['navy'],
             ArabicText::shape($name2));
 
-        // سطر التاريخ تحت الشريط
+        // سطر التاريخ تحت الشريط + 🆕 الاسمان بالإنجليزية (بطاقة ثنائيّة اللغة)
         if ($ts !== null) {
             $dateAr = (self::DAYS[date('l', $ts)] ?? '') . ' ' . (int)date('j', $ts) . ' ' . (self::MONTHS[(int)date('n', $ts)] ?? '');
             self::centerText($im, $fontAr, 21, $W/2, $barY + $barH + 40, $c['gold'], ArabicText::shape(trim($dateAr)));
         }
+        self::centerText($im, $fontEn, 18, $W/2, $barY + $barH + ($ts !== null ? 72 : 40), $c['light'],
+            strtoupper($t1 . '  vs  ' . $t2));
     }
 
     /** «Group A» → «المجموعة الأولى»، وإلا اسم الجولة بالعربية. */

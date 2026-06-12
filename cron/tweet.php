@@ -213,13 +213,18 @@ if (!$skipDaily) {
             $img = null;
             if (class_exists('TweetCardImage')) {
                 if ($dailySlot === 'morning') {
-                    $list = DataService::matchesOnDate();
-                    if ($list) $img = TweetCardImage::generate($list,
-                        ['title' => 'مباريات اليوم', 'subtitle' => 'كأس العالم 2026']);
+                    // الـ24 ساعة القادمة (لا التقويم — كانت تعرض مباريات لُعبت فجراً)
+                    $list = TweetComposer::next24Matches(4);
+                    if ($list) $img = TweetCardImage::generate($list, [
+                        'title' => 'المباريات القادمة', 'subtitle' => 'كأس العالم 2026',
+                        'subtitle_en' => "UPCOMING MATCHES — FIFA WORLD CUP 2026",
+                    ]);
                 } elseif ($dailySlot === 'evening' || $dailySlot === 'recap') {
                     $list = DataService::latestResults(3);
-                    if ($list) $img = TweetCardImage::generate($list,
-                        ['title' => 'نتائج المباريات', 'subtitle' => 'كأس العالم 2026', 'mode' => 'result']);
+                    if ($list) $img = TweetCardImage::generate($list, [
+                        'title' => 'نتائج المباريات', 'subtitle' => 'كأس العالم 2026',
+                        'subtitle_en' => "RESULTS — FIFA WORLD CUP 2026", 'mode' => 'result',
+                    ]);
                 }
             }
             if ($img) $log('[daily] card image: ' . basename($img));

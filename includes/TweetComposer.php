@@ -23,7 +23,7 @@ class TweetComposer
         'recap'     => 9,    // نتائج مباريات الليل (تنبيه صباحي للجمهور)
         'news'      => 14,   // 🆕 تذكير بصفحة الأخبار (CTA يوميّ يوجّه للموقع)
         'countdown' => 16,   // عدّ تنازلي عصراً قبل المباريات
-        'morning'   => 17,   // معاينة مباريات اليوم (تحضير الجمهور)
+        'morning'   => 18,   // 6م: معاينة مباريات الـ24 ساعة القادمة (تبدأ ~8م حتى فجر الغد)
         'trivia'    => 18,   // سؤال اليوم في وقت ذروة التفاعل
         'stats'     => 22,   // ملخّص رقمي قبل المباريات الليلية
         'evening'   => 23,   // نتائج آخر مباريات المساء
@@ -89,11 +89,45 @@ class TweetComposer
         return self::sign($msg, $link, 'countdown');
     }
 
+    /**
+     * 🆕 مباريات الـ24 ساعة القادمة (لم تبدأ بعد) — بدل «مباريات اليوم» التقويمي
+     * الذي كان يُظهر مباريات لُعبت فجراً. تُستخدم في التغريدة وبطاقتها المصوّرة.
+     */
+    public static function next24Matches(int $limit = 6): array
+    {
+        $now = time();
+        $out = [];
+        foreach (DataService::allMatches() as $m) {
+            $ts = DataService::matchTimestamp($m);
+            if ($ts === null || $ts < $now - 900 || $ts > $now + 86400) continue;
+            if (($m['_status'] ?? '') !== 'upcoming') continue;
+            $out[] = $m;
+        }
+        usort($out, fn($a, $b) => DataService::matchTimestamp($a) <=> DataService::matchTimestamp($b));
+        return array_slice($out, 0, $limit);
+    }
+
+    /** هاشتاكات منتخبات المباريات (عربي + إنجليزي) — للوصول المحلّي والعالمي معاً. */
+    private static function teamTags(array $matches, int $maxMatches = 2): string
+    {
+        $tags = [];
+        foreach (array_slice($matches, 0, $maxMatches) as $m) {
+            foreach (['team1', 'team2'] as $k) {
+                $en = trim((string)($m[$k] ?? ''));
+                if ($en === '' || (function_exists('is_real_team') && !is_real_team($en))) continue;
+                if (class_exists('Hashtags') && ($t = Hashtags::team($en))) $tags[] = $t;
+                $enTag = preg_replace('/[^A-Za-z]/', '', $en);
+                if ($enTag !== '') $tags[] = '#' . $enTag;
+            }
+        }
+        return implode(' ', array_unique($tags));
+    }
+
     private static function morning(bool $ar): string
     {
-        $today = DataService::matchesOnDate();
-        $n     = count($today);
-        $link  = self::link('matches.php');
+        $next = self::next24Matches();
+        $n    = count($next);
+        $link = self::link('matches.php');
         if ($n === 0) {
             $msg = $ar
                 ? "☕ يوم راحة في المونديال — راجع توقّعاتك وتفقّد ترتيبك 📊"
@@ -101,14 +135,15 @@ class TweetComposer
             return self::sign($msg, self::link('leaderboard.php'), 'morning');
         }
         $headline = $ar
-            ? "🔥 اليوم {$n} مباراة في المونديال ⚽"
-            : "🔥 {$n} World Cup matches today ⚽";
+            ? "🔥 {$n} مباراة في الـ24 ساعة القادمة ⚽"
+            : "🔥 {$n} World Cup matches in the next 24h ⚽";
         $lines = [];
-        foreach (array_slice($today, 0, 3) as $m) {
+        foreach (array_slice($next, 0, 3) as $m) {
             $lines[] = self::matchLine($m, $ar, withTime: true);
         }
         $foot = $ar ? "كل التفاصيل بتوقيتك المحلي 👇" : "All times in your local timezone 👇";
-        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link, 'morning');
+        return self::sign($headline . "\n" . implode("\n", $lines) . "\n" . $foot, $link, 'morning',
+                          self::teamTags($next));
     }
 
     private static function evening(bool $ar): string
@@ -327,7 +362,7 @@ class TweetComposer
         return mb_chr($cp, 'UTF-8');
     }
 
-    private static function sign(string $msg, string $link, ?string $slot = null): string
+    private static function sign(string $msg, string $link, ?string $slot = null, string $extraTags = ''): string
     {
         // هاشتاكات ذكيّة حسب الفترة: مرحلة + slot + أساس قصير
         if ($slot !== null && class_exists('Hashtags')) {
@@ -335,6 +370,8 @@ class TweetComposer
         } else {
             $tags = defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26';
         }
+        // هاشتاكات المنتخبات (عربي+إنجليزي) تتقدّم — الأكثر بحثاً وقت المباريات
+        if ($extraTags !== '') $tags = trim($extraTags . ' ' . $tags);
         $full = $msg . "\n" . $link . "\n" . $tags;
         if (mb_strlen($full, 'UTF-8') <= 280) return $full;
         $budget = 280 - mb_strlen("\n" . $link . "\n" . $tags, 'UTF-8') - 1;
