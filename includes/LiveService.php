@@ -713,12 +713,16 @@ class LiveService
         if ($needCards && !empty($ev['cards'])) {
             $out = [];
             foreach ($ev['cards'] as $c) {
-                $out[] = [
+                $card = [
                     'team'   => $sideToTeam((string)$c['side']),
                     'minute' => (int)($c['minute'] ?? 0),
                     'name'   => (string)($c['name'] ?? ''),
                     'type'   => (($c['type'] ?? '') === 'red') ? 'red' : 'yellow',
                 ];
+                // 🆕 تفسير الحالة التحكيميّة (سبب البطاقة)
+                if (!empty($c['reason_ar'])) $card['reason_ar'] = (string)$c['reason_ar'];
+                if (!empty($c['reason_en'])) $card['reason_en'] = (string)$c['reason_en'];
+                $out[] = $card;
             }
             if ($out) $m['cards'] = $out;
         }
@@ -730,6 +734,7 @@ class LiveService
                 if (!empty($g['offset']))  $e['offset']  = (int)$g['offset'];
                 if (!empty($g['penalty'])) $e['penalty'] = true;
                 if (!empty($g['owngoal'])) $e['owngoal'] = true;
+                if (!empty($g['assist']))  $e['assist']  = (string)$g['assist'];   // 🆕 صانع الهدف
                 ($sideToTeam((string)$g['side']) === 1) ? ($g1[] = $e) : ($g2[] = $e);
             }
             if ($g1) $m['goals1'] = $g1;

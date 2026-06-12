@@ -87,18 +87,24 @@ $page_image = base_url() . '/card.php?id=' . (int)$id . '&mode=match&v=3';
 $events = [];
 foreach (($m['goals1'] ?? []) as $g) {
     $events[] = ['min'=>(int)($g['minute']??0), 'side'=>1, 'type'=>'goal',
-                 'name'=>(string)($g['name']??''), 'pen'=>!empty($g['penalty']), 'og'=>!empty($g['owngoal'])];
+                 'name'=>(string)($g['name']??''), 'pen'=>!empty($g['penalty']), 'og'=>!empty($g['owngoal']),
+                 'assist'=>(string)($g['assist']??'')];
 }
 foreach (($m['goals2'] ?? []) as $g) {
     $events[] = ['min'=>(int)($g['minute']??0), 'side'=>2, 'type'=>'goal',
-                 'name'=>(string)($g['name']??''), 'pen'=>!empty($g['penalty']), 'og'=>!empty($g['owngoal'])];
+                 'name'=>(string)($g['name']??''), 'pen'=>!empty($g['penalty']), 'og'=>!empty($g['owngoal']),
+                 'assist'=>(string)($g['assist']??'')];
 }
 foreach (($m['cards'] ?? []) as $c) {
     $isRed = (($c['type'] ?? 'yellow') === 'red');
     $events[] = ['min'=>(int)($c['minute']??0),
                  'side'=>(((int)($c['team']??1))===2 ? 2 : 1),
                  'type'=>$isRed ? 'red' : 'yellow',
-                 'name'=>(string)($c['name']??'')];
+                 'name'=>(string)($c['name']??''),
+                 // تفسير الحالة التحكيميّة (من ESPN، معرّب عند توفّر المقابل)
+                 'reason'=>(string)(current_lang() === 'ar'
+                     ? ($c['reason_ar'] ?? ($c['reason_en'] ?? ''))
+                     : ($c['reason_en'] ?? ($c['reason_ar'] ?? '')))];
 }
 usort($events, fn($a,$b)=>$a['min'] <=> $b['min']);
 
@@ -256,6 +262,12 @@ seo_sportsevent($m);
             <span class="md-tl-flag"><?= flag_img($tnEn, 'w40') ?></span>
             <span class="md-tl-name"><?= e($ev['name']) ?></span>
             <?php if ($tag !== ''): ?><span class="md-tl-tag">(<?= e($tag) ?>)</span><?php endif; ?>
+            <?php if (!empty($ev['assist'])): ?>
+              <span class="md-tl-note">🅰️ <?= e($L('صناعة','Assist')) ?>: <?= e($ev['assist']) ?></span>
+            <?php endif; ?>
+            <?php if (!empty($ev['reason'])): ?>
+              <span class="md-tl-note">📋 <?= e($ev['reason']) ?></span>
+            <?php endif; ?>
           </li>
         <?php endforeach; ?>
       </ol>

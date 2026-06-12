@@ -249,6 +249,8 @@ class EspnLive
                 $offset = (int)($mm[2] ?? 0);
             }
 
+            $desc = trim((string)($e['text'] ?? ''));
+
             if (!empty($e['scoringPlay']) && empty($e['shootout'])) {
                 $g = ['side' => $side, 'name' => $name, 'minute' => $minute];
                 if ($offset) $g['offset'] = $offset;
@@ -258,13 +260,52 @@ class EspnLive
                     $g['owngoal'] = true;
                     $g['side'] = ($side === 'home') ? 'away' : 'home';
                 }
+                // 🆕 صانع الهدف من النص الوصفي: "Assisted by Érik Lira."
+                if (preg_match('/Assisted by ([^.]+)\./u', $desc, $am)) {
+                    $g['assist'] = trim($am[1]);
+                }
                 $goals[] = $g;
             } elseif ($tt === 'yellow-card' || $tt === 'red-card') {
-                $cards[] = ['side' => $side, 'minute' => $minute, 'name' => $name,
-                            'type' => ($tt === 'red-card') ? 'red' : 'yellow'];
+                $card = ['side' => $side, 'minute' => $minute, 'name' => $name,
+                         'type' => ($tt === 'red-card') ? 'red' : 'yellow'];
+                // 🆕 تفسير الحالة التحكيميّة (سبب البطاقة) — عربي + إنجليزي
+                $ar = self::cardReasonAr($desc);
+                if ($ar !== '') $card['reason_ar'] = $ar;
+                if (preg_match('/card(?: for (.+?))?\.?\s*$/u', $desc, $rm) && !empty($rm[1])) {
+                    $card['reason_en'] = trim($rm[1]);
+                }
+                $cards[] = $card;
             }
         }
         return ['goals' => $goals, 'cards' => $cards];
+    }
+
+    /** ترجمة أسباب البطاقات الشائعة في نصوص ESPN إلى العربيّة. */
+    private static function cardReasonAr(string $text): string
+    {
+        static $map = [
+            'second yellow'        => 'الإنذار الثاني',
+            'violent conduct'      => 'سلوك عنيف',
+            'serious foul play'    => 'تدخّل عنيف خطير',
+            'professional foul'    => 'إعاقة هجمة واعدة',
+            'denying an obvious'   => 'حرمان من فرصة محقّقة',
+            'bad foul'             => 'خطأ قويّ',
+            'handball'             => 'لمسة يد',
+            'handling the ball'    => 'لمسة يد',
+            'dissent'              => 'الاعتراض على الحكم',
+            'time wasting'         => 'إضاعة الوقت',
+            'delaying the restart' => 'تأخير استئناف اللعب',
+            'simulation'           => 'التمثيل',
+            'diving'               => 'التمثيل (سقوط متعمّد)',
+            'unsporting'           => 'سلوك غير رياضي',
+            'off the ball'         => 'حالة بعيدة عن الكرة',
+            'altercation'          => 'مشادّة',
+        ];
+        $lt = strtolower($text);
+        foreach ($map as $en => $ar) {
+            if (strpos($lt, $en) !== false) return $ar;
+        }
+        return '';
     }
 
     // ════════════════════════════════════════════════════════════

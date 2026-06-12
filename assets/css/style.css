@@ -1656,6 +1656,12 @@ a.ref-item:hover { border-color: var(--accent); transform: translateY(-2px); }
     background:linear-gradient(transparent, rgba(5,12,24,.92));
     color:#fff; font-weight:800; font-size:.95rem; text-align:center;
 }
+/* تفسير الحالة التحكيميّة / صانع الهدف في الخطّ الزمني */
+.md-tl-note {
+    display:inline-block; color:var(--text-dim); font-size:.78rem;
+    background:rgba(255,255,255,.05); border-radius:8px; padding:2px 8px;
+    margin-inline-start:6px;
+}
 /* 📊 إحصائيات الحكم */
 .ref-stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-bottom:16px; }
 .ref-stat { background:#11203a; border:1px solid #243a68; border-radius:12px; padding:14px; text-align:center; }
