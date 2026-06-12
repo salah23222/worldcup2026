@@ -20,7 +20,9 @@ if (!defined('WC2026')) { exit('Access denied'); }
 class RefereesFetcher
 {
     const WIKI_URL  = 'https://en.wikipedia.org/w/api.php?action=parse&page=2026_FIFA_World_Cup_officials&format=json&prop=wikitext&redirects=true';
-    const CACHE_TTL = 604800; // 7 أيّام
+    // 6 ساعات: صفحة ويكيبيديا تُحدَّث يومياً بتعيينات FIFA لكل مباراة
+    // (عمودا «Matches assigned» و«Fourth official») — نلتقطها بنفس اليوم.
+    const CACHE_TTL = 21600;
 
     /** مهلة إعادة المحاولة بعد جلب فاشل/فارغ — تمنع إعادة الجلب في كل طلب. */
     const FAIL_RETRY_AFTER = 900; // 15 دقيقة
@@ -167,16 +169,18 @@ class RefereesFetcher
             if (preg_match('/^\s*!/', $p)) continue;
 
             // اجمع خلايا الصفّ (كل سطر يبدأ بـ |)
-            $cells = []; $cur = '';
+            // ⚠️ الخلايا الفارغة «|» مشروعة ويجب حفظها — إسقاطها يُزيح الأعمدة
+            //    فيُقرأ تعيين «الحكم الرابع» وكأنّه تعيين «رئيسي»!
+            $cells = []; $cur = null;
             foreach (explode("\n", $p) as $line) {
                 if (strlen($line) > 0 && $line[0] === '|') {
-                    if ($cur !== '') $cells[] = trim($cur);
+                    if ($cur !== null) $cells[] = trim($cur);
                     $cur = ltrim($line, '|');
-                } elseif ($cur !== '') {
+                } elseif ($cur !== null) {
                     $cur .= "\n" . $line;
                 }
             }
-            if ($cur !== '') $cells[] = trim($cur);
+            if ($cur !== null) $cells[] = trim($cur);
 
             // احذف rowspan="x"|
             $cells = array_map(fn($c) => preg_replace('/^rowspan="?\d+"?\s*\|\s*/', '', $c), $cells);
@@ -206,9 +210,102 @@ class RefereesFetcher
                 'name'       => trim($rm[1]),
                 'country'    => trim($rm[2]),
                 'assistants' => $assistants,
+                // 🆕 تعيينات FIFA لكل مباراة (تملؤها ويكيبيديا تباعاً)
+                'assigned'   => self::parseAssigned($cells[2] ?? ''),   // حكماً رئيسياً
+                'fourth_of'  => self::parseAssigned($cells[3] ?? ''),   // حكماً رابعاً
             ];
         }
         return $referees;
+    }
+
+    /**
+     * parseAssigned() — يحلّل خليّة «Matches assigned»:
+     *   "Canada–Bosnia and Herzegovina (Group B)<br/>Ivory Coast–Ecuador (Group E)"
+     * يعيد [['Canada','Bosnia and Herzegovina'], ['Ivory Coast','Ecuador']].
+     */
+    private static function parseAssigned(string $raw): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') return [];
+        $out = [];
+        foreach (explode("\n", self::clean($raw)) as $line) {
+            $line = trim($line);
+            if ($line === '') continue;
+            $line = preg_replace('/\s*\([^)]*\)\s*$/u', '', $line);   // احذف "(Group B)"
+            // الفاصل: شرطة طويلة – أو — أو " v " أو " vs "
+            $parts = preg_split('/\s*(?:–|—|\bvs?\.?\b)\s*/u', $line);
+            if (is_array($parts) && count($parts) === 2
+                && trim($parts[0]) !== '' && trim($parts[1]) !== '') {
+                $out[] = [trim($parts[0]), trim($parts[1])];
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * assignmentFor($t1, $t2) — تعيين FIFA الرسمي لمباراة (من ويكيبيديا):
+     * يعيد طاقماً جاهزاً ['main','assistants','var'=>null,'fourth'] أو null.
+     * المطابقة عبر LiveService::normalizeKey (تتكفّل بمرادفات الأسماء).
+     */
+    public static function assignmentFor(string $t1, string $t2): ?array
+    {
+        if (!class_exists('LiveService')) return null;
+        $want = [LiveService::normalizeKey($t1, $t2), LiveService::normalizeKey($t2, $t1)];
+
+        $pairMatches = function (array $pair) use ($want): bool {
+            $k = LiveService::normalizeKey($pair[0], $pair[1]);
+            return in_array($k, $want, true);
+        };
+
+        $crew = null;
+        $fourth = null;
+        foreach (self::all() as $r) {
+            foreach (($r['assigned'] ?? []) as $pair) {
+                if ($pairMatches($pair)) {
+                    $assts = [];
+                    foreach (($r['assistants'] ?? []) as $a) {
+                        $assts[] = [
+                            'name'       => (string)($a['name'] ?? ''),
+                            'country_ar' => self::countryArabic((string)($a['country'] ?? '')),
+                            'flag'       => self::countryFlag((string)($a['country'] ?? '')),
+                        ];
+                    }
+                    $crew = [
+                        'main' => [
+                            'name'       => (string)$r['name'],
+                            'country_ar' => self::countryArabic((string)($r['country'] ?? '')),
+                            'flag'       => self::countryFlag((string)($r['country'] ?? '')),
+                        ],
+                        'assistants' => $assts,
+                        'var'        => null,
+                        'fourth'     => null,
+                    ];
+                    break;
+                }
+            }
+            if ($fourth === null) {
+                foreach (($r['fourth_of'] ?? []) as $pair) {
+                    if ($pairMatches($pair)) {
+                        $fourth = [
+                            'name'       => (string)$r['name'],
+                            'country_ar' => self::countryArabic((string)($r['country'] ?? '')),
+                            'flag'       => self::countryFlag((string)($r['country'] ?? '')),
+                        ];
+                        break;
+                    }
+                }
+            }
+            if ($crew !== null && $fourth !== null) break;
+        }
+
+        if ($crew === null && $fourth === null) return null;
+        if ($crew === null) {
+            // لم يُملأ الحكم الرئيسي بعد، لكنّ الرابع معروف — أعِد الرابع فقط
+            $crew = ['main' => null, 'assistants' => [], 'var' => null, 'fourth' => $fourth];
+        } else {
+            $crew['fourth'] = $fourth;
+        }
+        return $crew;
     }
 
     /** يطبّع وسوم Wikipedia: [[a|b]]→b, {{ill|x|...}}→x, <br>→\n */

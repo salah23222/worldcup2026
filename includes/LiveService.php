@@ -287,6 +287,8 @@ class LiveService
             'czechia'         => 'czech republic',
             'türkiye'         => 'turkey',
             'congo dr'        => 'dr congo',
+            // ويكيبيديا تكتب and بدل & (openfootball)
+            'bosnia and herzegovina' => 'bosnia & herzegovina',
         ];
         $name = $aliases[$name] ?? $name;
         return preg_replace('/[^a-z]/', '', $name);
@@ -941,6 +943,7 @@ class LiveService
         // ⚠️ أسماء openfootball الفعليّة: "Bosnia & Herzegovina" و"USA"
         'Canada|Bosnia & Herzegovina'     => ['main' => ['name' => 'TELLO Facundo',  'country_ar' => 'الأرجنتين','flag' => 'ar']],
         'USA|Paraguay'                    => ['main' => ['name' => 'MAKKELIE Danny', 'country_ar' => 'هولندا',   'flag' => 'nl']],
+        'Qatar|Switzerland'               => ['main' => ['name' => 'Said Martinez',  'country_ar' => 'هندوراس',  'flag' => 'hn']],
         // ⚽ أضِف هنا أيّ مباراة عند إعلان FIFA — صيغة: "Team1|Team2" بأسماء openfootball
         //    (ESPN يجلب التعيينات تلقائياً أيضاً — هذا للتجاوز اليدوي السريع فقط)
     ];
@@ -989,28 +992,56 @@ class LiveService
             }
         }
 
+        // تعيين ويكيبيديا — يُحسب مرّة ويُستعمل في أكثر من فرع أدناه
+        $wa = (class_exists('RefereesFetcher') && method_exists('RefereesFetcher', 'assignmentFor'))
+            ? RefereesFetcher::assignmentFor($t1, $t2)
+            : null;
+
         // ────────────────────────────────────────────────
         // (2) 🆕 BUILTIN — تعيينات FIFA مُضمَّنة في الكود
         // ────────────────────────────────────────────────
         $bi = self::BUILTIN_REFEREES[$t1 . '|' . $t2] ?? (self::BUILTIN_REFEREES[$t2 . '|' . $t1] ?? null);
         if (is_array($bi)) {
-            return self::$officialsMemo[$memoKey] = self::enrich([
+            $crew = [
                 'main'       => self::normalizeOfficial($bi['main']       ?? null),
                 'assistants' => self::normalizeOfficials($bi['assistants'] ?? null),
                 'var'        => self::normalizeOfficial($bi['var']        ?? null),
                 'fourth'     => self::normalizeOfficial($bi['fourth']     ?? null),
-            ]);
+            ];
+            // أكمل الحكم الرابع من تعيينات ويكيبيديا
+            if (empty($crew['fourth']) && $wa !== null && !empty($wa['fourth']['name'])) {
+                $crew['fourth'] = $wa['fourth'];
+            }
+            return self::$officialsMemo[$memoKey] = self::enrich($crew);
         }
 
         // ────────────────────────────────────────────────
-        // (3) 🆕 ESPN — تعيينات FIFA الفعليّة لكل مباراة، تلقائياً
-        //     (تظهر فور نشرها قرب موعد المباراة، وتُؤرشَف للأبد)
+        // (3) 🆕 ويكيبيديا — تعيينات FIFA الرسميّة لكل مباراة
+        //     (تُحدَّث يومياً بعد إعلان FIFA: الرئيسي + مساعدوه + الرابع)
         // ────────────────────────────────────────────────
-        $espn = self::espnOfficials($match, $t1, $t2);
-        if ($espn !== null) return self::enrich($espn);
+        if ($wa !== null && !empty($wa['main']['name'])) {
+            // أكمل VAR/الرابع من ESPN إن نشرهما
+            $e = self::espnOfficials($match, $t1, $t2);
+            if (is_array($e)) {
+                if (empty($wa['var']['name'])    && !empty($e['var']['name']))    $wa['var']    = $e['var'];
+                if (empty($wa['fourth']['name']) && !empty($e['fourth']['name'])) $wa['fourth'] = $e['fourth'];
+            }
+            return self::$officialsMemo[$memoKey] = self::enrich($wa);
+        }
 
         // ────────────────────────────────────────────────
-        // (4) API-Football → اسم الحكم الرئيسي فقط
+        // (4) ESPN — تظهر قرب موعد المباراة وتُؤرشَف للأبد
+        // ────────────────────────────────────────────────
+        $espn = self::espnOfficials($match, $t1, $t2);
+        if ($espn !== null) {
+            if ($wa !== null && empty($espn['fourth']) && !empty($wa['fourth']['name'])) {
+                $espn['fourth'] = $wa['fourth'];
+            }
+            return self::$officialsMemo[$memoKey] = self::enrich($espn);
+        }
+
+        // ────────────────────────────────────────────────
+        // (5) API-Football → اسم الحكم الرئيسي فقط
         // ────────────────────────────────────────────────
         if (self::isEnabled()) {
             $map = self::fixturesMap();
@@ -1023,6 +1054,11 @@ class LiveService
                     }
                 }
             }
+        }
+
+        // لا حكم رئيسياً بعد — لكن لو ويكيبيديا تعرف «الرابع» وحده فاعرضه
+        if ($wa !== null && !empty($wa['fourth']['name'])) {
+            return self::$officialsMemo[$memoKey] = self::enrich($wa);
         }
         return self::$officialsMemo[$memoKey] = $empty;
     }
