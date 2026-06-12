@@ -2624,3 +2624,7 @@ button.sponsor-empty:hover { border-color: var(--accent-2); color: var(--text); 
 .kit-share.kit-rd { background: #ff4500; color: #fff; }
 .kit-share.kit-cp { background: var(--bg-2); color: var(--text); border: 1px solid var(--border); }
 .kit-share.kit-cp:hover { background: var(--surface); }
+
+/* مصادر تحكيميّة (referees.php) */
+.ref-sources { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+.ref-src-ico { font-size:1.5rem; width:42px; text-align:center; }

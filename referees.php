@@ -89,4 +89,32 @@ tpl('header');
   <?php endforeach; ?>
 <?php endif; ?>
 
+<?php $isAr = (current_lang() === 'ar'); ?>
+<section class="section">
+  <h2 class="section-title">🔭 <?= e($isAr ? 'مصادر تحكيميّة موثوقة' : 'Trusted refereeing sources') ?></h2>
+  <div class="ref-sources">
+    <a class="ref-item" href="https://x.com/ArbitroInteBlog" target="_blank" rel="noopener">
+      <span class="ref-src-ico">𝕏</span>
+      <div class="ref-meta">
+        <span class="ref-name">Arbitro Internacional</span>
+        <span class="ref-country"><?= e($isAr ? 'تعيينات الحكام أوّلاً بأوّل + تحليل الحالات' : 'Appointments first + decision analysis') ?></span>
+      </div>
+    </a>
+    <a class="ref-item" href="https://x.com/DaleJohnsonESPN" target="_blank" rel="noopener">
+      <span class="ref-src-ico">𝕏</span>
+      <div class="ref-meta">
+        <span class="ref-name">Dale Johnson — ESPN</span>
+        <span class="ref-country"><?= e($isAr ? 'شرح قرارات الـVAR الجدليّة' : 'VAR decisions explained') ?></span>
+      </div>
+    </a>
+    <a class="ref-item" href="https://www.theifab.com/laws-of-the-game-documents/" target="_blank" rel="noopener">
+      <span class="ref-src-ico">⚖️</span>
+      <div class="ref-meta">
+        <span class="ref-name">IFAB — <?= e($isAr ? 'قانون اللعبة' : 'Laws of the Game') ?></span>
+        <span class="ref-country"><?= e($isAr ? 'المرجع الرسمي (نسخة عربيّة متاحة)' : 'Official rules (Arabic available)') ?></span>
+      </div>
+    </a>
+  </div>
+</section>
+
 <?php tpl('footer'); ?>
