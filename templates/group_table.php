@@ -6,10 +6,15 @@
 if (!defined('WC2026')) { exit('Access denied'); }
 
 function render_group_table(string $group, array $rows): void {
+    // حرف المجموعة الصحيح: «Group A» → «A». لا نستعمل preg_replace('/[^A-L]/')
+    // لأنّ حرف G من كلمة Group يقع ضمن A-L فينتج «GA» خاطئ.
+    $gL = preg_match('/Group\s*([A-L])/i', $group, $gm)
+        ? strtoupper($gm[1])
+        : strtoupper(substr(trim($group), -1));
     ?>
     <div class="group-block">
       <h3 class="group-title">
-        <span class="group-letter"><?= e(preg_replace('/[^A-L]/i', '', $group)) ?></span>
+        <span class="group-letter"><?= e($gL) ?></span>
         <?= e(group_label($group)) ?>
       </h3>
       <div class="table-scroll">
@@ -55,8 +60,7 @@ function render_group_table(string $group, array $rows): void {
       </div>
       <?php
         // مشاركة هذه المجموعة: الرابط يحمل ?g=الحرف → معاينة بطاقة المجموعة،
-        // والهاشتاكات تضمّ منتخبات المجموعة (AR + EN).
-        $gL = preg_replace('/[^A-L]/i', '', $group);
+        // والهاشتاكات تضمّ منتخبات المجموعة (AR + EN). $gL مُحسَّب أعلى الدالة.
         render_share(
             url('groups.php', ['g' => $gL, 'd' => card_rev()]),
             group_label($group) . ' — ' . t('standings') . ' — ' . SITE_NAME_AR,
@@ -101,7 +105,7 @@ function render_third_place_table(array $rows): void {
             ?>
             <tr class="<?= e(ltrim($qualClass)) ?>">
               <td class="t-pos"><span class="rank"><?= $rank ?></span></td>
-              <td><strong><?= e(preg_replace('/[^A-L]/i', '', (string)($r['group'] ?? ''))) ?></strong></td>
+              <td><strong><?= e(preg_match('/Group\s*([A-L])/i', (string)($r['group'] ?? ''), $tm) ? strtoupper($tm[1]) : strtoupper(substr(trim((string)($r['group'] ?? '')), -1))) ?></strong></td>
               <td class="t-team">
                 <a href="<?= e(url('team.php', ['team' => $r['team']])) ?>">
                   <?= flag_img($r['team'], 'w40') ?>

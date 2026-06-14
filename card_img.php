@@ -114,7 +114,8 @@ try {
     // 🆕 بطاقة ترتيب مجموعة (?mode=group&g=A) — بيانات حقيقيّة من Standings بنفس الهوية
     if (($_GET['mode'] ?? '') === 'group') {
         $gL = strtoupper(preg_replace('/[^A-La-l]/', '', (string)($_GET['g'] ?? '')));
-        $gL = $gL !== '' ? $gL[0] : 'A';
+        // آخر حرف: يتحمّل «GA» القديم (G من Group) → A، و«A» المفرد → A
+        $gL = $gL !== '' ? substr($gL, -1) : 'A';
         $rows = class_exists('Standings') ? Standings::forGroup('Group ' . $gL) : [];
 
         // جالب أعلام محلي (نسخة مصغّرة من جالب وضع المباراة)

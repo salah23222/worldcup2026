@@ -10,14 +10,16 @@ $tables     = Standings::all();
 $thirds     = Standings::thirdPlaceRanking();
 
 // معاينة الرابط (تويتر/واتساب): ?g=A → بطاقة تلك المجموعة · بلا ?g → كل المجموعات
-$gParam = strtoupper(preg_replace('/[^A-La-l]/', '', (string)($_GET['g'] ?? '')));
+// حرف المجموعة: آخر حرف A-L (يتحمّل الروابط القديمة «GA» المكَيَّشة → A، وكذلك «A» المفرد)
+$gRaw   = strtoupper(preg_replace('/[^A-La-l]/', '', (string)($_GET['g'] ?? '')));
+$gParam = $gRaw !== '' ? substr($gRaw, -1) : '';
 $page_image = ($gParam !== '')
-    ? url('card_img.php', ['mode' => 'group',  'g' => $gParam[0], 'd' => card_rev()])
+    ? url('card_img.php', ['mode' => 'group',  'g' => $gParam, 'd' => card_rev()])
     : url('card_img.php', ['mode' => 'groups', 'd' => card_rev()]);
 
 // عند ?g → عنوان/وصف خاصّان بالمجموعة فتظهر بطاقة المشاركة ذات معنى (لا «المجموعات» العامّة)
 if ($gParam !== '') {
-    $gL = $gParam[0];
+    $gL = $gParam;
     $page_title = t('group') . ' ' . $gL . ' — ' . t('standings');
     $page_desc  = current_lang() === 'ar'
         ? ('ترتيب المجموعة ' . $gL . ' في كأس العالم 2026 — النقاط والفارق والنتائج محدّثة.')
