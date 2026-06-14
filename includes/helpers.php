@@ -60,6 +60,20 @@ function url(string $page, array $params = []): string {
     return rtrim(SITE_URL, '/') . '/' . ltrim($page, '/') . ($qs ? '?' . $qs : '');
 }
 
+/**
+ * card_rev() — مُبطِّل كاش لبطاقات المشاركة (og:image + رابط المشاركة).
+ * يتغيّر يومياً (لتحديث الترتيب) + مع كل تعديل على مولّد البطاقات (لكسر كاش
+ * تويتر/فيسبوك بعد أي إصلاح تصميم). يُستخدَم نفسه في og:image ورابط المشاركة
+ * فيتطابق مفتاح الكاش (og:url) مع الصورة. */
+function card_rev(): string {
+    static $rev = null;
+    if ($rev === null) {
+        $mt  = @filemtime(__DIR__ . '/../card_img.php') ?: 0;
+        $rev = date('Ymd') . '-' . substr((string)$mt, -5);
+    }
+    return $rev;
+}
+
 /** تحويل اسم الجولة (إنجليزي) إلى نص معروض حسب اللغة */
 function round_label(string $round): string {
     $round = trim($round);

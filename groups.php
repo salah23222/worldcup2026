@@ -12,8 +12,8 @@ $thirds     = Standings::thirdPlaceRanking();
 // معاينة الرابط (تويتر/واتساب): ?g=A → بطاقة تلك المجموعة · بلا ?g → كل المجموعات
 $gParam = strtoupper(preg_replace('/[^A-La-l]/', '', (string)($_GET['g'] ?? '')));
 $page_image = ($gParam !== '')
-    ? url('card_img.php', ['mode' => 'group',  'g' => $gParam[0], 'd' => date('Ymd')])
-    : url('card_img.php', ['mode' => 'groups', 'd' => date('Ymd')]);
+    ? url('card_img.php', ['mode' => 'group',  'g' => $gParam[0], 'd' => card_rev()])
+    : url('card_img.php', ['mode' => 'groups', 'd' => card_rev()]);
 
 // عند ?g → عنوان/وصف خاصّان بالمجموعة فتظهر بطاقة المشاركة ذات معنى (لا «المجموعات» العامّة)
 if ($gParam !== '') {
