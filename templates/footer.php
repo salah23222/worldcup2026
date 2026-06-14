@@ -317,9 +317,10 @@ $lang       = current_lang();
   'soonBody'  => t('remind_soon_body'),
   'startBody' => t('remind_start_body'),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
-<?php $rateV = @filemtime(__DIR__ . '/../assets/js/rating.js') ?: 1; ?>
+<?php $rateV = @filemtime(__DIR__ . '/../assets/js/rating.js') ?: 1; $shV = @filemtime(__DIR__ . '/../assets/js/share.js') ?: 1; ?>
 <script src="<?= $jsBase ?>/assets/js/reminders.js?v=<?= $rmV ?>" defer></script>
 <script src="<?= $jsBase ?>/assets/js/rating.js?v=<?= $rateV ?>" defer></script>
+<script src="<?= $jsBase ?>/assets/js/share.js?v=<?= $shV ?>" defer></script>
 <script>
 (function () {
   var el = document.getElementById('visitorCount');

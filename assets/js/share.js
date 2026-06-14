@@ -71,13 +71,24 @@
     };
   }
 
+  /* مشاركة أصليّة (Web Share API) — تفتح ورقة المشاركة على الهاتف؛ وإلا X */
+  function nativeShare(text, url) {
+    if (global.navigator && global.navigator.share) {
+      global.navigator.share({ title: text || (global.document && global.document.title) || '', text: text, url: url })
+        .catch(function () {});
+    } else {
+      openShare(xUrl(text, url));
+    }
+  }
+
   function handle(kind, el, ev) {
     var d = resolve(el);
     switch (kind) {
-      case 'wa':   if (ev) ev.preventDefault(); openShare(waUrl(d.text, d.url)); break;
-      case 'x':    if (ev) ev.preventDefault(); openShare(xUrl(d.text, d.url));  break;
-      case 'tg':   if (ev) ev.preventDefault(); openShare(tgUrl(d.text, d.url)); break;
-      case 'copy': if (ev) ev.preventDefault(); copyLink(d.url, el); break;
+      case 'wa':     if (ev) ev.preventDefault(); openShare(waUrl(d.text, d.url)); break;
+      case 'x':      if (ev) ev.preventDefault(); openShare(xUrl(d.text, d.url));  break;
+      case 'tg':     if (ev) ev.preventDefault(); openShare(tgUrl(d.text, d.url)); break;
+      case 'copy':   if (ev) ev.preventDefault(); copyLink(d.url, el); break;
+      case 'native': if (ev) ev.preventDefault(); nativeShare(d.text, d.url); break;
     }
   }
 

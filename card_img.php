@@ -186,6 +186,104 @@ try {
         imagepng($im); imagedestroy($im); exit;
     }
 
+    // 🆕 بطاقة «المباريات القادمة خلال 24 ساعة» (?mode=upcoming) — لزر مشاركة صفحة المباريات
+    if (($_GET['mode'] ?? '') === 'upcoming') {
+        $now  = time();
+        $list = [];
+        if (class_exists('TweetComposer')) $list = TweetComposer::next24Matches(4);
+        if (!$list && class_exists('DataService')) {
+            foreach (DataService::allMatches() as $mm) {
+                $ts = DataService::matchTimestamp($mm);
+                if ($ts === null || $ts < $now - 900 || $ts > $now + 86400) continue;
+                if (($mm['_status'] ?? '') !== 'upcoming') continue;
+                $list[] = $mm;
+            }
+            usort($list, fn($a, $b) => (DataService::matchTimestamp($a) ?? 0) <=> (DataService::matchTimestamp($b) ?? 0));
+            $list = array_slice($list, 0, 4);
+        }
+
+        $fetch = function (string $url) {
+            if ($url === '') return false;
+            $cf = rtrim(CACHE_DIR, '/') . '/flag_' . md5($url) . '.png';
+            if (is_file($cf)) { $r = @file_get_contents($cf); if ($r !== false) { $i = @imagecreatefromstring($r); if ($i) return $i; } }
+            $raw = http_get($url, ['timeout' => 8]);
+            if (!$raw) return false;
+            @file_put_contents($cf, $raw);
+            return @imagecreatefromstring($raw);
+        };
+        $fontAr = __DIR__ . '/assets/fonts/Amiri-Bold.ttf';
+        if (!is_file($fontAr)) $fontAr = $font;
+        $shape = fn(string $s): string => class_exists('ArabicText') ? ArabicText::shape($s) : $s;
+        $DAYS = ['Sunday'=>'الأحد','Monday'=>'الإثنين','Tuesday'=>'الثلاثاء','Wednesday'=>'الأربعاء','Thursday'=>'الخميس','Friday'=>'الجمعة','Saturday'=>'السبت'];
+        $MON  = [1=>'يناير',2=>'فبراير',3=>'مارس',4=>'أبريل',5=>'مايو',6=>'يونيو',7=>'يوليو',8=>'أغسطس',9=>'سبتمبر',10=>'أكتوبر',11=>'نوفمبر',12=>'ديسمبر'];
+        $navyText = imagecolorallocate($im, 26, 31, 100);
+        $enBlue   = imagecolorallocate($im, 70, 90, 140);
+        $frame    = imagecolorallocate($im, 36, 66, 104);
+
+        if ($hasFont) {
+            $centerText($im, 44, 122, $white, $fontAr, $shape('المباريات القادمة'));
+            $centerText($im, 19, 156, $gold,  $font,   'UPCOMING · NEXT 24H · FIFA WORLD CUP 2026');
+
+            if ($list) {
+                $y = 188;
+                foreach ($list as $m) {
+                    $t1 = (string)($m['team1'] ?? ''); $t2 = (string)($m['team2'] ?? '');
+                    $ts = class_exists('DataService') ? DataService::matchTimestamp($m) : null;
+                    if ($ts) {
+                        $d = $shape(($DAYS[date('l', $ts)] ?? '') . ' ' . (int)date('j', $ts) . ' ' . ($MON[(int)date('n', $ts)] ?? ''));
+                        $bb = imagettfbbox(15, 0, $fontAr, $d);
+                        imagettftext($im, 15, 0, (int)($W/2 - ($bb[2]-$bb[0])/2), $y + 14, $gold, $fontAr, $d);
+                    }
+                    $by = $y + 24; $bh = 62; $mid = $by + (int)($bh/2);
+                    imagefilledrectangle($im, 60, $by, $W - 60, $by + $bh, imagecolorallocatealpha($im, 255, 255, 255, 120));
+
+                    // صندوق الوقت في الوسط (كحلي + نص أبيض)
+                    $boxW = 186; $bx1 = (int)($W/2 - $boxW/2);
+                    imagefilledrectangle($im, $bx1, $by + 6, $bx1 + $boxW, $by + $bh - 6, $navyText);
+                    $time = $ts ? date('H:i', $ts) : '--:--';
+                    $bb = imagettfbbox(28, 0, $font, $time);
+                    imagettftext($im, 28, 0, (int)($W/2 - ($bb[2]-$bb[0])/2), $mid + 4, $white, $font, $time);
+                    $tl = $shape('بتوقيت الإمارات'); $bb = imagettfbbox(12, 0, $fontAr, $tl);
+                    imagettftext($im, 12, 0, (int)($W/2 - ($bb[2]-$bb[0])/2), $mid + 22, $dim, $fontAr, $tl);
+
+                    // علم + اسم الفريقين (AR فوق · EN تحت)
+                    $fw = 54; $fh = 36; $fy = $mid - (int)($fh/2);
+                    // يمين: الفريق الأول (محاذاة يمين)
+                    $f1x = $W - 60 - 22 - $fw;
+                    if ($fl = $fetch(flag_url($t1, 'w160'))) {
+                        imagecopyresampled($im, $fl, $f1x, $fy, 0, 0, $fw, $fh, imagesx($fl), imagesy($fl));
+                        imagedestroy($fl); imagerectangle($im, $f1x, $fy, $f1x + $fw, $fy + $fh, $frame);
+                    }
+                    $rEdge = $f1x - 16;
+                    $n1 = $shape(function_exists('team_name') ? team_name($t1) : $t1);
+                    $bb = imagettfbbox(23, 0, $fontAr, $n1); imagettftext($im, 23, 0, (int)($rEdge - ($bb[2]-$bb[0])), $mid - 1, $navyText, $fontAr, $n1);
+                    $e1 = strtoupper($t1); $bb = imagettfbbox(13, 0, $font, $e1); imagettftext($im, 13, 0, (int)($rEdge - ($bb[2]-$bb[0])), $mid + 21, $enBlue, $font, $e1);
+                    // يسار: الفريق الثاني (محاذاة يسار)
+                    $f2x = 60 + 22;
+                    if ($fl2 = $fetch(flag_url($t2, 'w160'))) {
+                        imagecopyresampled($im, $fl2, $f2x, $fy, 0, 0, $fw, $fh, imagesx($fl2), imagesy($fl2));
+                        imagedestroy($fl2); imagerectangle($im, $f2x, $fy, $f2x + $fw, $fy + $fh, $frame);
+                    }
+                    $lEdge = $f2x + $fw + 16;
+                    $n2 = $shape(function_exists('team_name') ? team_name($t2) : $t2);
+                    imagettftext($im, 23, 0, $lEdge, $mid - 1, $navyText, $fontAr, $n2);
+                    imagettftext($im, 13, 0, $lEdge, $mid + 21, $enBlue, $font, strtoupper($t2));
+
+                    $y += 95;
+                }
+            } else {
+                $centerText($im, 30, 330, $white, $fontAr, $shape('لا مباريات خلال الـ24 ساعة القادمة'));
+                $centerText($im, 22, 372, $dim,   $font,   'NO MATCHES IN THE NEXT 24 HOURS');
+            }
+            $domain = parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org';
+            $centerText($im, 22, $H - 22, $white, $font, strtoupper($domain));
+        } else {
+            $centerBuiltin($im, 5, 300, $white, 'UPCOMING MATCHES');
+            $centerBuiltin($im, 4, 340, $dim, 'wcup2026.org');
+        }
+        imagepng($im); imagedestroy($im); exit;
+    }
+
     // 🆕 بطاقة كل المجموعات (?mode=groups) — 4 جداول مصغّرة بهويّة الموقع
     if (($_GET['mode'] ?? '') === 'groups') {
         $all = class_exists('Standings') ? Standings::all() : [];

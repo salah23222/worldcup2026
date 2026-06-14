@@ -6,6 +6,11 @@ require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/templates/match_card.php';
 
 $page_title = t('matches');
+// معاينة المشاركة: بطاقة «المباريات القادمة خلال 24 ساعة» بهويّة الموقع
+$page_image = url('card_img.php', ['mode' => 'upcoming', 'd' => card_rev()]);
+$page_desc  = current_lang() === 'ar'
+    ? 'كل مباريات كأس العالم 2026 ومواعيدها بتوقيتك — والمباريات القادمة خلال 24 ساعة.'
+    : 'All FIFA World Cup 2026 matches and kickoff times in your timezone — plus what is coming in the next 24 hours.';
 
 // قراءة الفلاتر من الرابط
 $fRound  = isset($_GET['round'])  ? trim($_GET['round'])  : '';
@@ -50,6 +55,9 @@ tpl('header');
 ?>
 <div class="cal-bar">
   <a class="btn btn-cta" href="<?= $icsUrl ?>">📅 <?= e(t('add_to_calendar')) ?></a>
+  <button type="button" class="btn btn-sm cal-sub" data-share="native"
+          data-share-url="<?= e(url('matches.php', ['d' => card_rev()])) ?>"
+          data-share-text="<?= e(current_lang()==='ar' ? 'المباريات القادمة خلال 24 ساعة — كأس العالم 2026' : 'Upcoming matches in the next 24h — FIFA World Cup 2026') ?>">📢 <?= e(current_lang()==='ar' ? 'شارك المباريات' : 'Share matches') ?></button>
   <a class="btn btn-sm cal-sub" href="<?= $webcalUrl ?>">🔔 <?= e(t('subscribe_calendar')) ?></a>
   <a class="btn btn-sm cal-sub" href="<?= e(url('print.php')) ?>" target="_blank">🖨️ <?= e(current_lang()==='ar' ? 'طباعة جدول البطولة' : 'Print schedule poster') ?></a>
   <span class="cal-hint muted"><?= e(t('calendar_hint')) ?></span>
