@@ -188,25 +188,6 @@ try {
 
     // 🆕 بطاقة «المباريات القادمة خلال 24 ساعة» (?mode=upcoming) — لزر مشاركة صفحة المباريات
     if (($_GET['mode'] ?? '') === 'upcoming') {
-        // التصميم المعتمد: البطاقة الطوليّة الغنيّة (TweetCardImage) — تاريخ + مجموعة + أعلام + AR/EN
-        if (class_exists('TweetCardImage') && class_exists('TweetComposer')) {
-            $u24 = TweetComposer::next24Matches(4);
-            if ($u24) {
-                $png = TweetCardImage::generate($u24, [
-                    'title'       => 'المباريات القادمة',
-                    'subtitle'    => 'كأس العالم 2026',
-                    'subtitle_en' => 'UPCOMING MATCHES — FIFA WORLD CUP 2026',
-                ]);
-                if ($png && is_file($png)) {
-                    imagedestroy($im);
-                    header('Content-Type: image/png');
-                    header('Cache-Control: public, max-age=3600');
-                    readfile($png);
-                    exit;
-                }
-            }
-        }
-        // احتياطي: تصميم أفقي مدمج (إن تعذّر توليد البطاقة الطوليّة)
         $now  = time();
         $list = [];
         if (class_exists('TweetComposer')) $list = TweetComposer::next24Matches(4);
@@ -235,6 +216,7 @@ try {
         $shape = fn(string $s): string => class_exists('ArabicText') ? ArabicText::shape($s) : $s;
         $DAYS = ['Sunday'=>'الأحد','Monday'=>'الإثنين','Tuesday'=>'الثلاثاء','Wednesday'=>'الأربعاء','Thursday'=>'الخميس','Friday'=>'الجمعة','Saturday'=>'السبت'];
         $MON  = [1=>'يناير',2=>'فبراير',3=>'مارس',4=>'أبريل',5=>'مايو',6=>'يونيو',7=>'يوليو',8=>'أغسطس',9=>'سبتمبر',10=>'أكتوبر',11=>'نوفمبر',12=>'ديسمبر'];
+        $GROUP_AR = ['A'=>'الأولى','B'=>'الثانية','C'=>'الثالثة','D'=>'الرابعة','E'=>'الخامسة','F'=>'السادسة','G'=>'السابعة','H'=>'الثامنة','I'=>'التاسعة','J'=>'العاشرة','K'=>'الحادية عشرة','L'=>'الثانية عشرة'];
         $navyText = imagecolorallocate($im, 26, 31, 100);
         $enBlue   = imagecolorallocate($im, 70, 90, 140);
         $frame    = imagecolorallocate($im, 36, 66, 104);
@@ -248,10 +230,14 @@ try {
                 foreach ($list as $m) {
                     $t1 = (string)($m['team1'] ?? ''); $t2 = (string)($m['team2'] ?? '');
                     $ts = class_exists('DataService') ? DataService::matchTimestamp($m) : null;
-                    if ($ts) {
-                        $d = $shape(($DAYS[date('l', $ts)] ?? '') . ' ' . (int)date('j', $ts) . ' ' . ($MON[(int)date('n', $ts)] ?? ''));
-                        $bb = imagettfbbox(15, 0, $fontAr, $d);
-                        imagettftext($im, 15, 0, (int)($W/2 - ($bb[2]-$bb[0])/2), $y + 14, $gold, $fontAr, $d);
+                    $dateStr = '';
+                    if ($ts) $dateStr = ($DAYS[date('l', $ts)] ?? '') . ' ' . (int)date('j', $ts) . ' ' . ($MON[(int)date('n', $ts)] ?? '');
+                    $grpStr = (preg_match('/Group\s*([A-L])/i', (string)($m['group'] ?? ''), $gmm))
+                        ? ('المجموعة ' . ($GROUP_AR[strtoupper($gmm[1])] ?? strtoupper($gmm[1]))) : '';
+                    $hdr = trim($dateStr . ($dateStr && $grpStr ? '  ·  ' : '') . $grpStr);
+                    if ($hdr !== '') {
+                        $hs = $shape($hdr); $bb = imagettfbbox(15, 0, $fontAr, $hs);
+                        imagettftext($im, 15, 0, (int)($W/2 - ($bb[2]-$bb[0])/2), $y + 14, $gold, $fontAr, $hs);
                     }
                     $by = $y + 24; $bh = 62; $mid = $by + (int)($bh/2);
                     imagefilledrectangle($im, 60, $by, $W - 60, $by + $bh, imagecolorallocatealpha($im, 255, 255, 255, 120));

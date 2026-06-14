@@ -6,22 +6,8 @@ require __DIR__ . '/includes/bootstrap.php';
 require __DIR__ . '/templates/match_card.php';
 
 $page_title = t('matches');
-// معاينة المشاركة: بطاقة «المباريات القادمة خلال 24 ساعة» (طوليّة بهويّة الموقع)
+// معاينة المشاركة: بطاقة «المباريات القادمة خلال 24 ساعة» (أفقيّة 1200×630 — لا تُقصّ على X)
 $page_image = url('card_img.php', ['mode' => 'upcoming', 'd' => card_rev()]);
-// أبعاد البطاقة الفعليّة (طوليّة متغيّرة الارتفاع) — لمعاينة الروابط الصحيحة
-if (class_exists('TweetCardImage') && class_exists('TweetComposer')) {
-    $u = TweetComposer::next24Matches(4);
-    if ($u) {
-        $p = TweetCardImage::generate($u, [
-            'title' => 'المباريات القادمة', 'subtitle' => 'كأس العالم 2026',
-            'subtitle_en' => 'UPCOMING MATCHES — FIFA WORLD CUP 2026',
-        ]);
-        if ($p && is_file($p) && ($sz = @getimagesize($p))) {
-            $page_image_w = $sz[0];
-            $page_image_h = $sz[1];
-        }
-    }
-}
 $page_desc  = current_lang() === 'ar'
     ? 'كل مباريات كأس العالم 2026 ومواعيدها بتوقيتك — والمباريات القادمة خلال 24 ساعة.'
     : 'All FIFA World Cup 2026 matches and kickoff times in your timezone — plus what is coming in the next 24 hours.';
