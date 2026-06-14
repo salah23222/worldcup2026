@@ -1,13 +1,15 @@
 <?php
 /**
- * cron/deploy.php — نشر تلقائي: يسحب آخر تحديث من GitHub إلى الإنتاج.
+ * cron/deploy.php — مزامنة إحصائيات FIFA من GitHub إلى الإنتاج (بلا git ولا hPanel).
  * ============================================================
- * يكمّل سلسلة التحديث الآلي:
- *   جهازك (يستخرج + git push) → GitHub → هذا السكربت (git pull) → الموقع محدَّث.
+ * يكمّل سلسلة التحديث الآلي للتقارير:
+ *   جهازك (يستخرج + git push) → GitHub → هذا السكربت (يسحب assets/fifa) → الموقع محدَّث.
+ * يعمل على أي استضافة: يجلب ملفّات assets/fifa/*.json عبر HTTP من GitHub (الريبو عام)
+ * ويكتب الجديد/المتغيّر فقط. لا يحتاج git ولا exec ولا لوحة Hostinger.
+ *
  * أضِفه في cron-job.org كل ساعة (مثل باقي مهامّك):
  *   /cron/deploy.php?token=INSTALL_TOKEN
- * آمن: git pull --ff-only فقط (لا يكتب فوق أي تعديل محلّي، يفشل بنظافة عند التعارض).
- * الريبو عام → لا يحتاج مصادقة. محميّ بالتوكن.
+ * محميّ بالتوكن. أمان: يكتب فقط ملفّات بنمط hash.json داخل assets/fifa (لا تجاوز مسار).
  * ============================================================
  */
 require __DIR__ . '/../includes/bootstrap.php';
@@ -21,26 +23,27 @@ if (PHP_SAPI !== 'cli') {
     header('Content-Type: text/plain; charset=utf-8');
 }
 
-if (!function_exists('exec')) { exit("exec() disabled on this host — auto-pull unavailable.\n"); }
+const GH_API = 'https://api.github.com/repos/salah23222/worldcup2026/contents/assets/fifa';
 
-$root = realpath(__DIR__ . '/..');
-$run = function (string $cmd) use ($root): array {
-    $out = []; $code = 0;
-    exec('cd ' . escapeshellarg($root) . ' && ' . $cmd . ' 2>&1', $out, $code);
-    return ['out' => trim(implode("\n", $out)), 'code' => $code];
-};
+$listJson = http_get(GH_API, ['timeout' => 15, 'ua' => 'wcup2026-deploy', 'redirects' => true]);
+if ($listJson === null) { echo "GitHub list unreachable\n"; exit; }
+$files = json_decode($listJson, true);
+if (!is_array($files)) { echo "GitHub list invalid: " . substr((string)$listJson, 0, 200) . "\n"; exit; }
 
-$git = $run('git --version');
-echo "git: {$git['out']} (code {$git['code']})\n";
-if ($git['code'] !== 0) { echo "git not available on this host.\n"; exit; }
+$dir = __DIR__ . '/../assets/fifa';
+if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
-$wt = $run('git rev-parse --is-inside-work-tree');
-if ($wt['out'] !== 'true') { echo "NOT a git checkout here — auto-pull unavailable.\n"; exit; }
-
-$before = $run('git rev-parse --short HEAD');
-$pull   = $run('git pull --ff-only');
-$after  = $run('git rev-parse --short HEAD');
-
-echo "before: {$before['out']}\nafter:  {$after['out']}\n";
-echo "pull (code {$pull['code']}):\n{$pull['out']}\n";
-echo ($before['out'] !== $after['out']) ? "UPDATED\n" : "already up to date\n";
+$added = 0; $skip = 0;
+foreach ($files as $f) {
+    if (($f['type'] ?? '') !== 'file') continue;
+    $name = basename((string)($f['name'] ?? ''));
+    if (!preg_match('/^[a-f0-9]{32}\.json$/', $name)) continue;       // أمان: hash.json فقط
+    $local = $dir . '/' . $name;
+    clearstatcache(true, $local);
+    if (is_file($local) && (int)@filesize($local) === (int)($f['size'] ?? -1)) { $skip++; continue; }
+    $raw = http_get((string)($f['download_url'] ?? ''), ['timeout' => 15, 'redirects' => true]);
+    if ($raw !== null && json_decode($raw) !== null) {
+        if (@file_put_contents($local . '.tmp', $raw) !== false) { @rename($local . '.tmp', $local); $added++; }
+    }
+}
+echo "fifa sync — added/updated: $added, up-to-date: $skip\n";
