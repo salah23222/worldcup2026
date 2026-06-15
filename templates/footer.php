@@ -90,6 +90,10 @@ $lang       = current_lang();
           <span class="li-ico">🧩</span>
           <a href="<?= e(url('embed.php')) ?>"><?= e(t('embed_widget')) ?></a>
         </li>
+        <li>
+          <span class="li-ico">🗒️</span>
+          <a href="<?= e(url('football.php')) ?>"><?= e($lang === 'ar' ? 'بيانات مفتوحة · football.txt' : ($lang === 'fr' ? 'Données ouvertes · football.txt' : 'Open data · football.txt')) ?></a>
+        </li>
       </ul>
     </div>
 
