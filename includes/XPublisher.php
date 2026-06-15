@@ -35,7 +35,7 @@ class XPublisher
      * $imagePath: مسار PNG اختياري يُرفَق بالتغريدة (بطاقة المباراة).
      *             فشل رفع الصورة لا يمنع التغريدة — تُنشر نصاً فقط.
      */
-    public static function tweet(string $text, ?string $imagePath = null): array
+    public static function tweet(string $text, ?string $imagePath = null, bool $priority = false): array
     {
         if (!self::configured()) {
             return ['ok' => false, 'id' => null, 'error' => 'x_not_configured'];
@@ -49,7 +49,7 @@ class XPublisher
         }
         // ── حارس الحماية: نتأكّد أنّنا ضمن الحدود قبل أي طلب شبكة ──
         if (class_exists('RateGuard')) {
-            $g = RateGuard::check();
+            $g = RateGuard::check(0, $priority);
             if (!$g['ok']) {
                 $err = 'rate_guard:' . $g['reason'] . ' wait=' . $g['wait'] . 's';
                 self::log(null, false, $err, $text);   // نسجّل في سجل X (بدون استدعاء RateGuard::record)

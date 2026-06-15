@@ -30,8 +30,13 @@ class RateGuard
 
     // ──────────────────── الواجهة العامّة ────────────────────
 
-    /** هل يُسمح بنشر تغريدة الآن؟ يعيد ['ok'=>bool,'reason'=>?string,'wait'=>int]. */
-    public static function check(int $now = 0): array
+    /**
+     * هل يُسمح بنشر تغريدة الآن؟ يعيد ['ok'=>bool,'reason'=>?string,'wait'=>int].
+     * $skipDaily=true للتغريدات ذات الأولويّة (نتائج المباريات): تتجاوز السقف اليومي
+     * المشترك (عددها محدود ~6/يوم) لكن تبقى محكومةً بالإيقاف + السقف الساعي + التباعد
+     * تفادياً لحظر X.
+     */
+    public static function check(int $now = 0, bool $skipDaily = false): array
     {
         $now = $now ?: time();
         $s = self::state();
@@ -56,11 +61,13 @@ class RateGuard
             return ['ok' => false, 'reason' => 'hourly_cap', 'wait' => 600];
         }
 
-        // (3) سقف يوم
-        $dailyCap = self::dailyCap();
-        $lastDay  = array_filter($hist, fn($r) => ($r['ts'] ?? 0) >= $now - 86400);
-        if (count($lastDay) >= $dailyCap) {
-            return ['ok' => false, 'reason' => 'daily_cap', 'wait' => 3600];
+        // (3) سقف يوم — تتجاوزه التغريدات ذات الأولويّة (نتائج المباريات)
+        if (!$skipDaily) {
+            $dailyCap = self::dailyCap();
+            $lastDay  = array_filter($hist, fn($r) => ($r['ts'] ?? 0) >= $now - 86400);
+            if (count($lastDay) >= $dailyCap) {
+                return ['ok' => false, 'reason' => 'daily_cap', 'wait' => 3600];
+            }
         }
 
         // (4) فاصل أدنى

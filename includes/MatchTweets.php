@@ -107,7 +107,8 @@ class MatchTweets
         $img = class_exists('TweetCardImage')
              ? TweetCardImage::generate([$m], ['title' => 'نتيجة المباراة', 'subtitle' => 'كأس العالم 2026', 'mode' => 'result'])
              : null;
-        $r = XPublisher::tweet($text, $img);
+        // أولويّة: تتجاوز نتيجةُ المباراة السقفَ اليومي المشترك (هي الأهمّ والأعلى تفاعلاً)
+        $r = XPublisher::tweet($text, $img, true);
         if ($r['ok']) self::markSent((int)$m['_index'], 'post', $lang, (string)$r['id']);
         return $r + ['text' => $text];
     }

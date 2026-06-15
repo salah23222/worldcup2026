@@ -161,17 +161,18 @@ $sent = 0; $failed = 0;
  * هذا يُصلح حالة «أوّل تغريدة فشلت → $sent ظلّ 0 → لا نوم → الكل يفشل».
  */
 $blocked = false;   // عند رفعها = توقّف عن المحاولة لبقيّة الـ run
-$send = function (string $tag, string $label, callable $sender) use (&$sent, &$failed, &$blocked, $log, $dry, $pace) {
+$send = function (string $tag, string $label, callable $sender, bool $priority = false) use (&$sent, &$failed, &$blocked, $log, $dry, $pace) {
     if ($dry) {
         $log("[{$tag}] would tweet {$label}");
         return ['ok' => false, 'skipped' => 'dry'];
     }
-    if ($blocked) {
+    // الأولويّة (نتائج) تتجاوز علم blocked إن كان سببه السقف اليومي فقط
+    if ($blocked && !$priority) {
         $log("[{$tag}] SKIP {$label} (guard blocked earlier in this run)");
         return ['ok' => false, 'error' => 'guard_blocked'];
     }
-    // فحص استباقي للحارس
-    $g = RateGuard::check();
+    // فحص استباقي للحارس (النتائج تتجاوز السقف اليومي)
+    $g = RateGuard::check(0, $priority);
     if (!$g['ok']) {
         if ($g['reason'] === 'spacing' && (int)$g['wait'] <= max(30, $pace + 5)) {
             $sleepFor = max(1, (int)$g['wait'] + 1);
@@ -211,7 +212,7 @@ if (!$skipMatches) {
         $m = $job['match']; $lg = $job['lang'];
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
         if ($dry) { $log('[post] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---'); continue; }
-        $send('post', $label, fn() => MatchTweets::sendPost($m, $lg));
+        $send('post', $label, fn() => MatchTweets::sendPost($m, $lg), true);   // أولويّة: تتجاوز السقف اليومي
     }
 }
 
