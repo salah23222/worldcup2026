@@ -647,4 +647,75 @@ class FifaStats
         }
         return [];
     }
+
+    /**
+     * teamDashboard() — تجميع على مستوى المنتخب من تقارير FIFA: مؤشّرات البطولة (KPI)
+     * + جدول مقارنة المنتخبات (استحواذ/xG/تسديدات/تمرير/مسافة…). للوحة الإحصائيّة.
+     * كاش «آخر نسخة ناجحة» مثل physicalLeaderboard (يصمد أمام تذبذب glob).
+     */
+    public static function teamDashboard(): array
+    {
+        $cacheFile = rtrim(CACHE_DIR, '/') . '/fifa-dashboard.json';
+        clearstatcache(true);
+        $files = glob(self::dataDir() . '/*.json') ?: [];
+        if (!$files) { clearstatcache(true); $files = glob(self::dataDir() . '/*.json') ?: []; }
+
+        $sumKeys = ['shots', 'shots_sub', 'xg', 'line_breaks', 'crosses'];
+        $avgKeys = ['possession', 'pass_pct', 'sprint_dist', 'distance'];
+        $teams = []; $kpi = ['matches' => 0, 'distance' => 0.0, 'goals' => 0,
+            'topXg' => ['v' => 0.0, 'team' => '']];
+
+        foreach ($files as $f) {
+            $rec = json_decode((string)@file_get_contents($f), true);
+            if (!is_array($rec) || empty($rec['stats'])) continue;
+            $kpi['matches']++;
+            $sides = [(string)($rec['team1'] ?? ''), (string)($rec['team2'] ?? '')];
+            foreach ($sides as $i => $en) {
+                if ($en === '') continue;
+                if (!isset($teams[$en])) {
+                    $teams[$en] = ['team' => $en, 'm' => 0, 'shots' => 0, 'shots_sub' => 0, 'xg' => 0.0,
+                        'line_breaks' => 0, 'crosses' => 0, 'possession' => 0.0, 'pass_pct' => 0.0,
+                        'sprint_dist' => 0.0, 'distance' => 0.0];
+                }
+                $t = &$teams[$en]; $t['m']++;
+                foreach ($sumKeys as $k) $t[$k] += (float)($rec['stats'][$k][$i] ?? 0);
+                foreach ($avgKeys as $k) $t[$k] += (float)($rec['stats'][$k][$i] ?? 0);
+                unset($t);
+                $kpi['distance'] += (float)($rec['stats']['distance'][$i] ?? 0);
+                $xg = (float)($rec['stats']['xg'][$i] ?? 0);
+                if ($xg > $kpi['topXg']['v']) $kpi['topXg'] = ['v' => $xg, 'team' => $en];
+            }
+        }
+        foreach ($teams as &$t) {
+            if ($t['m'] > 0) foreach ($avgKeys as $k) $t[$k] = $t[$k] / $t['m'];
+        }
+        unset($t);
+        $teams = array_values($teams);
+        usort($teams, fn($a, $b) => $b['distance'] <=> $a['distance']);
+
+        // مؤشّرات اللاعبين من جدول البدنيّات (أسرع/أكثر مسافة/أكثر عَدْوات لكل مباراة)
+        $kpi['fastest'] = ['v' => 0.0, 'name' => '', 'team' => ''];
+        $kpi['topDist'] = ['v' => 0.0, 'name' => '', 'team' => ''];
+        $kpi['topSprint'] = ['v' => 0.0, 'name' => '', 'team' => ''];
+        foreach (self::physicalLeaderboard() as $p) {
+            $m = max(1, (int)($p['m'] ?? 1));
+            if ((float)$p['top'] > $kpi['fastest']['v']) $kpi['fastest'] = ['v' => (float)$p['top'], 'name' => $p['name'], 'team' => $p['team']];
+            $dpm = (float)$p['dist'] / $m;
+            if ($dpm > $kpi['topDist']['v']) $kpi['topDist'] = ['v' => $dpm, 'name' => $p['name'], 'team' => $p['team']];
+            $spm = (float)$p['sprints'] / $m;
+            if ($spm > $kpi['topSprint']['v']) $kpi['topSprint'] = ['v' => $spm, 'name' => $p['name'], 'team' => $p['team']];
+        }
+
+        $out = ['teams' => $teams, 'kpi' => $kpi];
+        if ($teams) {
+            if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+            @file_put_contents($cacheFile, json_encode($out, JSON_UNESCAPED_UNICODE));
+            return $out;
+        }
+        if (is_file($cacheFile)) {
+            $c = json_decode((string)@file_get_contents($cacheFile), true);
+            if (is_array($c) && !empty($c['teams'])) return $c;
+        }
+        return $out;
+    }
 }

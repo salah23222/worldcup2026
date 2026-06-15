@@ -100,8 +100,8 @@ class PageCache
             'widget.php', 'embed.php', 'stickers.php', 'unsubscribe.php',
             // ميزات جديدة شخصية/ديناميكية — لا تُخزَّن كصفحة كاملة
             'leagues.php', 'league.php', 'today.php',
-            // physical.php يقرأ ملفّات assets/fifa — لا نخزّن نسخة فارغة عرضيّة (كاش stat على Hostinger)
-            'physical.php',
+            // physical.php / dashboard.php يقرآن ملفّات assets/fifa — لا نخزّن نسخة فارغة عرضيّة
+            'physical.php', 'dashboard.php',
         ];
         return !in_array($script, $noCache, true);
     }

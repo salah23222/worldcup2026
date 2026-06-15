@@ -130,10 +130,11 @@ seo_head([
       </div>
 
       <div class="nav-group">
-        <button type="button" class="nav-group-btn<?= nav_group_active(['stats.php','topscorers.php','bookings.php','referees.php','physical.php']) ?>">
+        <button type="button" class="nav-group-btn<?= nav_group_active(['stats.php','topscorers.php','bookings.php','referees.php','physical.php','dashboard.php']) ?>">
           <?= e(t('nav_numbers')) ?><i class="nav-caret">▾</i>
         </button>
         <div class="nav-drop">
+          <a href="<?= e(url('dashboard.php')) ?>"<?= nav_active('dashboard.php') ?>>📊 <?= e(current_lang() === 'ar' ? 'لوحة الإحصائيّات' : (current_lang() === 'fr' ? 'Tableau de bord' : 'Stats dashboard')) ?></a>
           <a href="<?= e(url('stats.php')) ?>"<?= nav_active('stats.php') ?>><?= e(t('stats')) ?></a>
           <a href="<?= e(url('physical.php')) ?>"<?= nav_active('physical.php') ?>>🏃 <?= e(current_lang() === 'ar' ? 'البيانات البدنيّة' : (current_lang() === 'fr' ? 'Données physiques' : 'Physical data')) ?></a>
           <a href="<?= e(url('topscorers.php')) ?>"<?= nav_active('topscorers.php') ?>><?= e(t('top_scorers')) ?></a>

@@ -11,9 +11,9 @@
    ============================================================ */
 'use strict';
 
-/* v15 — رفع الإصدار يحذف الكاش القديم عند التفعيل (يمسح أي صفحة فارغة مخزّنة).
-   + physical.php صار مُستثنى من كاش SW كليّاً (بيانات حيّة → دائماً من الشبكة). */
-var CACHE = 'wc2026-v15';
+/* v16 — رفع الإصدار يحذف الكاش القديم عند التفعيل (يمسح أي صفحة فارغة مخزّنة).
+   physical.php + dashboard.php مُستثنيان من كاش SW (بيانات حيّة → دائماً من الشبكة). */
+var CACHE = 'wc2026-v16';
 
 /* قشرة التطبيق — صفحات شائعة بكل لغة (يطابقها SW مع/بدون query). */
 var SHELL = [
@@ -243,6 +243,7 @@ self.addEventListener('fetch', function (e) {
   if (/^\/unsubscribe/i.test(url.pathname)) return;
   if (/^\/install\.php/i.test(url.pathname))return;
   if (/^\/physical\.php/i.test(url.pathname))return;   // بيانات حيّة متغيّرة — دائماً من الشبكة (لا يُخدَم فراغ مخزّن)
+  if (/^\/dashboard\.php/i.test(url.pathname))return;  // لوحة الإحصائيّات — بيانات حيّة، دائماً من الشبكة
 
   var isNav = (req.mode === 'navigate') ||
               (req.headers.get('accept') || '').indexOf('text/html') !== -1;
