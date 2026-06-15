@@ -108,3 +108,30 @@ $payload = [
 $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 file_put_contents(__DIR__ . '/../assets/fifa-metrics.json', $json);
 echo 'built ' . count($out) . ' players · ' . round(strlen($json) / 1024) . " KB\n";
+
+// ── 5) خريطة صور اللاعبين (assets/fifa-photos.json) — من نفس الكائنات ──────────
+//    تُحدَّث تلقائياً فيلتقط اللاعبين الجدد/البدلاء فور ظهورهم في الخلاصة.
+$norm = function (string $s): string {
+    $n = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+    if ($n === false) $n = $s;
+    return preg_replace('/\s+/', ' ', trim(preg_replace('/[^A-Z0-9 ]/', ' ', strtoupper($n))));
+};
+$byName = []; $dup = []; $seenP = [];
+foreach ($rows as $r) {
+    if (isset($seenP[$r[1]])) continue;
+    $seenP[$r[1]] = 1;
+    $n = $norm($r[2]); $photo = $r[5];
+    if ($n === '' || $photo === '') continue;
+    if (isset($byName[$n]) && $byName[$n] !== $photo) $dup[$n] = 1;
+    elseif (!isset($byName[$n])) $byName[$n] = $photo;
+}
+foreach (array_keys($dup) as $k) unset($byName[$k]);
+ksort($byName);
+$photoJson = json_encode([
+    '_source'    => 'FIFA Digital Hub (digitalhub.fifa.com) — official WC2026 player photos',
+    '_generated' => gmdate('Y-m-d'),
+    '_count'     => count($byName),
+    'byName'     => $byName,
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+file_put_contents(__DIR__ . '/../assets/fifa-photos.json', $photoJson);
+echo 'photos ' . count($byName) . " players\n";
