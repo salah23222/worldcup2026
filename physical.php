@@ -7,7 +7,8 @@ require __DIR__ . '/includes/bootstrap.php';
 
 $ar   = (current_lang() === 'ar');
 $L    = fn(string $a, string $e): string => $ar ? $a : $e;
-$rows = class_exists('FifaStats') ? FifaStats::physicalLeaderboard() : [];
+// الصفحة تُرسَم بالمتصفّح من api/data.php?action=physical (قشرة خفيفة + إعادة محاولة)
+// → تتجاوز تذبذب الخادم/كاش SW وتُحمّل دائماً. لا حساب ثقيل هنا.
 
 $page_title = $L('البيانات البدنيّة', 'Physical data');
 $page_desc  = $L('أرقام اللاعبين البدنيّة في كأس العالم 2026 — المسافة، العَدْوات، السرعة القصوى، رتّب وقارن.',
@@ -21,10 +22,6 @@ tpl('header');
                             'Every player\'s numbers from official FIFA reports — sort by any column, search, toggle total vs per-match.')) ?></p>
 </div>
 
-<?php if (!$rows): ?>
-  <p class="empty-note"><?= e($L('تظهر البيانات بعد لعب المباريات.', 'Data appears once matches are played.')) ?></p>
-<?php else: ?>
-
 <div class="phys-controls">
   <input type="search" id="physSearch" class="phys-input" placeholder="<?= e($L('ابحث عن لاعب أو منتخب…', 'Search player or team…')) ?>">
   <div class="phys-toggle">
@@ -33,8 +30,10 @@ tpl('header');
   </div>
 </div>
 
+<p id="physStatus" class="empty-note"><?= e($L('جارٍ التحميل…', 'Loading…')) ?></p>
+
 <div class="lb-wrap">
-  <table class="leaderboard phys-table" id="physTable">
+  <table class="leaderboard phys-table" id="physTable" hidden>
     <thead>
       <tr>
         <th>#</th>
@@ -46,26 +45,7 @@ tpl('header');
         <th class="ph-sort" data-k="top"><?= e($L('سرعة قصوى', 'Top speed')) ?></th>
       </tr>
     </thead>
-    <tbody>
-      <?php foreach ($rows as $i => $r):
-        $teamAr = function_exists('team_name') ? team_name($r['team']) : $r['team'];
-        $topTxt = rtrim(rtrim(number_format((float)$r['top'], 1, '.', ''), '0'), '.');
-      ?>
-      <tr data-name="<?= e(mb_strtolower($r['name'], 'UTF-8')) ?>"
-          data-team="<?= e(mb_strtolower($teamAr . ' ' . $r['team'], 'UTF-8')) ?>"
-          data-m="<?= (int)$r['m'] ?>" data-dist="<?= (float)$r['dist'] ?>"
-          data-sprints="<?= (int)$r['sprints'] ?>" data-hsr="<?= (int)$r['hsr'] ?>" data-top="<?= (float)$r['top'] ?>">
-        <td class="lb-rank ph-rank"><?= $i + 1 ?></td>
-        <td class="lb-name"><?= flag_img($r['team'], 'w40') ?> <?= e($r['name']) ?>
-            <span class="muted ph-team"><?= e($teamAr) ?></span></td>
-        <td><?= (int)$r['m'] ?></td>
-        <td class="ph-v" data-c="dist"><?= round((float)$r['dist'] / 1000, 1) ?></td>
-        <td class="ph-v" data-c="sprints"><?= (int)$r['sprints'] ?></td>
-        <td class="ph-v" data-c="hsr"><?= (int)$r['hsr'] ?></td>
-        <td class="ph-v" data-c="top"><?= e($topTxt) ?></td>
-      </tr>
-      <?php endforeach; ?>
-    </tbody>
+    <tbody id="physBody"></tbody>
   </table>
 </div>
 <p class="video-credit"><?= e($L('المصدر: المركز الفنّي لـFIFA — تقارير ما بعد المباراة. «لكل مباراة» = الإجمالي ÷ عدد المباريات.',
@@ -85,16 +65,48 @@ tpl('header');
 </style>
 <script>
 (function(){
-  var table = document.getElementById('physTable'); if (!table) return;
-  var tbody = table.tBodies[0];
-  var rows  = [].slice.call(tbody.rows);
-  var mode  = 'total', sortK = 'dist';
-  var val = function(r, k){ return parseFloat(r.getAttribute('data-' + k)) || 0; };
-  var metric = function(r, k){
-    var v = val(r, k);
-    if (mode === 'avg' && k !== 'top' && k !== 'm') v = v / (val(r, 'm') || 1);
-    return v;
+  var API   = <?= json_encode(url('api/data.php', ['action' => 'physical']), JSON_UNESCAPED_SLASHES) ?>;
+  var MSG = {
+    empty: <?= json_encode($L('تظهر البيانات بعد لعب المباريات.', 'Data appears once matches are played.'), JSON_UNESCAPED_UNICODE) ?>,
+    err:   <?= json_encode($L('تعذّر تحميل البيانات.', 'Could not load data.'), JSON_UNESCAPED_UNICODE) ?>,
+    retry: <?= json_encode($L('إعادة المحاولة', 'Retry'), JSON_UNESCAPED_UNICODE) ?>
   };
+  var table  = document.getElementById('physTable');
+  var tbody  = document.getElementById('physBody');
+  var status = document.getElementById('physStatus');
+  var rows = [], mode = 'total', sortK = 'dist', wired = false;
+
+  function val(r, k){ return parseFloat(r.getAttribute('data-' + k)) || 0; }
+  function metric(r, k){ var v = val(r, k); if (mode === 'avg' && k !== 'top' && k !== 'm') v = v / (val(r, 'm') || 1); return v; }
+
+  // هيكل الصفّ ثابت (innerHTML بلا أي بيانات) ثم نملؤه عبر textContent/DOM — آمن ضد XSS.
+  function build(players){
+    var frag = document.createDocumentFragment();
+    rows = [];
+    players.forEach(function(p){
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-name', String(p.name || '').toLowerCase());
+      tr.setAttribute('data-team', (String(p.teamAr || '') + ' ' + String(p.team || '')).toLowerCase());
+      tr.setAttribute('data-m', p.m); tr.setAttribute('data-dist', p.dist);
+      tr.setAttribute('data-sprints', p.sprints); tr.setAttribute('data-hsr', p.hsr); tr.setAttribute('data-top', p.top);
+      tr.innerHTML = '<td class="lb-rank ph-rank"></td><td class="lb-name"></td><td></td>'
+        + '<td class="ph-v" data-c="dist"></td><td class="ph-v" data-c="sprints"></td>'
+        + '<td class="ph-v" data-c="hsr"></td><td class="ph-v" data-c="top"></td>';
+      var nameTd = tr.children[1];
+      if (p.flag) {
+        var img = document.createElement('img');
+        img.className = 'flag'; img.src = p.flag; img.width = 32; img.height = 24; img.loading = 'lazy'; img.alt = '';
+        nameTd.appendChild(img); nameTd.appendChild(document.createTextNode(' '));
+      }
+      nameTd.appendChild(document.createTextNode(String(p.name || '') + ' '));
+      var sp = document.createElement('span'); sp.className = 'muted ph-team'; sp.textContent = String(p.teamAr || '');
+      nameTd.appendChild(sp);
+      tr.children[2].textContent = (p.m | 0);
+      tr.children[6].textContent = (Math.round((+p.top) * 10) / 10);
+      rows.push(tr); frag.appendChild(tr);
+    });
+    tbody.innerHTML = ''; tbody.appendChild(frag);
+  }
   function render(){
     rows.forEach(function(r){
       var m = val(r, 'm') || 1, f = (mode === 'avg') ? m : 1;
@@ -108,28 +120,53 @@ tpl('header');
     rows.sort(function(a, b){ return metric(b, k) - metric(a, k); });
     rows.forEach(function(r, i){ tbody.appendChild(r); r.querySelector('.ph-rank').textContent = i + 1; });
   }
-  [].forEach.call(table.querySelectorAll('.ph-sort'), function(th){
-    th.addEventListener('click', function(){
-      [].forEach.call(table.querySelectorAll('.ph-sort'), function(x){ x.classList.remove('is-sort'); });
-      th.classList.add('is-sort'); sortBy(th.getAttribute('data-k'));
+  function wire(){
+    if (wired) return; wired = true;
+    [].forEach.call(table.querySelectorAll('.ph-sort'), function(th){
+      th.addEventListener('click', function(){
+        [].forEach.call(table.querySelectorAll('.ph-sort'), function(x){ x.classList.remove('is-sort'); });
+        th.classList.add('is-sort'); sortBy(th.getAttribute('data-k'));
+      });
     });
-  });
-  [].forEach.call(document.querySelectorAll('.phys-mode'), function(btn){
-    btn.addEventListener('click', function(){
-      [].forEach.call(document.querySelectorAll('.phys-mode'), function(x){ x.classList.remove('is-on'); });
-      btn.classList.add('is-on'); mode = btn.getAttribute('data-mode'); render(); sortBy(sortK);
+    [].forEach.call(document.querySelectorAll('.phys-mode'), function(btn){
+      btn.addEventListener('click', function(){
+        [].forEach.call(document.querySelectorAll('.phys-mode'), function(x){ x.classList.remove('is-on'); });
+        btn.classList.add('is-on'); mode = btn.getAttribute('data-mode'); render(); sortBy(sortK);
+      });
     });
-  });
-  var s = document.getElementById('physSearch');
-  if (s) s.addEventListener('input', function(){
-    var q = this.value.trim().toLowerCase();
-    rows.forEach(function(r){
-      var hit = !q || r.getAttribute('data-name').indexOf(q) >= 0 || r.getAttribute('data-team').indexOf(q) >= 0;
-      r.style.display = hit ? '' : 'none';
+    var s = document.getElementById('physSearch');
+    if (s) s.addEventListener('input', function(){
+      var q = this.value.trim().toLowerCase();
+      rows.forEach(function(r){
+        var hit = !q || r.getAttribute('data-name').indexOf(q) >= 0 || r.getAttribute('data-team').indexOf(q) >= 0;
+        r.style.display = hit ? '' : 'none';
+      });
     });
-  });
+  }
+  function showError(){
+    status.hidden = false;
+    status.textContent = MSG.err + ' ';
+    var b = document.createElement('button'); b.className = 'btn btn-sm'; b.textContent = MSG.retry;
+    b.onclick = function(){ status.textContent = '…'; load(1); };
+    status.appendChild(b);
+  }
+  function load(attempt){
+    attempt = attempt || 1;
+    fetch(API, { cache: 'no-store' })
+      .then(function(r){ if (!r.ok) throw 0; return r.json(); })
+      .then(function(d){
+        var p = (d && d.players) || [];
+        if (!p.length){ status.hidden = false; status.textContent = MSG.empty; return; }
+        build(p); render(); sortBy('dist'); wire();
+        status.hidden = true; table.hidden = false;
+      })
+      .catch(function(){
+        if (attempt < 4) { setTimeout(function(){ load(attempt + 1); }, 700 * attempt); }
+        else { showError(); }
+      });
+  }
+  load();
 })();
 </script>
-<?php endif; ?>
 
 <?php tpl('footer'); ?>

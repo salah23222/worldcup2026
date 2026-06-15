@@ -104,6 +104,26 @@ switch ($action) {
         $response['ok'] = ($response['analysis'] !== null);
         break;
 
+    case 'physical':   // مستكشف البيانات البدنيّة — يُرسَم بالمتصفّح (أخفّ + أصمد من جدول 251 صفّاً)
+        $players = class_exists('FifaStats') ? FifaStats::physicalLeaderboard() : [];
+        $out = [];
+        foreach ($players as $r) {
+            $en = (string)($r['team'] ?? '');
+            $out[] = [
+                'name'   => (string)($r['name'] ?? ''),
+                'team'   => $en,
+                'teamAr' => function_exists('team_name') ? team_name($en) : $en,
+                'flag'   => function_exists('flag_url') ? flag_url($en, 'w40') : '',
+                'm'      => (int)($r['m'] ?? 0),
+                'dist'   => (float)($r['dist'] ?? 0),
+                'sprints'=> (int)($r['sprints'] ?? 0),
+                'hsr'    => (int)($r['hsr'] ?? 0),
+                'top'    => (float)($r['top'] ?? 0),
+            ];
+        }
+        $response['players'] = $out;
+        break;
+
     default:
         $response['ok'] = false;
         $response['error'] = 'unknown_action';
