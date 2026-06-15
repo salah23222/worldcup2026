@@ -47,3 +47,23 @@ foreach ($files as $f) {
     }
 }
 echo "fifa sync — added/updated: $added, up-to-date: $skip\n";
+
+// خريطة صور اللاعبين الرسميّة (assets/fifa-photos.json) — ملفّ مفرد خارج مجلّد
+// assets/fifa، فنجلبه على حدة من GitHub raw (لا يدخل في حلقة المجلّد أعلاه).
+$photoRaw = http_get('https://raw.githubusercontent.com/salah23222/worldcup2026/main/assets/fifa-photos.json',
+                     ['timeout' => 20, 'ua' => 'wcup2026-deploy', 'redirects' => true]);
+if ($photoRaw !== null && json_decode($photoRaw) !== null) {
+    $pf = __DIR__ . '/../assets/fifa-photos.json';
+    clearstatcache(true, $pf);
+    if (!is_file($pf) || (int)@filesize($pf) !== strlen($photoRaw)) {
+        if (@file_put_contents($pf . '.tmp', $photoRaw) !== false && @rename($pf . '.tmp', $pf)) {
+            echo "fifa-photos.json — updated (" . strlen($photoRaw) . " bytes)\n";
+        } else {
+            echo "fifa-photos.json — write failed\n";
+        }
+    } else {
+        echo "fifa-photos.json — up-to-date\n";
+    }
+} else {
+    echo "fifa-photos.json — fetch failed\n";
+}
