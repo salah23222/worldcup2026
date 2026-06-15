@@ -589,6 +589,7 @@ class FifaStats
     {
         // مضيفات Hostinger (hcdn) تُبقي أحياناً كاش stat/realpath قديماً فيرجع glob
         // فارغاً عرضيّاً رغم وجود الملفّات → جدول فارغ متذبذب. نمسح الكاش ونعيد المحاولة.
+        $cacheFile = rtrim(CACHE_DIR, '/') . '/physical-leaderboard.json';
         clearstatcache(true);
         $files = glob(self::dataDir() . '/*.json') ?: [];
         if (!$files) { clearstatcache(true); $files = glob(self::dataDir() . '/*.json') ?: []; }
@@ -619,6 +620,18 @@ class FifaStats
         }
         $players = array_values($players);
         usort($players, fn($a, $b) => $b['dist'] <=> $a['dist']);
-        return $players;
+
+        if ($players) {
+            // احفظ آخر نسخة ناجحة → تصمد أمام تذبذب glob الفارغ العرضي على Hostinger
+            if (!is_dir(CACHE_DIR)) @mkdir(CACHE_DIR, 0755, true);
+            @file_put_contents($cacheFile, json_encode($players, JSON_UNESCAPED_UNICODE));
+            return $players;
+        }
+        // فارغ عرضيّاً (تذبذب الخادم) → أعِد آخر نسخة محفوظة بدل صفحة فارغة
+        if (is_file($cacheFile)) {
+            $cached = json_decode((string)@file_get_contents($cacheFile), true);
+            if (is_array($cached) && $cached) return $cached;
+        }
+        return [];
     }
 }
