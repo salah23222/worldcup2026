@@ -66,6 +66,7 @@ tpl('header');
 .phys-table .ph-rank{font-weight:800;color:#ffc846}
 .phys-table .ph-team{display:block;font-size:.78em;opacity:.7}
 .phys-team{flex:0 0 auto;cursor:pointer;max-width:220px}
+.phys-team option{color:#0a1626;background:#fff}
 .phys-table tbody tr.ph-row{cursor:pointer}
 .phys-table tbody tr.ph-row:hover{background:rgba(255,255,255,.05)}
 .phys-table tbody tr.ph-row.is-open{background:rgba(255,200,70,.10)}
