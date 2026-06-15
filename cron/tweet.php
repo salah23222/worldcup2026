@@ -200,6 +200,21 @@ $send = function (string $tag, string $label, callable $sender) use (&$sent, &$f
     return $r;
 };
 
+// ═══ أولويّة قصوى: تغريدة نتيجة فور انتهاء المباراة (قبل أي تغريدة أخرى) ═══
+// النتائج هي الأهمّ والأعلى تفاعلاً — تُنشَر أوّلاً كي لا تستهلك الفتراتُ اليوميّة
+// والمجموعاتُ ميزانيّةَ السقف قبلها. نافذة الطزاجة في pendingPost تمنع الطابور القديم.
+if (!$skipMatches) {
+    $post = MatchTweets::pendingPost();
+    $log('[post] candidates=' . count($post));
+    foreach ($post as $job) {
+        if ($sent >= $capPerRun) { $log('[post] cap reached, stop.'); break; }
+        $m = $job['match']; $lg = $job['lang'];
+        $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
+        if ($dry) { $log('[post] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---'); continue; }
+        $send('post', $label, fn() => MatchTweets::sendPost($m, $lg));
+    }
+}
+
 // ═══════════════════ A) الفترات اليوميّة (AR + EN) ═══════════════════
 if (!$skipDaily) {
     $dailySlot = $slot !== '' ? $slot : (TweetComposer::currentSlot() ?? '');
@@ -280,18 +295,7 @@ if (!$skipMatches) {
     }
 }
 
-// ═══════════════════ C) بعد المباراة + تقرير AI ═══════════════════
-if (!$skipMatches) {
-    $post = MatchTweets::pendingPost();
-    $log('[post] candidates=' . count($post));
-    foreach ($post as $job) {
-        if ($sent >= $capPerRun) { $log('[post] cap reached, stop.'); break; }
-        $m = $job['match']; $lg = $job['lang'];
-        $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
-        if ($dry) { $log('[post] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPost($m, $lg)); $log('---'); continue; }
-        $send('post', $label, fn() => MatchTweets::sendPost($m, $lg));
-    }
-}
+// ═══════════════════ C) (نُقلت تغريدة النتيجة إلى الأعلى — أولويّة قصوى) ═══════════════════
 
 // ═══════════════════ D) ترتيب المجموعات ═══════════════════
 if (!$skipMatches) {

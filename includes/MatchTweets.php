@@ -27,6 +27,10 @@ class MatchTweets
     /** نافذة النشر القبلي: نُنشر بين هذين الفاصلين قبل ضربة البداية. */
     private const PRE_MIN_SEC = 30 * 60;   // 30 دقيقة
     private const PRE_MAX_SEC = 75 * 60;   // 75 دقيقة (cron 15-min يلتقطها بسهولة)
+    // نافذة تغريدة النتيجة: المباريات التي انطلقت خلال آخر 6 ساعات فقط (≈ انتهت خلال
+    // آخر ~4 ساعات). تمنع نشر طابور قديم متراكم دفعةً واحدة عند أي انقطاع للكرون،
+    // وتضمن أن النتيجة الطازجة تُنشر فور انتهاء المباراة (الكرون كل دقيقتين يلتقطها).
+    private const POST_MAX_AGE_SEC = 6 * 3600;
 
     /** الحدّ الأقصى لتغريدات لكل run cron (حماية من العواصف). */
     public const MAX_PER_RUN = 6;
@@ -65,14 +69,21 @@ class MatchTweets
             if (($m['_status'] ?? '') !== 'finished') continue;
             if (!isset($m['score']['ft']) || !is_array($m['score']['ft'])) continue;
 
+            // نافذة طزاجة: تجاهل المباريات التي مرّ على انطلاقها أكثر من 6 ساعات
+            // (لا تُغرِّد طابوراً قديماً متراكماً؛ فقط النتائج الحديثة).
+            $ts = DataService::matchTimestamp($m);
+            if ($ts !== null && ($now - $ts) > self::POST_MAX_AGE_SEC) continue;
+
             $idx = (int)$m['_index'];
             // تغريدة نتيجة واحدة ثنائيّة اللغة (bi). تُعتبر مُرسَلة أيضاً لو نُشرت
             // سابقاً بالنظام القديم (ar/en منفصلتين) فلا تتكرّر بعد التحديث.
             if (self::wasSent($idx, 'post', 'bi')
                 || self::wasSent($idx, 'post', 'ar')
                 || self::wasSent($idx, 'post', 'en')) continue;
-            $out[] = ['match' => $m, 'lang' => 'bi'];
+            $out[] = ['match' => $m, 'lang' => 'bi', 'ts' => $ts ?? 0];
         }
+        // الأحدث أوّلاً (تُنشَر النتيجة الطازجة قبل أي متأخّرة لو تزامنت)
+        usort($out, fn($a, $b) => ($b['ts'] ?? 0) <=> ($a['ts'] ?? 0));
         return $out;
     }
 
@@ -167,9 +178,19 @@ class MatchTweets
             $penEn = " (penalties {$p1}–{$p2})";
         }
 
-        // عربي فوق ثم إنجليزي تحت — كل كتلة: «نهاية المباراة» + الفريقان والنتيجة
-        $arBlock = "🏁 نهاية المباراة\n{$f1} {$ar1} {$g1} - {$g2} {$ar2} {$f2}{$penAr}";
-        $enBlock = "🏁 Full time\n{$f1} {$en1} {$g1} - {$g2} {$en2} {$f2}{$penEn}";
+        // سياق الجولة: اسم المجموعة (أو الدور الإقصائي) — يظهر بجانب «نهاية المباراة»
+        $grp = trim((string)($m['group'] ?? ''));
+        $arCtx = $enCtx = '';
+        // الحرف بعد «Group» تحديداً — لا أوّل [A-L] (وإلّا التقط «G» من Group نفسها)
+        if ($grp !== '' && preg_match('/Group\s*([A-L])/i', $grp, $gm)) {
+            $gL = strtoupper($gm[1]); $arCtx = ' · المجموعة ' . $gL; $enCtx = ' · Group ' . $gL;
+        } elseif (($m['round'] ?? '') !== '') {
+            $arCtx = $enCtx = ' · ' . (string)$m['round'];
+        }
+
+        // عربي فوق ثم إنجليزي تحت — كل كتلة: «نهاية المباراة» + المجموعة + الفريقان والنتيجة
+        $arBlock = "🏁 نهاية المباراة{$arCtx}\n{$f1} {$ar1} {$g1} - {$g2} {$ar2} {$f2}{$penAr}";
+        $enBlock = "🏁 Full time{$enCtx}\n{$f1} {$en1} {$g1} - {$g2} {$en2} {$f2}{$penEn}";
         $cta     = "👇 للتفاصيل اضغط هنا · Tap for details";
 
         $msg = $arBlock . "\n\n" . $enBlock . "\n\n" . $cta . "\n" . $url . "\n" . $tags;
