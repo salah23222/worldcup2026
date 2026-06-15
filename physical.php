@@ -64,6 +64,7 @@ tpl('header');
 .phys-table th.ph-sort.is-sort{color:#ffc846}
 .phys-table .ph-v{font-variant-numeric:tabular-nums;font-weight:700}
 .phys-table .ph-rank{font-weight:800;color:#ffc846}
+.phys-table .ph-photo{width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:top center;background:#0e1b34;border:1.5px solid rgba(255,255,255,.18);vertical-align:middle;margin-inline-end:6px}
 .phys-table .ph-team{display:block;font-size:.78em;opacity:.7}
 .phys-team{flex:0 0 auto;cursor:pointer;max-width:220px}
 .phys-team option{color:#0a1626;background:#fff}
@@ -136,6 +137,12 @@ tpl('header');
         + '<td class="ph-v" data-c="dist"></td><td class="ph-v" data-c="sprints"></td>'
         + '<td class="ph-v" data-c="hsr"></td><td class="ph-v" data-c="top"></td>';
       var nameTd = tr.children[1];
+      if (p.photo) {
+        var pho = document.createElement('img');
+        pho.className = 'ph-photo'; pho.src = p.photo; pho.loading = 'lazy'; pho.alt = '';
+        pho.onerror = function(){ this.remove(); };
+        nameTd.appendChild(pho);
+      }
       if (p.flag) {
         var img = document.createElement('img');
         img.className = 'flag'; img.src = p.flag; img.width = 32; img.height = 24; img.loading = 'lazy'; img.alt = '';

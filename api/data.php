@@ -114,6 +114,7 @@ switch ($action) {
                 'team'   => $en,
                 'teamAr' => function_exists('team_name') ? team_name($en) : $en,
                 'flag'   => function_exists('flag_url') ? flag_url($en, 'w40') : '',
+                'photo'  => function_exists('player_photo') ? player_photo((string)($r['name'] ?? '')) : '',
                 'num'    => (int)($r['num'] ?? 0),
                 'm'      => (int)($r['m'] ?? 0),
                 'dist'   => (float)($r['dist'] ?? 0),

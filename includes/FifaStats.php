@@ -227,7 +227,9 @@ class FifaStats
     private static function playerCard(array $p, bool $ar): string
     {
         $phys = (isset($p['phys']) && count($p['phys']) >= 9) ? $p['phys'] : null;
-        $head = '<span>#' . (int)$p['num'] . ' · ' . e($p['name']) . '</span>';
+        $photo = function_exists('player_photo') ? player_photo((string)($p['name'] ?? '')) : '';
+        $av = $photo !== '' ? '<img class="fpc-photo" src="' . e($photo) . '" alt="" loading="lazy" onerror="this.classList.add(\'is-off\')">' : '';
+        $head = '<span class="fpc-id">' . $av . '<span>#' . (int)$p['num'] . ' · ' . e($p['name']) . '</span></span>';
         if ($phys) {
             $head .= '<span class="fpc-q">' . round($phys[0] / 1000, 1) . ($ar ? ' كم' : ' km')
                 . ' · ' . self::fmt($phys[8]) . ($ar ? ' كم/س' : ' km/h') . '</span>';
@@ -292,6 +294,9 @@ class FifaStats
             . '.fifa-stats .fpc{margin:6px 0;border:1px solid rgba(255,255,255,.09);border-radius:10px;overflow:hidden}'
             . '.fifa-stats .fpc>summary{cursor:pointer;padding:10px 12px;font-weight:700;display:flex;justify-content:space-between;gap:8px;align-items:center;list-style:none}'
             . '.fifa-stats .fpc>summary::-webkit-details-marker{display:none}'
+            . '.fifa-stats .fpc-id{display:flex;align-items:center;gap:9px;min-width:0}'
+            . '.fifa-stats .fpc-photo{width:34px;height:34px;border-radius:50%;object-fit:cover;object-position:top center;background:#0e1b34;border:1.5px solid rgba(255,255,255,.18);flex:0 0 auto}'
+            . '.fifa-stats .fpc-photo.is-off{display:none}'
             . '.fifa-stats .fpc-q{font-weight:700;font-size:.78em;color:#ffc846;white-space:nowrap}'
             . '.fifa-stats .fpc-body{padding:2px 12px 12px}'
             . '.fifa-stats .fpc-cat{font-size:.78em;opacity:.7;margin:12px 0 6px}'

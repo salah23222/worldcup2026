@@ -262,6 +262,25 @@ function render_share(string $url, string $text, array $opts = []): void {
     <?php
 }
 
+/**
+ * player_photo(name) — رابط الصورة الرسميّة للاعب من المركز الرقمي لـFIFA
+ * (digitalhub.fifa.com)، أو '' إن لم يُطابَق. المصدر: snapshot عام في
+ * assets/fifa-photos.json (يُحمَّل مرّة ويُخزَّن). المطابقة بالاسم المُطبَّع.
+ */
+function player_photo(string $name): string {
+    static $map = null;
+    if ($map === null) {
+        $f = __DIR__ . '/../assets/fifa-photos.json';
+        $d = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null;
+        $map = (is_array($d) && isset($d['byName']) && is_array($d['byName'])) ? $d['byName'] : [];
+    }
+    if (!$map) return '';
+    $n = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+    if ($n === false) $n = $name;
+    $n = preg_replace('/\s+/', ' ', trim(preg_replace('/[^A-Z0-9 ]/', ' ', strtoupper($n))));
+    return isset($map[$n]) ? (string)$map[$n] : '';
+}
+
 /** صورة العلم كـ <img> أو دائرة فارغة للـ placeholder */
 function flag_img(string $team, string $size = 'w40'): string {
     $u = flag_url($team, $size);
