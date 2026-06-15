@@ -1,8 +1,10 @@
 # ⚽ World Cup 2026 Companion
 
 > An Arabic‑first, open‑source companion site for the FIFA World Cup 2026 — live‑style
-> results, group standings, a free predictions game, private leagues, stickers, daily
-> trivia, leaderboards, AI match previews, and a fast installable PWA.
+> results, group standings, **official FIFA match stats & physical data**, **automatic
+> match highlights**, AI match reports, a free predictions game, private leagues,
+> stickers, daily trivia, leaderboards, bilingual auto‑posting to X, and a fast
+> installable PWA.
 
 ![PHP](https://img.shields.io/badge/PHP-8.0%2B-777bb4)
 ![No build](https://img.shields.io/badge/build-none-brightgreen)
@@ -17,18 +19,28 @@
 
 ## 🆕 What's New
 
-The latest releases focus on **2026-format accuracy**, **engagement**, and **hardening**:
+The platform now goes well beyond scores — **official data, rich media, and full automation**:
 
-- 🥉 **Best third-placed teams table** — the 2026 format qualifies the **8 best
-  third-placed teams** (across the 12 groups) to the Round of 32. The groups page
-  now computes and highlights exactly who advances.
-- ⚖️ **FIFA-compliant tie-breakers** — group ties now resolve by points → goal
-  difference → goals → **head-to-head** among level teams, matching the official rules.
-- 🔔 **Match-start reminders** — a one-tap "Remind me" on upcoming matches fires a
-  local notification ~10 min before kickoff and at kickoff. No server, no push keys,
-  nothing leaves your device.
-- 🛡️ **Security hardening** — fixed a rate-limit bypass via spoofed forwarding headers
-  (now keys on `REMOTE_ADDR`), and made the Telegram webhook require its secret.
+- 📊 **Official FIFA match stats (PMSR)** — every finished match shows FIFA's official
+  post‑match data in the site's own identity: possession, shots, passing, **phases of
+  play** (build‑up, press, blocks), team **physical** output, and a **tap‑to‑expand card
+  per player** (distance, sprints, top speed, line‑breaks, crosses). Pulled straight from
+  FIFA's official reports — automatically.
+- 🏃 **Physical data explorer** — a sortable, searchable leaderboard of every player's
+  running numbers across all matches (total or per‑match average).
+- 🎬 **Automatic match highlights** — official broadcast highlights are matched to each
+  match via the YouTube feed and shown on the match page within ~30 min of upload —
+  hands‑free, with a safe single‑name fallback.
+- 🖼️ **Unified bilingual share cards** — one royal‑blue identity for every shareable
+  card: group standings, final results (with **AR + EN** stats), next‑24h fixtures, and
+  discipline (yellow/red) — tuned for X & WhatsApp with Arabic + English hashtags.
+- 🤖 **End‑to‑end automation** — FIFA reports auto‑extract hourly → auto‑deploy to the
+  live site → result tweets post within ~2 min of full‑time, with a run‑lock that
+  guarantees **no duplicate posts**.
+- 📱 **App‑like mobile navigation** — a fixed bottom tab bar (Home · Matches · Predictions
+  · News · Stats) for a native feel on phones.
+- 🥉 **2026‑format accuracy** — best third‑placed teams table + **FIFA‑compliant
+  tie‑breakers** (head‑to‑head), plus match‑start reminders and security hardening.
 
 📜 Full history in **[CHANGELOG.md](CHANGELOG.md)**.
 
@@ -65,6 +77,17 @@ The latest releases focus on **2026-format accuracy**, **engagement**, and **har
 - **Matches, groups & knockout** — schedule, live‑style status, results, standings, bracket.
 - **2026-accurate standings** — 12 groups, **best third-placed teams** table for the
   Round of 32, and **FIFA-compliant tie-breakers** (head-to-head among level teams).
+- **Official FIFA match stats (PMSR)** — possession, shots, passing, **phases of play**,
+  team **physical** output, and a **per‑player card** (distance, sprints, top speed,
+  line‑breaks, crosses) — pulled from FIFA's official reports, auto‑extracted.
+- **Physical data explorer** — sortable, searchable per‑player running leaderboard across
+  all matches (total or per‑match average).
+- **Automatic match highlights** — official broadcast clips matched to each match via the
+  YouTube feed and shown on the match page.
+- **Bilingual share cards** — one unified royal‑blue identity for standings, results
+  (with AR/EN stats), next‑24h fixtures and discipline — tuned for X & WhatsApp.
+- **Automated X posting** — pre/post‑match, results, standings & news, fully hands‑free
+  with a run‑lock that prevents duplicate posts.
 - **Predictions game** — predict scores, earn points, climb a global leaderboard. No login required (cookie identity) or full accounts via MySQL.
 - **Private Leagues** — create a league, share a code, compete with friends/family.
 - **Quick 1X2 vote** on every match card (community polls).
