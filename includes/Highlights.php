@@ -193,28 +193,45 @@ class Highlights
      */
     private static function scrapePlaylist(): ?array
     {
-        $url = 'https://www.youtube.com/playlist?list=' . rawurlencode(self::playlistId()) . '&hl=ar';
-        $ctx = stream_context_create(['http' => [
-            'method'  => 'GET',
-            'header'  => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n"
-                       . "Accept-Language: ar,en;q=0.8\r\n",
-            'timeout' => 14,
-        ]]);
-        $html = @file_get_contents($url, false, $ctx);
-        if ($html === false || $html === '') return null;
+        $pid = self::playlistId();
 
-        // عناوين عناصر القائمة (ملخّصات المباريات فقط — تحوي «مباراة»، بترتيب العرض)
+        // (1) خلاصة RSS الرسميّة — XML مستقرّ، بلا جدار موافقة YouTube (يعمل على خوادم
+        //     الاستضافة حيث يفشل كشط HTML أحياناً). تُرجع أحدث ~15 فيديو.
+        $rss = self::fetchUrl('https://www.youtube.com/feeds/videos.xml?playlist_id=' . rawurlencode($pid));
+        if ($rss !== null && preg_match_all('#<yt:videoId>([A-Za-z0-9_-]{11})</yt:videoId>.*?<title>(.*?)</title>#s', $rss, $mm, PREG_SET_ORDER)) {
+            $out = [];
+            foreach ($mm as $e) {
+                $t = trim(html_entity_decode($e[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                if ($t !== '') $out[] = ['id' => $e[1], 'title' => $t];
+            }
+            if ($out) return $out;
+        }
+
+        // (2) احتياطي: كشط HTML (واجهة yt الجديدة — title.content، خام UTF-8)
+        $html = self::fetchUrl('https://www.youtube.com/playlist?list=' . rawurlencode($pid) . '&hl=ar');
+        if ($html === null) return null;
         if (!preg_match_all('/"title":\{"content":"([^"]+)"/', $html, $tt)) return [];
         $titles = array_values(array_filter($tt[1], fn($t) => mb_strpos($t, 'مباراة') !== false));
-        // معرّفات الفيديو بترتيب أوّل ظهور (نفس ترتيب العناوين)
         preg_match_all('/"videoId":"([A-Za-z0-9_-]{11})"/', $html, $vv);
         $ids = array_values(array_unique($vv[1]));
-
         $out = [];
         foreach ($titles as $i => $t) {
             if (!isset($ids[$i])) break;
             $out[] = ['id' => $ids[$i], 'title' => trim($t)];
         }
         return $out;
+    }
+
+    /** جلب HTTP بسيط (User-Agent متصفّح) — يعيد النصّ أو null عند الفشل. */
+    private static function fetchUrl(string $url): ?string
+    {
+        $ctx = stream_context_create(['http' => [
+            'method'  => 'GET',
+            'header'  => "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)\r\n"
+                       . "Accept-Language: ar,en;q=0.8\r\n",
+            'timeout' => 14,
+        ]]);
+        $r = @file_get_contents($url, false, $ctx);
+        return ($r === false || $r === '') ? null : $r;
     }
 }
