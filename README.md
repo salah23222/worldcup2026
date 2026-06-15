@@ -77,12 +77,23 @@ The platform now goes well beyond scores — **official data, rich media, and fu
 ### Prediction Game
 ![Predict match scores, earn points, and climb the global leaderboard](docs/screenshots/predict.png)
 
-### Player technical profiles & stat cards
-*Live, auto‑generated from official FIFA data (these render straight from the live site):*
+### Player technical profiles
+*Every player gets a full profile from official FIFA data — official photo, tournament
+rating, an overall radar (Attacking · Creation · Line‑breaking · Defending) and a
+per‑category breakdown (with per‑90 values and percentile bars vs same‑position players).
+Bilingual AR/EN. [See it live →](https://wcup2026.org/player.php?id=433872&lang=en)*
 
 <p align="center">
-  <img src="https://wcup2026.org/card_img.php?mode=player&id=433872" alt="Player technical profile card" width="420">
-  <img src="https://wcup2026.org/card_img.php?mode=dashboard" alt="Tournament stats dashboard card" width="420">
+  <img src="docs/screenshots/player-profile.png" alt="Player technical profile — header, rating and overall radar" width="760">
+</p>
+<p align="center">
+  <img src="docs/screenshots/player-categories.png" alt="Per-category breakdown — Creation and Line-breaking radars with percentile bars" width="760">
+</p>
+
+*Auto‑generated share card (also used as the social preview & in this README, rendered live by the site):*
+
+<p align="center">
+  <img src="https://wcup2026.org/card_img.php?mode=player&id=433872" alt="Player technical profile share card" width="520">
 </p>
 
 ---
