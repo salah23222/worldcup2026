@@ -11,9 +11,9 @@
    ============================================================ */
 'use strict';
 
-/* v14 — رفع الإصدار يحذف الكاش القديم عند التفعيل (يمسح أي صفحة فارغة مخزّنة
-   من زيارة سابقة، مثل physical.php قبل وصول البيانات) فيُجلب كل شيء طازجاً. */
-var CACHE = 'wc2026-v14';
+/* v15 — رفع الإصدار يحذف الكاش القديم عند التفعيل (يمسح أي صفحة فارغة مخزّنة).
+   + physical.php صار مُستثنى من كاش SW كليّاً (بيانات حيّة → دائماً من الشبكة). */
+var CACHE = 'wc2026-v15';
 
 /* قشرة التطبيق — صفحات شائعة بكل لغة (يطابقها SW مع/بدون query). */
 var SHELL = [
@@ -242,6 +242,7 @@ self.addEventListener('fetch', function (e) {
   if (/^\/login\.php/i.test(url.pathname))  return;
   if (/^\/unsubscribe/i.test(url.pathname)) return;
   if (/^\/install\.php/i.test(url.pathname))return;
+  if (/^\/physical\.php/i.test(url.pathname))return;   // بيانات حيّة متغيّرة — دائماً من الشبكة (لا يُخدَم فراغ مخزّن)
 
   var isNav = (req.mode === 'navigate') ||
               (req.headers.get('accept') || '').indexOf('text/html') !== -1;
