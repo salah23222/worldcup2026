@@ -37,7 +37,8 @@ $cats    = FifaMetrics::activeCats($pl);
 $page_title = $pl['name'] . ' — ' . $L('إحصائيّات', 'Stats');
 $page_desc  = $L('الملفّ الفنّي الكامل لـ' . $pl['name'] . ' في كأس العالم 2026 — من بيانات FIFA الرسميّة.',
                  'Full technical profile of ' . $pl['name'] . ' at the FIFA World Cup 2026 — official FIFA data.');
-if ($photo !== '') $page_image = $photo;
+// معاينة المشاركة: بطاقة الملفّ المُولّدة (صورة + تقييم + نقاط الفئات) لا الصورة الخام
+$page_image = url('card_img.php', ['mode' => 'player', 'id' => $pid, 'd' => function_exists('card_rev') ? card_rev() : '1']);
 tpl('header');
 
 /** رادار SVG: محاور [['label','pct'],…] بقيم 0-100. */

@@ -331,6 +331,89 @@ try {
         imagepng($im); imagedestroy($im); exit;
     }
 
+    // 🆕 بطاقة الملفّ الفنّي للاعب (?mode=player&id=.. أو &name=..&team=..) — صورة رسميّة
+    // + تقييم + نقاط الفئات. تُستعمل كمعاينة مشاركة لـplayer.php وكصورة في README.
+    if (($_GET['mode'] ?? '') === 'player') {
+        $fontAr = __DIR__ . '/assets/fonts/Amiri-Bold.ttf';
+        if (!is_file($fontAr)) $fontAr = $font;
+        $shape = fn(string $s): string => class_exists('ArabicText') ? ArabicText::shape($s) : $s;
+        $fetch = function (string $url) {
+            if ($url === '') return false;
+            $raw = http_get($url, ['timeout' => 9]);
+            return $raw ? @imagecreatefromstring($raw) : false;
+        };
+
+        $pid = (string)($_GET['id'] ?? '');
+        if ($pid === '' && isset($_GET['name']) && class_exists('FifaMetrics')) {
+            $pid = (string)(FifaMetrics::findId((string)$_GET['name'], (string)($_GET['team'] ?? '')) ?? '');
+        }
+        $pl = ($pid !== '' && class_exists('FifaMetrics')) ? FifaMetrics::player($pid) : null;
+
+        if ($pl) {
+            // ── الصورة الدائريّة (يسار) مع إطار ذهبي ──
+            $AV = 312; $px = 96; $py = 168;
+            imagefilledellipse($im, $px + $AV / 2, $py + $AV / 2, $AV + 14, $AV + 14, $gold);
+            $av = imagecreatetruecolor($AV, $AV);
+            imagesavealpha($av, true);
+            $tr = imagecolorallocatealpha($av, 0, 0, 0, 127);
+            imagefill($av, 0, 0, $tr);
+            $pimg = $fetch((string)($pl['photo'] ?? ''));
+            if ($pimg) {
+                $pw = imagesx($pimg); $ph = imagesy($pimg);
+                $side = min($pw, $ph);
+                imagecopyresampled($av, $pimg, 0, 0, (int)(($pw - $side) / 2), 0, $AV, $AV, $side, $side);
+                $r2 = ($AV / 2) * ($AV / 2);
+                for ($yy = 0; $yy < $AV; $yy++) for ($xx = 0; $xx < $AV; $xx++) {
+                    $dx = $xx - $AV / 2; $dy = $yy - $AV / 2;
+                    if ($dx * $dx + $dy * $dy > $r2) imagesetpixel($av, $xx, $yy, $tr);
+                }
+                imagedestroy($pimg);
+            }
+            imagecopy($im, $av, $px, $py, 0, 0, $AV, $AV);
+            imagedestroy($av);
+
+            // ── الاسم + الفريق + التقييم (يمين) ──
+            $tx = $px + $AV + 56;            // بداية عمود النصّ
+            $name = strtoupper(trim((string)$pl['name']));
+            $nsize = mb_strlen($name) > 18 ? 38 : (mb_strlen($name) > 13 ? 46 : 54);
+            imagettftext($im, $nsize, 0, $tx, 232, $white, $font, $name);
+
+            $teamLoc = function_exists('team_name') ? team_name((string)$pl['teamName']) : (string)$pl['teamName'];
+            $tline = $shape($teamLoc . (($pl['pos'] ?? '') !== '' ? '  ·  ' . $pl['pos'] : ''));
+            imagettftext($im, 24, 0, $tx, 280, $dim, $fontAr, $tline);
+
+            if ($pl['r'] !== null) {
+                $lblR = $shape('تقييم'); $rstr = number_format((float)$pl['r'], 1);
+                $rb = imagettfbbox(30, 0, $font, $rstr); $rw = $rb[2] - $rb[0];
+                imagefilledrectangle($im, $tx, 300, $tx + $rw + 34, 354, $gold);
+                imagettftext($im, 30, 0, $tx + 17, 339, $navy, $font, $rstr);
+                imagettftext($im, 18, 0, $tx + $rw + 50, 337, $dim, $fontAr, $lblR);
+            }
+
+            // ── أشرطة نقاط الفئات الكبرى ──
+            $macro = class_exists('FifaMetrics') ? FifaMetrics::macro($pl, 'ar') : [];
+            $by = 412; $bw = 372; $bh = 30; $gap = 50;
+            $trkX = $tx + 222;
+            foreach (array_slice($macro, 0, 4) as $mc) {
+                $lab = $shape((string)$mc['label']); $sc = (int)$mc['score'];
+                $lb = imagettfbbox(19, 0, $fontAr, $lab); $lw = $lb[2] - $lb[0];
+                imagettftext($im, 19, 0, (int)($trkX - 16 - $lw), $by + 22, $white, $fontAr, $lab);
+                imagefilledrectangle($im, $trkX, $by, $trkX + $bw, $by + $bh, imagecolorallocatealpha($im, 255, 255, 255, 108));
+                $fillW = (int)max(6, $bw * $sc / 100);
+                imagefilledrectangle($im, $trkX, $by, $trkX + $fillW, $by + $bh, $gold);
+                imagettftext($im, 24, 0, $trkX + $bw + 16, $by + 26, $gold, $font, (string)$sc);
+                $by += $gap;
+            }
+
+            $centerText($im, 18, 168, $gold, $font, 'FIFA TECHNICAL PROFILE · WORLD CUP 2026');
+            $centerText($im, 22, $H - 22, $white, $font, strtoupper(parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org'));
+        } else {
+            $centerBuiltin($im, 5, 300, $white, 'PLAYER PROFILE');
+            $centerBuiltin($im, 4, 340, $dim, 'wcup2026.org');
+        }
+        imagepng($im); imagedestroy($im); exit;
+    }
+
     // 🆕 بطاقة كل المجموعات (?mode=groups) — 4 جداول مصغّرة بهويّة الموقع
     if (($_GET['mode'] ?? '') === 'groups') {
         $all = class_exists('Standings') ? Standings::all() : [];
