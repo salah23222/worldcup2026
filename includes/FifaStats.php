@@ -173,7 +173,7 @@ class FifaStats
                     . e($p['t2']['top_player']) . ' ' . self::fmt($p['t2']['top_speed']) . ' ' . e($ar ? 'كم/س' : 'km/h') . '</p>';
             }
         }
-        $playersHtml = self::playersHtml($row, $ar, $t1, $t2);
+        $playersHtml = self::playersHtml($row, $ar, $t1, $t2, (string)($m['team1'] ?? ''), (string)($m['team2'] ?? ''));
         if ($statsHtml === '' && $inHtml === '' && $outHtml === '' && $playersHtml === '') return '';
 
         $form = '';
@@ -205,16 +205,17 @@ class FifaStats
         return '<div class="fpc-chip"><b>' . e($val) . '</b><span>' . e($label) . '</span></div>';
     }
 
-    private static function playersHtml(array $row, bool $ar, string $n1, string $n2): string
+    private static function playersHtml(array $row, bool $ar, string $n1, string $n2, string $en1 = '', string $en2 = ''): string
     {
         if (empty($row['players'])) return '';
         // عمودان متجاوران: كل منتخب ولاعبوه تحت اسمه (ينطوي لعمود واحد على الجوّال)
+        $enMap = ['t1' => $en1, 't2' => $en2];
         $cols = '';
         foreach (['t1' => $n1, 't2' => $n2] as $tk => $name) {
             $ps = $row['players'][$tk] ?? [];
             if (!$ps) continue;
             $col = '<h4 class="fstat-sub">👥 ' . e(($ar ? 'لاعبو ' : '') . $name) . '</h4>';
-            foreach ($ps as $p) $col .= self::playerCard($p, $ar);
+            foreach ($ps as $p) $col .= self::playerCard($p, $ar, $enMap[$tk] ?? '');
             $cols .= '<div class="fstat-pcol">' . $col . '</div>';
         }
         if ($cols === '') return '';
@@ -224,7 +225,7 @@ class FifaStats
              . '<div class="fstat-players2">' . $cols . '</div>';
     }
 
-    private static function playerCard(array $p, bool $ar): string
+    private static function playerCard(array $p, bool $ar, string $teamEn = ''): string
     {
         $phys = (isset($p['phys']) && count($p['phys']) >= 9) ? $p['phys'] : null;
         $photo = function_exists('player_photo') ? player_photo((string)($p['name'] ?? '')) : '';
@@ -270,7 +271,14 @@ class FifaStats
             if ($parts) $body .= '<p class="fpc-line">' . e(implode(' · ', $parts)) . '</p>';
         }
         if ($body === '') return '';
-        return '<details class="fpc"><summary>' . $head . '</summary><div class="fpc-body">' . $body . '</div></details>';
+        // زرّ الملفّ الفنّي الكامل (يفتح player.php لهذا اللاعب) — مثل زرّ المستكشف
+        $prof = '';
+        if ($teamEn !== '' && trim((string)($p['name'] ?? '')) !== '' && function_exists('url')) {
+            $purl = url('player.php', ['name' => (string)$p['name'], 'team' => $teamEn]);
+            $prof = '<a class="fpc-profile" href="' . e($purl) . '">'
+                  . e($ar ? '📋 الملفّ الفنّي الكامل' : '📋 Full technical profile') . '</a>';
+        }
+        return '<details class="fpc"><summary>' . $head . '</summary><div class="fpc-body">' . $body . $prof . '</div></details>';
     }
 
     private static function css(): string
@@ -299,6 +307,7 @@ class FifaStats
             . '.fifa-stats .fpc-photo.is-off{display:none}'
             . '.fifa-stats .fpc-q{font-weight:700;font-size:.78em;color:#ffc846;white-space:nowrap}'
             . '.fifa-stats .fpc-body{padding:2px 12px 12px}'
+            . '.fifa-stats .fpc-profile{display:block;width:max-content;margin:12px auto 2px;background:#ffc846;color:#0a1626;font-weight:800;border-radius:20px;padding:7px 18px;text-decoration:none;font-size:.86em}'
             . '.fifa-stats .fpc-cat{font-size:.78em;opacity:.7;margin:12px 0 6px}'
             . '.fifa-stats .fpc-grid{display:flex;flex-wrap:wrap;gap:8px}'
             . '.fifa-stats .fpc-chip{background:rgba(255,255,255,.06);border-radius:8px;padding:6px 12px;text-align:center;min-width:62px}'
