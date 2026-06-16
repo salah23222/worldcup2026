@@ -83,7 +83,7 @@ if (($mt = (int)($args['matchtweet'] ?? 0)) > 0 || isset($args['matchtweet'])) {
         $log('---'); $log($fin ? MatchTweets::buildPost($target, 'bi', false) : MatchTweets::buildPre($target, 'ar', false)); $log('---');
         exit;
     }
-    $r = $fin ? MatchTweets::sendPost($target, 'bi') : MatchTweets::sendPre($target, 'ar', true);
+    $r = $fin ? MatchTweets::sendPost($target, 'bi') : MatchTweets::sendPre($target, 'bi', true);
     $log(!empty($r['ok']) ? "[matchtweet] OK $lbl id=" . (string)$r['id'] : "[matchtweet] FAIL $lbl " . (string)($r['error'] ?? '?'));
     exit;
 }

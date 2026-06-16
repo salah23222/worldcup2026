@@ -51,10 +51,11 @@ class MatchTweets
             if ($diff < self::PRE_MIN_SEC || $diff > self::PRE_MAX_SEC) continue;
 
             $idx = (int)$m['_index'];
-            $need = [];
-            if (!self::wasSent($idx, 'pre', 'ar')) $need[] = 'ar';
-            if (!self::wasSent($idx, 'pre', 'en')) $need[] = 'en';
-            foreach ($need as $lang) $out[] = ['match' => $m, 'lang' => $lang];
+            // تغريدة قَبليّة واحدة ثنائيّة اللغة (bi) — لا تتكرّر (تشمل النظام القديم ar/en)
+            if (self::wasSent($idx, 'pre', 'bi')
+                || self::wasSent($idx, 'pre', 'ar')
+                || self::wasSent($idx, 'pre', 'en')) continue;
+            $out[] = ['match' => $m, 'lang' => 'bi'];
         }
         return $out;
     }
@@ -98,8 +99,7 @@ class MatchTweets
         $r = XPublisher::tweet($text, $img, $priority);
         if ($r['ok']) {
             self::markSent((int)$m['_index'], 'pre', $lang, (string)$r['id']);
-            self::replyWithLink((string)$r['id'], $m, $lang,
-                $lang === 'ar' ? '🔗 التفاصيل والتوقّعات 👇' : '🔗 Details & predictions 👇');
+            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التفاصيل والتوقّعات · Details & predictions 👇');
         }
         return $r + ['text' => $text];
     }
@@ -115,7 +115,7 @@ class MatchTweets
         $r = XPublisher::tweet($text, $img, true);
         if ($r['ok']) {
             self::markSent((int)$m['_index'], 'post', $lang, (string)$r['id']);
-            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التفاصيل والإحصائيّات الكاملة + رجل المباراة 👇');
+            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التفاصيل + رجل المباراة · Full stats & POTM 👇');
         }
         return $r + ['text' => $text];
     }
@@ -184,47 +184,36 @@ class MatchTweets
             ['options' => $p['options'], 'minutes' => $p['minutes']]);
         if (!empty($r['ok'])) {
             self::markSent((int)$m['_index'], 'poll', 'ar', (string)$r['id']);
-            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التشكيلة والتفاصيل 👇');
+            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التشكيلة والتفاصيل · Lineups & details 👇');
         }
         return $r + ['text' => $p['text']];
     }
 
     // ───────────────────── بانيات النصّ ─────────────────────
 
-    /** تغريدة قَبل المباراة (AR/EN). */
-    public static function buildPre(array $m, string $lang, bool $withLink = true): string
+    /** تغريدة قَبل المباراة — ثنائيّة اللغة (عربي فوق، إنجليزي تحت) مثل تغريدة النتيجة. */
+    public static function buildPre(array $m, string $lang = 'bi', bool $withLink = true): string
     {
-        $ar  = ($lang === 'ar');
-        $t1  = (string)($m['team1'] ?? '');
-        $t2  = (string)($m['team2'] ?? '');
-        $n1  = self::nameInLang($t1, $lang);
-        $n2  = self::nameInLang($t2, $lang);
-        $f1  = self::flagEmoji($t1);
-        $f2  = self::flagEmoji($t2);
-        $ts  = DataService::matchTimestamp($m);
-        $hm  = $ts ? date('H:i', $ts) : '';
+        $t1 = (string)($m['team1'] ?? ''); $t2 = (string)($m['team2'] ?? '');
+        $a1 = self::nameInLang($t1, 'ar'); $a2 = self::nameInLang($t2, 'ar');
+        $e1 = self::nameInLang($t1, 'en'); $e2 = self::nameInLang($t2, 'en');
+        $f1 = self::flagEmoji($t1);        $f2 = self::flagEmoji($t2);
+        $ts = DataService::matchTimestamp($m);
+        $hm = $ts ? date('H:i', $ts) : '';
         $ground = trim((string)($m['ground'] ?? ''));
-        $url    = self::link('match.php?id=' . (int)$m['_index'] . '&lang=' . $lang);
-        // هاشتاكات ذكيّة: #الفريق1 #الفريق2 #المضيف + الأساس القصير
-        $tags   = class_exists('Hashtags') ? Hashtags::forMatch($m)
-                : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup26');
-        $vs     = $ar ? 'ضدّ' : 'vs';
-
+        $url  = self::link('match.php?id=' . (int)$m['_index'] . '&lang=ar');
+        $tags = class_exists('Hashtags') ? Hashtags::forMatch($m)
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup2026');
         $soon = ($ts !== null && ($ts - time()) <= 5400);   // ≤90 دقيقة → «بعد قليل»، وإلّا «اليوم»
-        if ($ar) {
-            $head = $soon ? "⚽ بعد قليل في كأس العالم 2026" : "⚽ اليوم في كأس العالم 2026";
-            $line = "{$f1} {$n1} {$vs} {$n2} {$f2}";
-            $when = $hm !== '' ? "🕐 {$hm}" . ($ground !== '' ? " · 🏟️ {$ground}" : '') : ($ground !== '' ? "🏟️ {$ground}" : '');
-            $cta  = "🔮 توقّعك للنتيجة؟ شاركنا 👇";
-        } else {
-            $head = $soon ? "⚽ Coming up at FIFA World Cup 2026" : "⚽ Today at FIFA World Cup 2026";
-            $line = "{$f1} {$n1} {$vs} {$n2} {$f2}";
-            $when = $hm !== '' ? "🕐 {$hm}" . ($ground !== '' ? " · 🏟️ {$ground}" : '') : ($ground !== '' ? "🏟️ {$ground}" : '');
-            $cta  = "🔮 Your score prediction? 👇";
-        }
-        $msg = $head . "\n" . $line;
-        if ($when !== '') $msg .= "\n" . $when;
-        $msg .= "\n" . $cta;
+        $whenLine = $hm !== '' ? "🕐 {$hm}" . ($ground !== '' ? " · 🏟️ {$ground}" : '') : ($ground !== '' ? "🏟️ {$ground}" : '');
+
+        // كتلة عربيّة (مع الوقت/الملعب) ثمّ كتلة إنجليزيّة
+        $arBlock = "⚽ " . ($soon ? "بعد قليل في كأس العالم 2026" : "اليوم في كأس العالم 2026") . "\n{$f1} {$a1} ضدّ {$a2} {$f2}";
+        if ($whenLine !== '') $arBlock .= "\n{$whenLine}";
+        $enBlock = "⚽ " . ($soon ? "Coming up at the FIFA World Cup" : "Today at the FIFA World Cup") . "\n{$f1} {$e1} vs {$e2} {$f2}";
+        $cta = "🔮 توقّعك للنتيجة؟ · Your score prediction? 👇";
+
+        $msg = $arBlock . "\n\n" . $enBlock . "\n\n" . $cta;
         if ($withLink) $msg .= "\n" . $url;          // عند false: الرابط في ردّ (يرفع الوصول)
         $msg .= "\n" . $tags;
         return self::fitWithin($msg, 280, $withLink ? $url : '', $tags);
