@@ -35,7 +35,7 @@ class XPublisher
      * $imagePath: مسار PNG اختياري يُرفَق بالتغريدة (بطاقة المباراة).
      *             فشل رفع الصورة لا يمنع التغريدة — تُنشر نصاً فقط.
      */
-    public static function tweet(string $text, ?string $imagePath = null, bool $priority = false): array
+    public static function tweet(string $text, ?string $imagePath = null, bool $priority = false, ?string $replyTo = null): array
     {
         if (!self::configured()) {
             return ['ok' => false, 'id' => null, 'error' => 'x_not_configured'];
@@ -48,7 +48,8 @@ class XPublisher
             $text = mb_substr($text, 0, self::LIMIT - 1, 'UTF-8') . '…';
         }
         // ── حارس الحماية: نتأكّد أنّنا ضمن الحدود قبل أي طلب شبكة ──
-        if (class_exists('RateGuard')) {
+        // الردّ ($replyTo) تكملةٌ لتغريدة مُعتمَدة (الرابط تحت التغريدة) → يتجاوز الفحص.
+        if (class_exists('RateGuard') && $replyTo === null) {
             $g = RateGuard::check(0, $priority);
             if (!$g['ok']) {
                 $err = 'rate_guard:' . $g['reason'] . ' wait=' . $g['wait'] . 's';
@@ -66,6 +67,9 @@ class XPublisher
         $payload = ['text' => $text];
         if ($mediaId !== null) {
             $payload['media'] = ['media_ids' => [$mediaId]];
+        }
+        if ($replyTo !== null && $replyTo !== '') {
+            $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
         }
 
         $auth = self::oauthHeader('POST', self::ENDPOINT, []);

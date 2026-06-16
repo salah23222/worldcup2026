@@ -90,33 +90,48 @@ class MatchTweets
     /** ينشر تغريدة قَبليّة (يبني → يرسل → يسجّل). يعيد مصفوفة XPublisher. */
     public static function sendPre(array $m, string $lang): array
     {
-        $text = self::buildPre($m, $lang);
-        // بطاقة مصوّرة بأسلوب القنوات الرياضية — ترفع التفاعل بوضوح
+        // النصّ بلا رابط (الرابط يُنشَر في ردّ → يرفع وصول التغريدة الرئيسة)
+        $text = self::buildPre($m, $lang, false);
         $img = class_exists('TweetCardImage')
              ? TweetCardImage::generate([$m], ['title' => 'مباراة قادمة', 'subtitle' => 'كأس العالم 2026'])
              : null;
         $r = XPublisher::tweet($text, $img);
-        if ($r['ok']) self::markSent((int)$m['_index'], 'pre', $lang, (string)$r['id']);
+        if ($r['ok']) {
+            self::markSent((int)$m['_index'], 'pre', $lang, (string)$r['id']);
+            self::replyWithLink((string)$r['id'], $m, $lang,
+                $lang === 'ar' ? '🔗 التفاصيل والتوقّعات 👇' : '🔗 Details & predictions 👇');
+        }
         return $r + ['text' => $text];
     }
 
     /** ينشر تغريدة بعديّة (يولّد التقرير لو لزم → يبني → يرسل → يسجّل). */
     public static function sendPost(array $m, string $lang): array
     {
-        $text = self::buildPost($m, $lang);
+        $text = self::buildPost($m, $lang, false);   // بلا رابط — يُنشَر في ردّ
         $img = class_exists('TweetCardImage')
              ? TweetCardImage::generate([$m], ['title' => 'نتيجة المباراة', 'subtitle' => 'كأس العالم 2026', 'mode' => 'result'])
              : null;
         // أولويّة: تتجاوز نتيجةُ المباراة السقفَ اليومي المشترك (هي الأهمّ والأعلى تفاعلاً)
         $r = XPublisher::tweet($text, $img, true);
-        if ($r['ok']) self::markSent((int)$m['_index'], 'post', $lang, (string)$r['id']);
+        if ($r['ok']) {
+            self::markSent((int)$m['_index'], 'post', $lang, (string)$r['id']);
+            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التفاصيل والإحصائيّات الكاملة + رجل المباراة 👇');
+        }
         return $r + ['text' => $text];
+    }
+
+    /** ينشر الرابط كردّ تحت التغريدة (يبقي الرابط متاحاً دون خفض وصول التغريدة الرئيسة). */
+    private static function replyWithLink(string $parentId, array $m, string $lang, string $label): void
+    {
+        if ($parentId === '' || !class_exists('XPublisher')) return;
+        $url = self::link('match.php?id=' . (int)$m['_index'] . '&lang=' . ($lang === 'en' ? 'en' : 'ar'));
+        XPublisher::tweet($label . "\n" . $url, null, false, $parentId);   // الردّ يتجاوز الحارس
     }
 
     // ───────────────────── بانيات النصّ ─────────────────────
 
     /** تغريدة قَبل المباراة (AR/EN). */
-    public static function buildPre(array $m, string $lang): string
+    public static function buildPre(array $m, string $lang, bool $withLink = true): string
     {
         $ar  = ($lang === 'ar');
         $t1  = (string)($m['team1'] ?? '');
@@ -138,24 +153,26 @@ class MatchTweets
             $head = "⚽ بعد قليل في كأس العالم 2026";
             $line = "{$f1} {$n1} {$vs} {$n2} {$f2}";
             $when = $hm !== '' ? "🕐 {$hm}" . ($ground !== '' ? " · 🏟️ {$ground}" : '') : ($ground !== '' ? "🏟️ {$ground}" : '');
-            $cta  = "تابع التفاصيل والتوقّعات 👇";
+            $cta  = "🔮 توقّعك للنتيجة؟ شاركنا 👇";
         } else {
             $head = "⚽ Coming up at FIFA World Cup 2026";
             $line = "{$f1} {$n1} {$vs} {$n2} {$f2}";
             $when = $hm !== '' ? "🕐 {$hm}" . ($ground !== '' ? " · 🏟️ {$ground}" : '') : ($ground !== '' ? "🏟️ {$ground}" : '');
-            $cta  = "Details & predictions 👇";
+            $cta  = "🔮 Your score prediction? 👇";
         }
         $msg = $head . "\n" . $line;
         if ($when !== '') $msg .= "\n" . $when;
-        $msg .= "\n" . $cta . "\n" . $url . "\n" . $tags;
-        return self::fitWithin($msg, 280, $url, $tags);
+        $msg .= "\n" . $cta;
+        if ($withLink) $msg .= "\n" . $url;          // عند false: الرابط في ردّ (يرفع الوصول)
+        $msg .= "\n" . $tags;
+        return self::fitWithin($msg, 280, $withLink ? $url : '', $tags);
     }
 
     /**
      * تغريدة نتيجة المباراة — ثنائيّة اللغة في تغريدة واحدة (عربي فوق، إنجليزي تحت).
      * مبسّطة: «نهاية المباراة» + الفريقان والنتيجة + رابط التفاصيل (بلا تقرير ذكاء).
      */
-    public static function buildPost(array $m, string $lang = 'bi'): string
+    public static function buildPost(array $m, string $lang = 'bi', bool $withLink = true): string
     {
         $t1  = (string)($m['team1'] ?? '');
         $t2  = (string)($m['team2'] ?? '');
@@ -192,10 +209,13 @@ class MatchTweets
         // عربي فوق ثم إنجليزي تحت — كل كتلة: «نهاية المباراة» + المجموعة + الفريقان والنتيجة
         $arBlock = "🏁 نهاية المباراة{$arCtx}\n{$f1} {$ar1} {$g1} - {$g2} {$ar2} {$f2}{$penAr}";
         $enBlock = "🏁 Full time{$enCtx}\n{$f1} {$en1} {$g1} - {$g2} {$en2} {$f2}{$penEn}";
-        $cta     = "👇 للتفاصيل اضغط هنا · Tap for details";
+        // سؤال تفاعليّ (يدعو للردّ — أقوى إشارة للخوارزميّة) بدل «اضغط هنا»
+        $cta = "🌟 من رجل المباراة عندك؟ · Who's your Player of the Match?";
 
-        $msg = $arBlock . "\n\n" . $enBlock . "\n\n" . $cta . "\n" . $url . "\n" . $tags;
-        return self::fitWithin($msg, 280, $url, $tags);
+        $msg = $arBlock . "\n\n" . $enBlock . "\n\n" . $cta;
+        if ($withLink) $msg .= "\n" . $url;          // عند false: الرابط يُنشَر في ردّ (يرفع الوصول)
+        $msg .= "\n" . $tags;
+        return self::fitWithin($msg, 280, $withLink ? $url : '', $tags);
     }
 
     // ───────────────────── الحالة ─────────────────────
