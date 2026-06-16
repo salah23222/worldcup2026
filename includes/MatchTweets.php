@@ -128,6 +128,67 @@ class MatchTweets
         XPublisher::tweet($label . "\n" . $url, null, false, $parentId);   // الردّ يتجاوز الحارس
     }
 
+    // ───────────────────── استطلاع «من سيفوز؟» (للمباريات الكبرى) ─────────────────────
+
+    /** مباراة كبيرة = أحد الفريقين ضمن أفضل 24 في تصنيف FIFA. */
+    public static function isBigMatch(array $m): bool
+    {
+        if (!class_exists('Rankings')) return false;
+        $r1 = (int)(Rankings::of((string)($m['team1'] ?? '')) ?: 999);
+        $r2 = (int)(Rankings::of((string)($m['team2'] ?? '')) ?: 999);
+        return min($r1, $r2) <= 24;
+    }
+
+    /** المباريات الكبرى القادمة (بين ساعة و14 ساعة) التي لم يُنشَر استطلاعها بعد. */
+    public static function pendingPolls(int $now = 0): array
+    {
+        $now = $now ?: time();
+        $out = [];
+        foreach (DataService::allMatches() as $m) {
+            if (!self::isRealMatch($m) || !self::isBigMatch($m)) continue;
+            $ts = DataService::matchTimestamp($m);
+            if ($ts === null) continue;
+            $diff = $ts - $now;
+            if ($diff < 3600 || $diff > 14 * 3600) continue;   // مهلة كافية لجمع الأصوات قبل الانطلاق
+            if (self::wasSent((int)$m['_index'], 'poll', 'ar')) continue;
+            $out[] = $m;
+        }
+        return $out;
+    }
+
+    /** يبني استطلاع المباراة: ['text','options','minutes']. الاستطلاع يُغلق عند الانطلاق. */
+    public static function buildPoll(array $m): array
+    {
+        $t1 = (string)($m['team1'] ?? ''); $t2 = (string)($m['team2'] ?? '');
+        $a1 = self::nameInLang($t1, 'ar'); $a2 = self::nameInLang($t2, 'ar');
+        $f1 = self::flagEmoji($t1);        $f2 = self::flagEmoji($t2);
+        $tags = class_exists('Hashtags') ? Hashtags::forMatch($m)
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup2026');
+        $text = "🗳️ من سيفوز؟ · Who wins?\n{$f1} {$a1} 🆚 {$a2} {$f2}\n{$tags}";
+        $opts = [
+            trim("{$f1} {$a1}"),
+            '🤝 ' . 'تعادل',
+            trim("{$f2} {$a2}"),
+        ];
+        $ts = DataService::matchTimestamp($m);
+        $mins = $ts ? (int)floor(($ts - time()) / 60) : 720;
+        $mins = max(30, min(1440, $mins));   // يُغلق عند الانطلاق (30 د .. 24 س)
+        return ['text' => self::fitWithin($text, 280, '', $tags), 'options' => $opts, 'minutes' => $mins];
+    }
+
+    /** ينشر استطلاع المباراة (تغريدة استطلاع مستقلّة) + الرابط في ردّ. */
+    public static function sendPoll(array $m, bool $priority = false): array
+    {
+        $p = self::buildPoll($m);
+        $r = XPublisher::tweet($p['text'], null, $priority, null,
+            ['options' => $p['options'], 'minutes' => $p['minutes']]);
+        if (!empty($r['ok'])) {
+            self::markSent((int)$m['_index'], 'poll', 'ar', (string)$r['id']);
+            self::replyWithLink((string)$r['id'], $m, 'ar', '🔗 التشكيلة والتفاصيل 👇');
+        }
+        return $r + ['text' => $p['text']];
+    }
+
     // ───────────────────── بانيات النصّ ─────────────────────
 
     /** تغريدة قَبل المباراة (AR/EN). */

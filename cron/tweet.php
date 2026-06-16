@@ -64,6 +64,14 @@ if (($mt = (int)($args['matchtweet'] ?? 0)) > 0 || isset($args['matchtweet'])) {
     $target = null;
     foreach (DataService::allMatches() as $mm) { if ((int)($mm['_index'] ?? -1) === $mt) { $target = $mm; break; } }
     if (!$target) { $log("[matchtweet] match #$mt not found"); exit; }
+    // &poll → انشر استطلاع «من سيفوز؟» لهذه المباراة
+    if (isset($args['poll'])) {
+        if (!$force && MatchTweets::wasSent($mt, 'poll', 'ar')) { $log("[matchtweet] #$mt poll already posted — add &force"); exit; }
+        if ($dry) { $p = MatchTweets::buildPoll($target); $log('---'); $log($p['text']); $log('[options] ' . implode('  |  ', $p['options']) . '  (' . $p['minutes'] . 'min)'); $log('---'); exit; }
+        $r = MatchTweets::sendPoll($target, true);
+        $log(!empty($r['ok']) ? "[matchtweet] POLL OK #$mt id=" . (string)$r['id'] : "[matchtweet] POLL FAIL #$mt " . (string)($r['error'] ?? '?'));
+        exit;
+    }
     $fin  = isset($target['score']['ft']) && is_array($target['score']['ft']);
     $type = $fin ? 'post' : 'pre'; $lg2 = $fin ? 'bi' : 'ar';
     $lbl  = '#' . $mt . ' ' . ($target['team1'] ?? '') . '-' . ($target['team2'] ?? '') . ' [' . $type . ']';
@@ -316,6 +324,19 @@ if (!$skipMatches) {
         $label = '#' . (int)$m['_index'] . ' ' . $m['team1'] . '-' . $m['team2'] . ' [' . $lg . ']';
         if ($dry) { $log('[pre] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPre($m, $lg)); $log('---'); continue; }
         $send('pre', $label, fn() => MatchTweets::sendPre($m, $lg));
+    }
+}
+
+// ═══ استطلاع «من سيفوز؟» للمباريات الكبرى القادمة (تفاعل عالٍ) — واحد لكل run ═══
+if (!$skipMatches) {
+    $polls = MatchTweets::pendingPolls();
+    $log('[poll] candidates=' . count($polls));
+    foreach ($polls as $pm) {
+        if ($sent >= $capPerRun) { $log('[poll] cap reached, stop.'); break; }
+        $label = '#' . (int)$pm['_index'] . ' ' . $pm['team1'] . '-' . $pm['team2'];
+        if ($dry) { $pp = MatchTweets::buildPoll($pm); $log('[poll] would tweet ' . $label); $log('---'); $log($pp['text']); $log('[options] ' . implode('  |  ', $pp['options'])); $log('---'); continue; }
+        $send('poll', $label, fn() => MatchTweets::sendPoll($pm));
+        break;   // استطلاع واحد لكل تشغيل (تفادي الإغراق)
     }
 }
 

@@ -35,7 +35,11 @@ class XPublisher
      * $imagePath: مسار PNG اختياري يُرفَق بالتغريدة (بطاقة المباراة).
      *             فشل رفع الصورة لا يمنع التغريدة — تُنشر نصاً فقط.
      */
-    public static function tweet(string $text, ?string $imagePath = null, bool $priority = false, ?string $replyTo = null): array
+    /**
+     * @param array|null $poll  استطلاع: ['options'=>[..2-4 نصوص ≤25 حرف..], 'minutes'=>int].
+     *                          الاستطلاع لا يقبل صورة (قيد X) → تُتجاهَل الصورة عند وجوده.
+     */
+    public static function tweet(string $text, ?string $imagePath = null, bool $priority = false, ?string $replyTo = null, ?array $poll = null): array
     {
         if (!self::configured()) {
             return ['ok' => false, 'id' => null, 'error' => 'x_not_configured'];
@@ -58,15 +62,23 @@ class XPublisher
             }
         }
 
-        // ارفع الصورة أولاً (إن وُجدت) — best-effort: الفشل لا يوقف النشر.
-        $mediaId = null;
-        if ($imagePath !== null && $imagePath !== '' && is_file($imagePath)) {
-            $mediaId = self::uploadMedia($imagePath);
-        }
-
+        // استطلاع؟ (لا صورة معه) — وإلّا ارفع الصورة (best-effort: الفشل لا يوقف النشر).
         $payload = ['text' => $text];
-        if ($mediaId !== null) {
-            $payload['media'] = ['media_ids' => [$mediaId]];
+        if (is_array($poll) && !empty($poll['options'])) {
+            $opts = array_values(array_filter(array_map(
+                fn($o) => mb_substr(trim((string)$o), 0, 25, 'UTF-8'),
+                $poll['options']
+            ), fn($o) => $o !== ''));
+            $opts = array_slice($opts, 0, 4);
+            if (count($opts) >= 2) {
+                $payload['poll'] = [
+                    'options'          => $opts,
+                    'duration_minutes' => max(5, min(10080, (int)($poll['minutes'] ?? 1440))),
+                ];
+            }
+        } elseif ($imagePath !== null && $imagePath !== '' && is_file($imagePath)) {
+            $mediaId = self::uploadMedia($imagePath);
+            if ($mediaId !== null) $payload['media'] = ['media_ids' => [$mediaId]];
         }
         if ($replyTo !== null && $replyTo !== '') {
             $payload['reply'] = ['in_reply_to_tweet_id' => $replyTo];
