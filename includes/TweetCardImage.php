@@ -68,23 +68,19 @@ class TweetCardImage
             $rowH  = 262;   // +27 لسطر أسماء الفريقين بالإنجليزية تحت كل شريط
             $footH = 130;
             // 🆕 شريط إحصائيات لبطاقة نتيجة مباراة واحدة (إحصائيات حيّة + الإنذارات/الطرد)
-            $statsRows = []; $cardsLine = null;
+            $statsRows = []; $motm = null;
             if ($n === 1 && $mode === 'result') {
                 $m0 = $matches[0];
                 if (!empty($m0['stats']) && is_array($m0['stats'])) {
                     $statsRows = array_slice(array_values($m0['stats']), 0, 6);   // حتى 6 محاور للرادار
                 }
-                if (isset($m0['cards']) && is_array($m0['cards'])) {
-                    $yc = [0, 0]; $rc = [0, 0];
-                    foreach ($m0['cards'] as $cc) {
-                        if (!is_array($cc)) continue;
-                        $ix = ((int)($cc['team'] ?? 0) === 2) ? 1 : 0;
-                        if (($cc['type'] ?? '') === 'red') $rc[$ix]++; else $yc[$ix]++;
-                    }
-                    $cardsLine = ['yc' => $yc, 'rc' => $rc];   // البطاقات سطرٌ منفصل (محاور رديئة للرادار)
+                // رجل المباراة (صورته + اسمه) — يُضاف أسفل البطاقة إن وُجد
+                if ($statsRows && class_exists('FifaMetrics')) {
+                    $motm = FifaMetrics::motmFor((string)($m0['team1'] ?? ''), (string)($m0['team2'] ?? ''));
+                    if ($motm && (string)($motm['photo'] ?? '') === '') $motm = null;
                 }
             }
-            $statsH = $statsRows ? 520 : 0;   // منطقة ثابتة للرادار + العنوان + الإيضاح
+            $statsH = $statsRows ? (520 + ($motm ? 168 : 0)) : 0;   // رادار + (شريط رجل المباراة)
             $H = max(780, $headH + $n * $rowH + $statsH + $footH);
 
             $im = imagecreatetruecolor($W, $H);
@@ -191,6 +187,31 @@ class TweetCardImage
                 imagettftext($im, 18, 0, (int)($W / 2 - 132), $ly2, $white, $fontAr, ArabicText::shape($t1n));
                 imagefilledellipse($im, (int)($W / 2 + 60), $ly2 - 6, 16, 16, $sky);
                 imagettftext($im, 18, 0, (int)($W / 2 + 78), $ly2, $white, $fontAr, ArabicText::shape($t2n));
+
+                // ── شريط رجل المباراة (صورته + اسمه + تقييمه) ──
+                if ($motm) {
+                    $msy = $ly2 + 44;
+                    // سطران منفصلان (لا خلط عربي/إنجليزي في تشكيل واحد → لا انعكاس · بلا إيموجي)
+                    self::centerText($im, $fontAr, 24, $W / 2, $msy, $gold, ArabicText::shape('رجل المباراة'));
+                    self::centerText($im, $fontEn, 13, $W / 2, $msy + 20, $light, 'PLAYER OF THE MATCH');
+                    $d = 92;
+                    $nm = function_exists('mb_strtoupper') ? mb_strtoupper(trim((string)($motm['name'] ?? '')), 'UTF-8') : strtoupper(trim((string)($motm['name'] ?? '')));
+                    $rt = $motm['r'] ?? ($motm['rating'] ?? null);
+                    $rstr = $rt !== null ? number_format((float)$rt, 1) : '';
+                    $bbN = imagettfbbox(26, 0, $fontEn, $nm); $nmW = $bbN[2] - $bbN[0];
+                    $gap = 20; $total = $d + $gap + max($nmW, 80);
+                    $startX = (int)(($W - $total) / 2);
+                    $pcy = $msy + 84;
+                    if (!self::drawCirclePhoto($im, (string)$motm['photo'], $startX + (int)($d / 2), $pcy, $d, $gold)) {
+                        imagefilledellipse($im, $startX + (int)($d / 2), $pcy, $d, $d, imagecolorallocatealpha($im, 255, 255, 255, 110));
+                    }
+                    $txX = $startX + $d + $gap;
+                    imagettftext($im, 26, 0, $txX, $pcy - 4, $white, $fontEn, $nm);
+                    if ($rstr !== '') {
+                        imagefilledrectangle($im, $txX, $pcy + 12, $txX + 70, $pcy + 44, $gold);
+                        imagettftext($im, 22, 0, $txX + 10, $pcy + 38, $navy, $fontEn, $rstr);
+                    }
+                }
             }
 
             // ── التذييل ──
@@ -322,7 +343,36 @@ class TweetCardImage
         imagerectangle($im, $x, $y, $x + $w, $y + $h, $border);
     }
 
-    /** مستطيل بزوايا دائرية. */
+    /** صورة لاعب دائريّة بإطار (تُحمَّل من الرابط مع كاش قرص). يعيد true عند النجاح. */
+    private static function drawCirclePhoto($im, string $url, int $cx, int $cy, int $d, $ring): bool
+    {
+        if ($url === '') return false;
+        $cf = rtrim(CACHE_DIR, '/') . '/pp_' . md5($url) . '.img';
+        $raw = is_file($cf) ? @file_get_contents($cf) : null;
+        if (!$raw) {
+            $raw = function_exists('http_get') ? http_get($url, ['timeout' => 9]) : null;
+            if ($raw) @file_put_contents($cf, $raw);
+        }
+        if (!$raw) return false;
+        $src = @imagecreatefromstring($raw);
+        if (!$src) return false;
+        imagefilledellipse($im, $cx, $cy, $d + 8, $d + 8, $ring);   // إطار ذهبي
+        $av = imagecreatetruecolor($d, $d);
+        imagesavealpha($av, true);
+        $trans = imagecolorallocatealpha($av, 0, 0, 0, 127);
+        imagefill($av, 0, 0, $trans);
+        $pw = imagesx($src); $ph = imagesy($src); $side = min($pw, $ph);
+        imagecopyresampled($av, $src, 0, 0, (int)(($pw - $side) / 2), 0, $d, $d, $side, $side);
+        $r2 = ($d / 2) * ($d / 2);
+        for ($yy = 0; $yy < $d; $yy++) for ($xx = 0; $xx < $d; $xx++) {
+            $dx = $xx - $d / 2; $dy = $yy - $d / 2;
+            if ($dx * $dx + $dy * $dy > $r2) imagesetpixel($av, $xx, $yy, $trans);
+        }
+        imagecopy($im, $av, $cx - (int)($d / 2), $cy - (int)($d / 2), 0, 0, $d, $d);
+        imagedestroy($src); imagedestroy($av);
+        return true;
+    }
+
     /** مضلّع (مملوء أو حدّ) — متوافق مع PHP 8.0 (4 وسائط) و8.1+ (3 وسائط). */
     private static function poly($im, array $pts, $color, bool $fill): void
     {
