@@ -16,6 +16,8 @@ $gParam = $gRaw !== '' ? substr($gRaw, -1) : '';
 $page_image = ($gParam !== '')
     ? url('card_img.php', ['mode' => 'group',  'g' => $gParam, 'd' => card_rev()])
     : url('card_img.php', ['mode' => 'groups', 'd' => card_rev()]);
+// بطاقة «كل المجموعات» طوليّة (1200×1480) — اضبط أبعاد OG ليعرضها الكامل
+if ($gParam === '') { $page_image_w = 1200; $page_image_h = 1480; }
 
 // عند ?g → عنوان/وصف خاصّان بالمجموعة فتظهر بطاقة المشاركة ذات معنى (لا «المجموعات» العامّة)
 if ($gParam !== '') {

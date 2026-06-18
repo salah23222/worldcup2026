@@ -53,7 +53,7 @@ try {
     header('Content-Type: image/png');
     header('Cache-Control: public, max-age=86400');
 
-    $W = 1200; $H = 630;
+    $W = 1200; $H = (($_GET['mode'] ?? '') === 'groups') ? 1480 : 630;   // كل المجموعات الـ12 → بطاقة طوليّة
     $im = imagecreatetruecolor($W, $H);
     if (function_exists('imageantialias')) { @imageantialias($im, true); }
 
@@ -431,35 +431,38 @@ try {
         };
         if ($hasFont && $all) {
             $gold2 = imagecolorallocate($im, 255, 194, 51);
-            $centerText($im, 44, 156, $white, $fontAr, $shape('ترتيب المجموعات'));
-            $centerText($im, 24, 196, $dim,   $fontAr, $shape('كأس العالم 2026'));
+            $centerText($im, 48, 128, $white, $fontAr, $shape('ترتيب المجموعات'));
+            $centerText($im, 24, 170, $dim,   $fontAr, $shape('كأس العالم 2026 · دور المجموعات'));
 
-            $cellW = 540; $cellH = 176;
-            $colX  = [640, 60];     // RTL: يمين ثم يسار
-            $rowY  = [222, 408];
-            $order = ['Group A', 'Group B', 'Group C', 'Group D'];
+            // شبكة 3 أعمدة × 4 صفوف لكل الـ12 مجموعة (RTL: يمين · وسط · يسار)
+            $cellW = 376; $cellH = 286;
+            $colX  = [804, 412, 20];
+            $rowY  = [222, 532, 842, 1152];
             $i = 0;
-            foreach ($order as $gk) {
-                if (!isset($all[$gk])) { $i++; continue; }
-                $cx = $colX[$i % 2]; $cy = $rowY[intdiv($i, 2)];
-                imagefilledrectangle($im, $cx, $cy, $cx + $cellW, $cy + $cellH, imagecolorallocatealpha($im, 255, 255, 255, 122));
-                $gl = $shape('المجموعة ' . substr($gk, -1));
+            foreach (range('A', 'L') as $L) {
+                $gk = 'Group ' . $L;
+                $cx = $colX[$i % 3]; $cy = $rowY[intdiv($i, 3)];
+                imagefilledrectangle($im, $cx, $cy, $cx + $cellW, $cy + $cellH, imagecolorallocatealpha($im, 255, 255, 255, 124));
+                $gl = $shape('المجموعة ' . ($i + 1));
                 $bb = imagettfbbox(22, 0, $fontAr, $gl);
-                imagettftext($im, 22, 0, (int)($cx + $cellW - 16 - ($bb[2] - $bb[0])), $cy + 32, $gold2, $fontAr, $gl);
-                $ry = $cy + 64;
-                foreach (array_slice($all[$gk], 0, 4) as $ri => $r) {
+                imagettftext($im, 22, 0, (int)($cx + $cellW - 16 - ($bb[2] - $bb[0])), $cy + 38, $gold2, $fontAr, $gl);
+                $ry = $cy + 80;
+                foreach (array_slice($all[$gk] ?? [], 0, 4) as $ri => $r) {
                     $teamEn = (string)($r['team'] ?? '');
-                    imagettftext($im, 17, 0, $cx + $cellW - 38, $ry + 4, $dim,   $font, (string)($ri + 1));
-                    $fl = $fetch(flag_url($teamEn, 'w160'));
-                    if ($fl) { imagecopyresampled($im, $fl, $cx + $cellW - 104, $ry - 13, 0, 0, 42, 28, imagesx($fl), imagesy($fl)); imagedestroy($fl); }
-                    imagettftext($im, 19, 0, $cx + 64, $ry + 5, $white, $fontAr, $shape(function_exists('team_name') ? team_name($teamEn) : $teamEn));
-                    imagettftext($im, 20, 0, $cx + 20, $ry + 6, $gold2, $font, (string)($r['pts'] ?? 0));
-                    $ry += 30;
+                    imagettftext($im, 15, 0, $cx + $cellW - 26, $ry + 3, $dim, $font, (string)($ri + 1));   // الترتيب
+                    $fl = $fetch(function_exists('flag_url') ? flag_url($teamEn, 'w160') : '');
+                    if ($fl) { imagecopyresampled($im, $fl, $cx + $cellW - 90, $ry - 14, 0, 0, 42, 28, imagesx($fl), imagesy($fl)); imagedestroy($fl); }
+                    // الاسم بمحاذاة يمين (بجانب العلم)
+                    $nm = $shape(function_exists('team_name') ? team_name($teamEn) : $teamEn);
+                    $nbb = imagettfbbox(16, 0, $fontAr, $nm); $nw = $nbb[2] - $nbb[0];
+                    imagettftext($im, 16, 0, max($cx + 50, (int)($cx + $cellW - 98 - $nw)), $ry + 4, $white, $fontAr, $nm);
+                    imagettftext($im, 19, 0, $cx + 18, $ry + 5, $gold2, $font, (string)($r['pts'] ?? 0));     // النقاط
+                    $ry += 50;
                 }
                 $i++;
             }
             $domain = parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org';
-            $centerText($im, 22, $H - 24, $white, $font, strtoupper($domain));
+            $centerText($im, 22, $H - 30, $white, $font, strtoupper($domain));
         } else {
             $centerBuiltin($im, 5, 280, $white, 'GROUP STANDINGS - WORLD CUP 2026');
         }
