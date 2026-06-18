@@ -592,6 +592,28 @@ class LiveService
     }
 
     /**
+     * archivedLineup() — تشكيلة «خفيفة» للتصدير النصّي/الباتش: يدويّ مؤكَّد أو أرشيف ESPN
+     * الدائم فقط — **بلا أيّ نداء شبكة** (لا API-Football). آمنة للاستدعاء في حلقة على كلّ
+     * المباريات (مثل football.php?reports). تعيد null إن لا توجد تشكيلة مؤرشفة.
+     */
+    public static function archivedLineup(array $match): ?array
+    {
+        $manual = self::manualLineup($match);
+        if ($manual !== null && empty($manual['probable'])) return $manual;
+
+        $t1 = trim((string)($match['team1'] ?? ''));
+        $t2 = trim((string)($match['team2'] ?? ''));
+        if ($t1 !== '' && $t2 !== '') {
+            $archive = rtrim(CACHE_DIR, '/') . '/match-lineup-' . md5(self::normalizeKey($t1, $t2)) . '.json';
+            if (is_file($archive)) {
+                $a = json_decode((string)@file_get_contents($archive), true);
+                if (is_array($a) && !empty($a['team1'])) return $a;
+            }
+        }
+        return $manual;   // متوقّعة يدويّة كاحتياط (نادرة للمنتهية)
+    }
+
+    /**
      * manualLineup() — تشكيلة من data/lineups-manual.json (أولوية فوق API).
      * صيغة الملف — المفتاح "Team1|Team2" بالأسماء الإنجليزية (كما في openfootball):
      * {

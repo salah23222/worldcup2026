@@ -48,7 +48,7 @@ class FootballTxt
         if (!class_exists('DataService')) return "= FIFA World Cup 2026\n";
         $all = DataService::allMatches();
 
-        $sub = $withReport ? 'Match reports — results, scorers & bookings'
+        $sub = $withReport ? 'Match reports — results, scorers, bookings & line-ups'
              : ($finishedOnly ? 'Results' : 'Schedule & results');
         $out = self::header($sub);
 
@@ -178,7 +178,43 @@ class FootballTxt
         if ($rH || $rA) {
             $out .= '      Red Cards: ' . (implode(', ', $rH) ?: '-') . '  —  ' . (implode(', ', $rA) ?: '-') . "\n";
         }
+
+        // التشكيلتان الأساسيّتان (إن صدرت/أُرشِفت) — كلّ فريق سطر «خاصّيّة» باسمه (صيغة openfootball).
+        // ESPN المجاني يعطي الأساسيّين فقط (بلا دقائق تبديل/كابتن) → نخرج الـ11 مجمَّعين بالخطة.
+        if (class_exists('LiveService')) {
+            $lu = LiveService::archivedLineup($m);   // أرشيف/يدويّ فقط — بلا نداء شبكة في الحلقة
+            if (is_array($lu)) {
+                $l1 = self::lineupStr((string)($m['team1'] ?? ''), $lu['team1'] ?? null);
+                $l2 = self::lineupStr((string)($m['team2'] ?? ''), $lu['team2'] ?? null);
+                if ($l1 !== '') $out .= '      ' . $l1 . "\n";
+                if ($l2 !== '') $out .= '      ' . $l2 . "\n";
+            }
+        }
         return $out;
+    }
+
+    /** «Team: GK - D1, D2, D3, D4 - M1, M2, M3 - F1, F2, F3» من تشكيلة فريق (الأساسيّون مرتّبون
+     *  حارس→دفاع→وسط→هجوم). تُجمَّع حسب الخطة (4-3-3...)؛ وإن تعذّر → قائمة مفصولة بفواصل. */
+    private static function lineupStr(string $teamEn, ?array $side): string
+    {
+        $teamEn = trim($teamEn);
+        if ($teamEn === '' || !is_array($side)) return '';
+        $names = [];
+        foreach (($side['start'] ?? []) as $p) {
+            $n = trim((string)($p['name'] ?? ''));
+            if ($n !== '') $names[] = $n;
+        }
+        if (count($names) < 11) return '';   // التشكيلة لم تصدر/تكتمل
+
+        $lines = array_values(array_filter(array_map('intval', preg_split('/\D+/', (string)($side['formation'] ?? '')))));
+        if ($lines && array_sum($lines) === count($names) - 1) {
+            $segs = [array_shift($names)];                       // الحارس وحده
+            foreach ($lines as $cnt) $segs[] = implode(', ', array_splice($names, 0, $cnt));
+            $body = implode(' - ', $segs);
+        } else {
+            $body = implode(', ', $names);                       // خطة غير معروفة
+        }
+        return $teamEn . ': ' . $body;
     }
 
     /** «Player 51', Player 64' (pen.)» من مصفوفة أهداف فريق. */
