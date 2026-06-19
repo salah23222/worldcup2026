@@ -243,6 +243,90 @@ class TweetCardImage
         }
     }
 
+    /**
+     * roundOf32() — بطاقة «المتأهّلون إلى دور الـ32»: شبكة 4×8 (32 خانة) — علم لكلّ
+     * منتخب مضمون، و«؟» للباقي. تصميم داكن بأسلوب البثّ. تُملأ تدريجياً كلّما تأهّل منتخب.
+     * @param string[] $qualified أسماء المنتخبات الإنجليزيّة المضمونة (من Standings::qualifiedR32).
+     */
+    public static function roundOf32(array $qualified, bool $complete = false): ?string
+    {
+        if (!extension_loaded('gd') || !function_exists('imagettftext')) return null;
+        $fontAr = __DIR__ . '/../assets/fonts/Amiri-Bold.ttf';
+        $fontEn = __DIR__ . '/../assets/fonts/Cairo-Black.ttf';
+        if (!is_file($fontAr) || !is_file($fontEn) || !class_exists('ArabicText')) return null;
+
+        $qualified = array_values(array_filter(array_map('strval', $qualified)));
+        $n = min(32, count($qualified));
+
+        $key  = sha1('r32v1|' . ($complete ? 'C' : 'P') . '|' . implode(',', $qualified));
+        $dir  = rtrim(CACHE_DIR, '/') . '/cards';
+        $file = $dir . '/r32-' . substr($key, 0, 20) . '.png';
+        if (is_file($file) && (time() - filemtime($file) < 3 * 3600)) return $file;
+
+        try {
+            $W = self::W; $H = 1300;
+            $im = imagecreatetruecolor($W, $H);
+
+            // خلفية داكنة متدرّجة (كالمرجع)
+            $top = [20, 22, 34]; $bot = [9, 11, 20];
+            for ($y = 0; $y < $H; $y++) {
+                $t = $y / $H;
+                imageline($im, 0, $y, $W, $y, imagecolorallocate($im,
+                    (int)($top[0] + ($bot[0]-$top[0])*$t),
+                    (int)($top[1] + ($bot[1]-$top[1])*$t),
+                    (int)($top[2] + ($bot[2]-$top[2])*$t)));
+            }
+            $white  = imagecolorallocate($im, 255, 255, 255);
+            $light  = imagecolorallocate($im, 168, 205, 245);
+            $gold   = imagecolorallocate($im, 255, 200, 70);
+            $navy   = imagecolorallocate($im, 26, 31, 100);
+            $tileBg = imagecolorallocate($im, 32, 36, 52);
+            $qmark  = imagecolorallocatealpha($im, 255, 255, 255, 92);
+            $frame  = imagecolorallocate($im, 60, 66, 88);
+
+            // ترويسة: شارة 26 + النطاق
+            self::roundedRect($im, $W/2 - 38, 36, $W/2 + 38, 112, 18, $white);
+            self::centerText($im, $fontEn, 34, $W/2, 92, $navy, '26');
+
+            // العنوان الضخم + سطر عربي + العدّاد
+            self::centerText($im, $fontEn, 70, $W/2, 210, $white, 'ROUND OF 32');
+            self::centerText($im, $fontAr, 33, $W/2, 256, $light, ArabicText::shape('المتأهّلون إلى دور الـ32'));
+            self::centerText($im, $fontEn, 25, $W/2, 302, $gold, $n . ' / 32  ·  FIFA WORLD CUP 2026');
+
+            // الشبكة 4×8
+            $cols = 4; $mx = 70; $gap = 36;
+            $tileW = (int)(($W - 2*$mx - ($cols-1)*$gap) / $cols);
+            $tileH = 92; $rowGap = 20; $gy0 = 340;
+            for ($idx = 0; $idx < 32; $idx++) {
+                $c = $idx % $cols; $r = intdiv($idx, $cols);
+                $x = $mx + $c * ($tileW + $gap);
+                $y = $gy0 + $r * ($tileH + $rowGap);
+                self::roundedRect($im, $x, $y, $x + $tileW, $y + $tileH, 14, $tileBg);
+                if ($idx < $n) {
+                    $fw = (int)min($tileH * 1.5, $tileW - 18);
+                    $fh = (int)($fw / 1.5);
+                    self::drawFlag($im, $qualified[$idx], (int)($x + ($tileW - $fw)/2), (int)($y + ($tileH - $fh)/2), $fw, $fh);
+                } else {
+                    $bb = imagettfbbox(40, 0, $fontEn, '?');
+                    imagettftext($im, 40, 0, (int)($x + ($tileW - ($bb[2]-$bb[0]))/2), (int)($y + $tileH/2 + 16), $qmark, $fontEn, '?');
+                }
+            }
+
+            // تذييل
+            self::centerText($im, $fontAr, 25, $W/2, $H - 38, $light,
+                ArabicText::shape('المتأهّلون فور حسمهم رياضياً · wcup2026.org'));
+
+            if (!is_dir($dir)) @mkdir($dir, 0755, true);
+            imagepng($im, $file);
+            imagedestroy($im);
+            return is_file($file) ? $file : null;
+        } catch (\Throwable $e) {
+            @error_log('TweetCardImage::roundOf32: ' . $e->getMessage());
+            if (isset($im) && $im instanceof \GdImage) @imagedestroy($im);
+            return null;
+        }
+    }
+
     /** صفّ مباراة واحد: شارة المجموعة + الشريط الأبيض + سطر التاريخ. */
     private static function matchRow($im, array $m, int $y, string $mode, string $fontAr, string $fontEn, array $c): void
     {

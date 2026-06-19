@@ -88,6 +88,38 @@ if (($mt = (int)($args['matchtweet'] ?? 0)) > 0 || isset($args['matchtweet'])) {
     exit;
 }
 
+// ═══ بطاقة «المتأهّلون إلى دور الـ32»: بنّاء + ناشر (يدويّ &r32 · وتلقائيّ عند تأهّل جديد) ═══
+// لا تُنشَر إلا إذا زاد عدد المتأهّلين المضمونين رياضياً (Standings::qualifiedR32) عن آخر مرّة.
+$r32Tweet = function (bool $force, bool $priority) use ($log, $dry) {
+    if (!class_exists('Standings') || !class_exists('TweetCardImage')) return ['ok' => false, 'error' => 'no_class'];
+    $q = Standings::qualifiedR32();
+    $teams = $q['teams']; $cnt = count($teams);
+    if ($cnt < 1) { $log('[r32] none clinched yet — skip'); return ['ok' => false, 'error' => 'none']; }
+    $stateF = rtrim(CACHE_DIR, '/') . '/x_r32.json';
+    $last = 0;
+    if (is_file($stateF)) { $d = json_decode((string)@file_get_contents($stateF), true); $last = (int)($d['count'] ?? 0); }
+    if (!$force && $cnt <= $last) { $log("[r32] no new qualifier (now={$cnt} posted={$last}) — skip"); return ['ok' => false, 'error' => 'nochange']; }
+
+    $word = ($cnt === 1) ? 'منتخب ضمن مقعده' : 'منتخباً ضمنوا مقاعدهم';
+    $ar   = "🎟️ التأهّل إلى دور الـ32\n{$cnt} {$word} في كأس العالم 2026";
+    $en   = "🎟️ Through to the Round of 32\n" . ($cnt === 1 ? '1 team has booked its place' : "{$cnt} teams have booked their place");
+    $text = $ar . "\n\n" . $en . "\n#WorldCup2026 #FIFAWorldCup #كأس_العالم #المونديال";
+    $img  = TweetCardImage::roundOf32($teams, $q['complete']);
+
+    if ($dry) { $log('[r32] DRY (cnt=' . $cnt . ')'); $log('---'); $log($text); $log('[img] ' . ($img ?: 'none')); $log('---'); return ['ok' => false, 'skipped' => 'dry']; }
+    $r = XPublisher::tweet($text, $img, $priority);
+    if (!empty($r['ok'])) @file_put_contents($stateF, json_encode(['count' => $cnt, 'at' => time()], JSON_UNESCAPED_UNICODE));
+    return $r + ['count' => $cnt];
+};
+
+// مُشغّل يدويّ: انشر بطاقة المتأهّلين الآن (?token=...&r32 · +&force لإعادة النشر · +&dry للمعاينة)
+if (isset($args['r32'])) {
+    $r = $r32Tweet(isset($args['force']), true);   // أولويّة: تتجاوز السقف اليومي
+    $log(!empty($r['ok']) ? '[r32] OK posted id=' . (string)$r['id'] . ' (cnt=' . (string)($r['count'] ?? '?') . ')'
+                          : '[r32] not posted: ' . (string)($r['error'] ?? ($r['skipped'] ?? '?')));
+    exit;
+}
+
 // ═══════════════════ وضع التنظيف: مسح طوابير الحالة ═══════════════════
 // cron/tweet.php?token=...&clear-state=news       → يصمت كل أخبار الـ RSS الحاليّة
 // cron/tweet.php?token=...&clear-state=all        → ينظّف news + match + group state
@@ -272,6 +304,12 @@ if (!$skipMatches && ($drain || !$nonPrioDone)) {
         if ($dry) { $log('[pre] would tweet ' . $label); $log('---'); $log(MatchTweets::buildPre($m, $lg)); $log('---'); continue; }
         $send('pre', $label, fn() => MatchTweets::sendPre($m, $lg));
     }
+}
+
+// ═══ بطاقة «المتأهّلون إلى دور الـ32» — تلقائياً عند تأهّل منتخب جديد (تغريدة واحدة لكل تشغيل) ═══
+if (!$skipMatches && ($drain || !$nonPrioDone)) {
+    $r = $r32Tweet(false, false);
+    if (!empty($r['ok'])) { $log('[r32] OK auto id=' . (string)$r['id'] . ' (cnt=' . (string)($r['count'] ?? '?') . ')'); $sent++; $nonPrioDone = true; }
 }
 
 // ═══════════════════ A) الفترة اليوميّة (ومنها «مباريات الـ24 ساعة» صباحاً) ═══════════════════

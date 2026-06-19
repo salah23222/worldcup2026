@@ -75,6 +75,47 @@ class Standings
         return $thirds;
     }
 
+    /**
+     * qualifiedR32() — المنتخبات **المضمونة رياضياً** في دور الـ32 (لا تخمين، لا بيانات خاطئة):
+     *   • متصدّر/وصيف «محسوم» في مجموعته: حتى لو خسر كلّ ما تبقّى وفاز كلّ المنافسين بكلّ
+     *     ما تبقّى، يبقى ضمن الأوّلَين (نتعامل مع «قد يساويه» كتهديد → احتياط آمن).
+     *   • أصحاب المركز الثالث: لا نضيفهم إلا بعد **اكتمال دور المجموعات بأكمله** (عندها
+     *     يصبح ترتيب أفضل 8 نهائياً) — قبل ذلك غير مؤكّد فلا يُعرض.
+     * كل فريق يلعب 3 مباريات في المجموعة.
+     * @return array{teams: string[], complete: bool} أسماء إنجليزيّة، مرتّبة A1,A2,B1,…
+     */
+    public static function qualifiedR32(): array
+    {
+        $clinched = [];
+        $allDone  = true;
+        foreach (DataService::groupNames() as $g) {
+            $rows = self::forGroup($g);
+            if (count($rows) < 4) $allDone = false;
+            foreach ($rows as $r) { if ((int)$r['p'] < 3) $allDone = false; }
+
+            foreach ($rows as $i => $r) {
+                $pts = (int)$r['pts'];
+                $threats = 0;   // كم منافساً قد يبلغ نقاطه أو يتجاوزها في أسوأ الأحوال
+                foreach ($rows as $j => $o) {
+                    if ($i === $j) continue;
+                    $oMax = (int)$o['pts'] + 3 * max(0, 3 - (int)$o['p']);
+                    if ($oMax >= $pts) $threats++;
+                }
+                // تهديدان فأكثر ⇒ قد يصبح ثالثاً → غير محسوم. تهديد واحد أو صفر ⇒ ضمن الأوّلَين.
+                if ($threats <= 1) $clinched[$g . '-' . $i] = (string)$r['team'];
+            }
+        }
+        ksort($clinched, SORT_NATURAL);
+        $teams = array_values($clinched);
+
+        if ($allDone) {
+            foreach (self::thirdPlaceRanking(8) as $r) {
+                if (!empty($r['qualified'])) $teams[] = (string)$r['team'];
+            }
+        }
+        return ['teams' => array_values(array_unique($teams)), 'complete' => $allDone];
+    }
+
     // ====================================================
     //  الحساب الداخلي
     // ====================================================
