@@ -149,32 +149,60 @@ try {
             foreach ($colX as $k => $x) $colHdr($x, $colAr[$k], $colEn[$k]);
             $colHdr(885, 'المنتخب', 'TEAM');
 
+            // فاصل رفيع تحت رؤوس الأعمدة
+            imagefilledrectangle($im, 60, 252, $W - 60, 254, imagecolorallocatealpha($im, 255, 255, 255, 118));
+
+            // ألوان وعناصر الصفّ — هويّة بيضاء + أخضر «متأهّل» (دلالة فقط، غير مهيمن)
+            $rowBg  = imagecolorallocatealpha($im, 9, 15, 44, 62);
+            $green  = imagecolorallocate($im, 34, 197, 94);
+            $grayB  = imagecolorallocatealpha($im, 255, 255, 255, 92);
+            $pillTx = imagecolorallocate($im, 10, 20, 48);
+            $frameC = imagecolorallocate($im, 36, 66, 104);
+            // شارة الترتيب (دائرة): أخضر للمتأهّلَين · رماديّ لغيرهما
+            $rankBadge = function (int $cx, int $cy, int $n, $col) use ($im, $font, $white) {
+                imagefilledellipse($im, $cx, $cy, 48, 48, $col);
+                $s = (string)$n; $bb = imagettfbbox(23, 0, $font, $s);
+                imagettftext($im, 23, 0, (int)($cx - ($bb[2] - $bb[0]) / 2), $cy + 11, $white, $font, $s);
+            };
+            // حبّة النقاط (pill) بيضاء بارزة + رقم كحليّ — الأبيض هو الأبرز (هويّة الموقع)
+            $pill = function (int $cx, int $cy, string $txt) use ($im, $font, $white, $pillTx) {
+                $bb = imagettfbbox(28, 0, $font, $txt); $tw = $bb[2] - $bb[0];
+                $w = max(62, $tw + 36); $h = 48; $rr = (int)($h / 2);
+                $x1 = (int)($cx - $w / 2); $x2 = (int)($cx + $w / 2);
+                imagefilledrectangle($im, $x1 + $rr, $cy - $rr, $x2 - $rr, $cy + $rr, $white);
+                imagefilledellipse($im, $x1 + $rr, $cy, $h, $h, $white);
+                imagefilledellipse($im, $x2 - $rr, $cy, $h, $h, $white);
+                imagettftext($im, 28, 0, (int)($cx - $tw / 2), $cy + 10, $pillTx, $font, $txt);
+            };
+
             $y = 270;
             foreach (array_slice($rows, 0, 4) as $i => $r) {
                 $teamEn = (string)$r['team'];
-                imagefilledrectangle($im, 60, $y, $W - 60, $y + 68, imagecolorallocatealpha($im, 255, 255, 255, 120));
-                $mid = $y + 34;
-                imagettftext($im, 28, 0, 1092, $mid + 10, $gold, $font, (string)($i + 1));
+                $qual = ($i < 2);                       // أوّل منتخبَين يتأهّلان
+                $mid  = $y + 34;
+                imagefilledrectangle($im, 60, $y, $W - 60, $y + 68, $rowBg);
+                if ($qual) imagefilledrectangle($im, $W - 66, $y, $W - 60, $y + 68, $green);   // حافّة «متأهّل» خضراء رفيعة
+                $rankBadge(1090, $mid, $i + 1, $qual ? $green : $grayB);
                 $fl = $fetch(flag_url($teamEn, 'w160'));
                 if ($fl) {
-                    imagecopyresampled($im, $fl, 1000, $y + 20, 0, 0, 66, 44, imagesx($fl), imagesy($fl));
+                    imagecopyresampled($im, $fl, 988, $y + 18, 0, 0, 70, 47, imagesx($fl), imagesy($fl));
                     imagedestroy($fl);
-                    imagerectangle($im, 1000, $y + 20, 1066, $y + 64, imagecolorallocate($im, 36, 66, 104));
+                    imagerectangle($im, 988, $y + 18, 1058, $y + 65, $frameC);
                 }
-                // الاسم: عربي (فوق) + إنجليزي (تحت) — كلاهما محاذى يميناً لـ982 فلا يدخل العلم
+                // الاسم: عربي (فوق) + إنجليزي (تحت) — محاذى يميناً لـ968 فلا يدخل العلم
                 $nameAr = $shape(function_exists('team_name') ? team_name($teamEn) : $teamEn);
                 $bb = imagettfbbox(27, 0, $fontAr, $nameAr);
-                imagettftext($im, 27, 0, (int)(982 - ($bb[2] - $bb[0])), $mid - 1, $white, $fontAr, $nameAr);
+                imagettftext($im, 27, 0, (int)(968 - ($bb[2] - $bb[0])), $mid - 1, $white, $fontAr, $nameAr);
                 $en = strtoupper($teamEn); $bb = imagettfbbox(15, 0, $font, $en);
-                imagettftext($im, 15, 0, (int)(982 - ($bb[2] - $bb[0])), $mid + 27, $dim, $font, $en);
-                $vals = ['pts' => (int)$r['pts'], 'gd' => (int)$r['gd'], 'l' => (int)$r['l'], 'd' => (int)$r['d'], 'w' => (int)$r['w'], 'p' => (int)$r['p']];
+                imagettftext($im, 15, 0, (int)(968 - ($bb[2] - $bb[0])), $mid + 27, $dim, $font, $en);
+                // الأعمدة الرقميّة (عدا النقاط — لها حبّة بارزة)
+                $vals = ['gd' => (int)$r['gd'], 'l' => (int)$r['l'], 'd' => (int)$r['d'], 'w' => (int)$r['w'], 'p' => (int)$r['p']];
                 foreach ($vals as $k => $v) {
                     $vs = ($k === 'gd') ? (($v > 0 ? '+' : '') . $v) : (string)$v;
-                    $size = ($k === 'pts') ? 30 : 24;
-                    $col  = ($k === 'pts') ? $gold : $white;
-                    $bb = imagettfbbox($size, 0, $font, $vs);
-                    imagettftext($im, $size, 0, (int)($colX[$k] - ($bb[2] - $bb[0]) / 2), $mid + 9, $col, $font, $vs);
+                    $bb = imagettfbbox(24, 0, $font, $vs);
+                    imagettftext($im, 24, 0, (int)($colX[$k] - ($bb[2] - $bb[0]) / 2), $mid + 9, $white, $font, $vs);
                 }
+                $pill($colX['pts'], $mid, (string)(int)$r['pts']);
                 $y += 78;
             }
             $domain = parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org';
