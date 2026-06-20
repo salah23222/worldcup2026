@@ -268,6 +268,22 @@ seo_sportsevent($m);
     .fifa-rep-t small{font-size:.8rem;opacity:.75}
     .fifa-rep-go{margin-inline-start:auto;font-size:1.5rem;color:#ffc846;font-weight:800}
     </style>
+  <?php elseif ($hasScore && $fifaStatsHtml === ''): /* انتهت لكن تقرير FIFA لم يُنشَر بعد → ملاحظة بدل فراغ */ ?>
+    <div class="fifa-pending">
+      <span class="fifa-pending-ic">📄</span>
+      <span class="fifa-pending-t">
+        <b><?= e($L('تقرير FIFA الرسمي لم يُنشَر بعد', 'Official FIFA report not published yet')) ?></b>
+        <small><?= e($L('يصدر عادةً خلال يوم من المباراة، ويظهر هنا تلقائياً فور نشره.', 'Usually published within a day of the match — it will appear here automatically once released.')) ?></small>
+      </span>
+    </div>
+    <style>
+    .fifa-pending{display:flex;align-items:center;gap:13px;margin:6px 0 14px;padding:13px 16px;
+      background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.2);border-radius:14px;color:inherit}
+    .fifa-pending-ic{font-size:1.5rem;flex:0 0 auto;opacity:.7}
+    .fifa-pending-t{display:flex;flex-direction:column;line-height:1.3;min-width:0}
+    .fifa-pending-t b{font-size:.95rem}
+    .fifa-pending-t small{font-size:.8rem;opacity:.72}
+    </style>
   <?php endif; ?>
 
   <!-- ============ رجل المباراة (أعلى تقييم) ============ -->
