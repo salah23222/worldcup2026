@@ -214,6 +214,65 @@ try {
         imagepng($im); imagedestroy($im); exit;
     }
 
+    // 🆕 بطاقة الصدارة (?mode=leaderboard) — أفضل المتوقّعين بأسمائهم ونقاطهم
+    if (($_GET['mode'] ?? '') === 'leaderboard') {
+        $rows   = class_exists('Predictions') ? Predictions::leaderboard(8) : [];
+        $fontAr = __DIR__ . '/assets/fonts/Amiri-Bold.ttf';
+        if (!is_file($fontAr)) $fontAr = $font;
+        $shape  = fn(string $s): string => class_exists('ArabicText') ? ArabicText::shape($s) : $s;
+        $isAr   = fn(string $s): bool => (bool)preg_match('/\p{Arabic}/u', $s);
+        if ($hasFont && $rows) {
+            $centerText($im, 46, 150, $white, $fontAr, $shape('أفضل المتوقّعين'));
+            $centerText($im, 19, 186, $gold,  $font,   'LEADERBOARD · PREDICTIONS · FIFA WORLD CUP 2026');
+
+            $goldC   = imagecolorallocate($im, 255, 200, 70);
+            $silverC = imagecolorallocate($im, 203, 213, 225);
+            $bronzeC = imagecolorallocate($im, 205, 127, 50);
+            $rowBg   = imagecolorallocatealpha($im, 9, 15, 44, 62);
+            $grayB   = imagecolorallocatealpha($im, 255, 255, 255, 96);
+            $pillTx  = imagecolorallocate($im, 10, 20, 48);
+
+            $rankBadge = function (int $cx, int $cy, int $n, $col) use ($im, $font, $white) {
+                imagefilledellipse($im, $cx, $cy, 44, 44, $col);
+                $s = (string)$n; $bb = imagettfbbox(22, 0, $font, $s);
+                imagettftext($im, 22, 0, (int)($cx - ($bb[2]-$bb[0])/2), $cy + 10, $white, $font, $s);
+            };
+            $pill = function (int $cx, int $cy, string $txt) use ($im, $font, $white, $pillTx) {
+                $bb = imagettfbbox(26, 0, $font, $txt); $tw = $bb[2]-$bb[0];
+                $w = max(58, $tw + 34); $h = 44; $rr = (int)($h/2);
+                $x1 = (int)($cx - $w/2); $x2 = (int)($cx + $w/2);
+                imagefilledrectangle($im, $x1+$rr, $cy-$rr, $x2-$rr, $cy+$rr, $white);
+                imagefilledellipse($im, $x1+$rr, $cy, $h, $h, $white);
+                imagefilledellipse($im, $x2-$rr, $cy, $h, $h, $white);
+                imagettftext($im, 26, 0, (int)($cx - $tw/2), $cy + 9, $pillTx, $font, $txt);
+            };
+
+            $y = 214;
+            foreach (array_slice($rows, 0, 8) as $i => $r) {
+                $rank = $i + 1;
+                // أزل الإيموجي (خط GD لا يرسمها → تشوّه) — مثل «🤖 AI» تصبح «AI»
+                $nick = trim(preg_replace('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{2B00}-\x{2BFF}\x{FE0F}\x{200D}]/u', '', (string)($r['nickname'] ?? '')));
+                if ($nick === '') $nick = (string)($r['nickname'] ?? '');   // احتياط لو كان الاسم إيموجي فقط
+                if ($nick === '') continue;
+                $col  = $rank === 1 ? $goldC : ($rank === 2 ? $silverC : ($rank === 3 ? $bronzeC : $grayB));
+                imagefilledrectangle($im, 60, $y, $W - 60, $y + 44, $rowBg);
+                $mid = $y + 22;
+                $rankBadge(1132, $mid, $rank, $col);
+                if ($isAr($nick)) { $nm = $shape($nick); $nf = $fontAr; } else { $nm = $nick; $nf = $font; }
+                $bb = imagettfbbox(27, 0, $nf, $nm);
+                imagettftext($im, 27, 0, (int)(1092 - ($bb[2]-$bb[0])), $mid + 10, $white, $nf, $nm);
+                $pill(150, $mid, (string)(int)($r['points'] ?? 0));
+                $y += 48;
+            }
+            $domain = parse_url(base_url(), PHP_URL_HOST) ?: 'wcup2026.org';
+            $centerText($im, 22, $H - 20, $white, $font, strtoupper($domain));
+        } else {
+            $centerBuiltin($im, 5, 290, $white, 'LEADERBOARD');
+            $centerBuiltin($im, 4, 340, $dim, 'wcup2026.org');
+        }
+        imagepng($im); imagedestroy($im); exit;
+    }
+
     // 🆕 بطاقة «المباريات القادمة خلال 24 ساعة» (?mode=upcoming) — لزر مشاركة صفحة المباريات
     if (($_GET['mode'] ?? '') === 'upcoming') {
         $now  = time();

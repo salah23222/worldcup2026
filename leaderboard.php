@@ -10,6 +10,8 @@ $me      = Predictions::user();
 
 $page_title = t('leaderboard');
 $page_desc  = t('comp_intro');
+// بطاقة مشاركة بأسماء المتصدّرين ونقاطهم (بدل البطاقة الافتراضيّة)
+$page_image = url('card_img.php', ['mode' => 'leaderboard', 'd' => card_rev()]);
 tpl('header');
 ?>
 
