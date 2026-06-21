@@ -45,10 +45,10 @@ tpl('header');
 
     <form class="auth-form" method="post" action="<?= e(url('login.php')) ?>" autocomplete="off">
       <?= Auth::csrfField() ?>
-      <label class="auth-label" for="username"><?= e(t('username')) ?></label>
+      <label class="auth-label" for="username"><?= e(current_lang()==='ar' ? 'اسم المستخدم أو البريد الإلكتروني' : (current_lang()==='fr' ? "Nom d'utilisateur ou e-mail" : 'Username or email')) ?></label>
       <input class="auth-input" type="text" id="username" name="username"
-             maxlength="32" required value="<?= e($_POST['username'] ?? '') ?>"
-             autocapitalize="none" spellcheck="false">
+             maxlength="190" required value="<?= e($_POST['username'] ?? '') ?>"
+             autocapitalize="none" spellcheck="false" autocomplete="username">
 
       <label class="auth-label" for="password"><?= e(t('password')) ?></label>
       <input class="auth-input" type="password" id="password" name="password"

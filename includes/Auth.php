@@ -169,11 +169,13 @@ class Auth
         }
 
         try {
+            // الدخول باسم المستخدم أو البريد الإلكتروني (المستخدمون يكتبون بريدهم غالباً).
+            // البريد يُطابَق بلا حساسيّة لحالة الأحرف (LOWER) مهما كان ترميز الجدول.
             $stmt = $pdo->prepare(
                 'SELECT id, username, display_name, email, phone, country, pass_hash, created_at, updated_at
-                 FROM users WHERE username = ? LIMIT 1'
+                 FROM users WHERE username = ? OR LOWER(email) = LOWER(?) LIMIT 1'
             );
-            $stmt->execute([$username]);
+            $stmt->execute([$username, $username]);
             $row = $stmt->fetch();
         } catch (Throwable $e) {
             return ['ok' => false, 'error' => 'db_error', 'user' => null];
