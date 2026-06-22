@@ -197,6 +197,21 @@ console.log(data.scorers);
 </section>
 
 <section class="api-sec">
+  <h2>🚀 <?= e($tx('بُنيت بواجهتنا', 'Built with our API', 'Réalisé avec notre API')) ?></h2>
+  <p class="lead"><?= e($tx('تطبيقات ومشاريع يبنيها مطوّرون باستخدام هذا الـAPI:', 'Apps & projects developers built using this API:', 'Applications créées avec cette API :')) ?></p>
+  <ul style="margin:0;padding-inline-start:20px;line-height:2">
+    <li>
+      <a href="https://play.google.com/store/apps/details?id=com.fifaworldcupfixtures" target="_blank" rel="noopener"><strong>FIFA World Cup Fixtures</strong></a>
+      — <?= e($tx('تطبيق أندرويد على Google Play', 'Android app on Google Play', 'App Android sur Google Play')) ?>
+    </li>
+  </ul>
+  <p class="lead" style="margin:14px 0 0">
+    <?= e($tx('بنيت شيئاً بواجهتنا؟ أخبرنا لنعرضه هنا:', 'Built something with our API? Tell us and we\'ll feature it:', 'Vous avez créé quelque chose ? Dites-le-nous :')) ?>
+    <a href="mailto:info@wcup2026.org">info@wcup2026.org</a>
+  </p>
+</section>
+
+<section class="api-sec">
   <h2><?= e($tx('الاستخدام العادل', 'Fair use', 'Usage équitable')) ?></h2>
   <p class="lead" style="margin:0"><?= e($tx(
     'للقراءة فقط ومجّاني. خزّن مؤقّتاً حيثما أمكن (البيانات تتحدّث كل دقيقة تقريباً). الإسناد مُقدَّر — ضع رابطاً إلى wcup2026.org. بيانات الجدول من openfootball (ملك عام)؛ إحصائيات المباراة من بيانات الفيفا الرسميّة.',
