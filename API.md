@@ -129,6 +129,16 @@ https://wcup2026.org/football.php?reports    # results + scorers + bookings
 
 ---
 
+## 🚀 Built with our API
+
+Apps & projects developers have built using this API:
+
+- **[FIFA World Cup Fixtures](https://play.google.com/store/apps/details?id=com.fifaworldcupfixtures)** — Android app on Google Play.
+
+Built something with our API? Tell us and we'll feature it here — **info@wcup2026.org** (or open a discussion / issue on this repo).
+
+---
+
 ## Notes & fair use
 
 - Read‑only and free. Please cache where you can (data updates roughly every minute).
