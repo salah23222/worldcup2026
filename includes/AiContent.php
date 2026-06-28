@@ -50,6 +50,7 @@ class AiContent
         // يحتاج فريقين محدّدين (لا placeholders إقصائية)
         $t1 = trim($m['team1'] ?? '');
         $t2 = trim($m['team2'] ?? '');
+        if (function_exists('ko_resolve')) { $t1 = ko_resolve($t1); $t2 = ko_resolve($t2); }   // إقصائيات: «1L»→England
         if (!is_real_team($t1) || !is_real_team($t2)) return null;
 
         $finished = isset($m['score']['ft']) && is_array($m['score']['ft']);
@@ -101,6 +102,7 @@ class AiContent
         if ($idx < 0) return null;
         $t1 = trim($m['team1'] ?? '');
         $t2 = trim($m['team2'] ?? '');
+        if (function_exists('ko_resolve')) { $t1 = ko_resolve($t1); $t2 = ko_resolve($t2); }   // إقصائيات: «1L»→England
         if (!is_real_team($t1) || !is_real_team($t2)) return null;
 
         $file = rtrim(CACHE_DIR, '/') . "/aipred_{$idx}.json";

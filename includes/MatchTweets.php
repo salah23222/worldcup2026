@@ -329,6 +329,8 @@ class MatchTweets
     {
         $raw = trim($raw);
         if ($raw === '') return '';
+        // حلّ عناصر الإقصائيات النائبة («1L»→England · «3..»→الثالث · «W77»→الفائز) احتياطاً
+        if (function_exists('ko_resolve')) $raw = ko_resolve($raw);
         if ($lang !== 'ar') return $raw;
         if (!function_exists('teams_map')) return $raw;
         $map = teams_map();

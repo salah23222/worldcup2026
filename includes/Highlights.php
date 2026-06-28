@@ -62,6 +62,7 @@ class Highlights
     {
         $t1 = trim((string)($m['team1'] ?? ''));
         $t2 = trim((string)($m['team2'] ?? ''));
+        if (function_exists('ko_resolve')) { $t1 = ko_resolve($t1); $t2 = ko_resolve($t2); }   // إقصائيات: «1L»→England
         if ($t1 === '' || $t2 === '') return null;
 
         $key = strtolower(preg_replace('/[^a-z]/i', '', $t1 . $t2));
