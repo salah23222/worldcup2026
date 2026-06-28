@@ -112,11 +112,33 @@ function teams_map(): array {
 }
 
 /**
+ * ko_resolve_pos() — يحلّ عنصر «1X/2X» (أول/ثاني المجموعة X) إلى المنتخب الفعلي
+ * من الترتيب النهائي **بعد اكتمال مباريات تلك المجموعة فقط** (وإلّا يبقى نائباً).
+ * عناصر الثالث «3X/Y/Z» لا تُحَلّ هنا (تتبع جدول تخصيص FIFA الرسمي — لا نخمّنها).
+ * كاش لكل مجموعة → استدعاء team_name/team_flag المتكرّر لا يُعيد الحساب.
+ */
+function ko_resolve_pos(string $raw): string {
+    if (!preg_match('/^([12])([A-L])$/i', trim($raw), $m) || !class_exists('Standings')) return $raw;
+    static $cache = [];
+    $g = strtoupper($m[2]);
+    if (!array_key_exists($g, $cache)) {
+        $cache[$g] = null;
+        $rows = Standings::forGroup('Group ' . $g);
+        $done = !empty($rows);
+        foreach ($rows as $r) { if ((int)($r['p'] ?? 0) < 3) { $done = false; break; } }
+        if ($done && count($rows) >= 2) {
+            $cache[$g] = [1 => (string)$rows[0]['team'], 2 => (string)$rows[1]['team']];
+        }
+    }
+    return ($cache[$g] !== null) ? $cache[$g][(int)$m[1]] : $raw;
+}
+
+/**
  * team_name() — يرجّع اسم المنتخب حسب اللغة الحالية.
  * يتعامل بذكاء مع رموز placeholder للأدوار الإقصائية مثل "W73" أو "1A".
  */
 function team_name(string $raw): string {
-    $raw = trim($raw);
+    $raw = ko_resolve_pos(trim($raw));   // «1L» → بطل المجموعة L الفعلي (بعد اكتمالها)
     if ($raw === '') return t('tbd');
 
     // placeholder للأدوار الإقصائية: W73 = الفائز من المباراة 73
@@ -154,7 +176,7 @@ function team_name(string $raw): string {
  * team_flag() — يرجّع رمز ISO للعلم، أو '' إذا كان placeholder.
  */
 function team_flag(string $raw): string {
-    $raw = trim($raw);
+    $raw = ko_resolve_pos(trim($raw));   // «1L» → علم بطل المجموعة L (بعد اكتمالها)
     $map = teams_map();
     return $map[$raw][1] ?? '';
 }
