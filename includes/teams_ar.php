@@ -134,11 +134,65 @@ function ko_resolve_pos(string $raw): string {
 }
 
 /**
+ * ko_thirds_map() — تعيين أصحاب المركز الثالث الـ8 لخانات دور الـ32 وفق **جدول FIFA
+ * الرسمي 2026** (متحقَّق منه مزدوجاً: كل ثالث مجموعته ضمن مجموعات الخانة + يطابق الجدول
+ * الرسمي المنشور). يُحدَّث يدويّاً إن غيّرت FIFA التعيين. (مفتاح = رمز الخانة كما في البيانات.)
+ */
+function ko_thirds_map(): array {
+    return [
+        '3A/B/C/D/F' => 'Paraguay',
+        '3C/D/F/G/H' => 'Sweden',
+        '3C/E/F/H/I' => 'Ecuador',
+        '3E/H/I/J/K' => 'DR Congo',
+        '3B/E/F/I/J' => 'Bosnia & Herzegovina',
+        '3A/E/H/I/J' => 'Senegal',
+        '3E/F/G/I/J' => 'Algeria',
+        '3D/E/I/J/L' => 'Ghana',
+    ];
+}
+
+/**
+ * ko_resolve() — المُحلّل الشامل لعناصر الأدوار الإقصائية النائبة → المنتخب الفعلي:
+ *   • «1X/2X» → أول/ثاني المجموعة (من الترتيب النهائي).
+ *   • «3X/Y/Z» → الثالث المُعيَّن رسمياً (ko_thirds_map).
+ *   • «WN» → الفائز من المباراة N (من نتيجتها؛ ركلات الترجيح تحسم التعادل) — يتقدّم
+ *     الجدول تلقائياً دوراً بعد دور كلّما ظهرت النتائج. عودٌ آمن (الفائز قد يكون نائباً).
+ * يبقى العنصر نائباً إن لم يُحسَم بعد. كاش (memo) يمنع العَود ويُسرّع.
+ */
+function ko_resolve(string $raw): string {
+    static $memo = [];
+    $raw = trim($raw);
+    if ($raw === '') return $raw;
+    if (isset($memo[$raw])) return $memo[$raw];
+    $memo[$raw] = $raw;   // حماية من العَود اللانهائي قبل الحساب
+
+    $r = ko_resolve_pos($raw);
+    if ($r === $raw) $r = ko_thirds_map()[strtoupper($raw)] ?? $raw;
+    if ($r === $raw && preg_match('/^W(\d+)$/i', $raw, $m) && class_exists('DataService')) {
+        $match = DataService::matchByIndex((int)$m[1]);
+        $ft = is_array($match) ? ($match['score']['ft'] ?? null) : null;
+        if (is_array($ft) && isset($ft[0], $ft[1])) {
+            $a = (int)$ft[0]; $b = (int)$ft[1]; $w = null;
+            if ($a > $b)      $w = (string)($match['team1'] ?? '');
+            elseif ($b > $a)  $w = (string)($match['team2'] ?? '');
+            else {            // تعادل → ركلات الترجيح إن وُجدت
+                $p = $match['score']['p'] ?? null;
+                if (is_array($p) && isset($p[0], $p[1])) {
+                    $w = ((int)$p[0] >= (int)$p[1]) ? (string)($match['team1'] ?? '') : (string)($match['team2'] ?? '');
+                }
+            }
+            if ($w !== null && $w !== '') $r = ko_resolve($w);   // الفائز قد يكون نائباً بدوره
+        }
+    }
+    return $memo[$raw] = $r;
+}
+
+/**
  * team_name() — يرجّع اسم المنتخب حسب اللغة الحالية.
  * يتعامل بذكاء مع رموز placeholder للأدوار الإقصائية مثل "W73" أو "1A".
  */
 function team_name(string $raw): string {
-    $raw = ko_resolve_pos(trim($raw));   // «1L» → بطل المجموعة L الفعلي (بعد اكتمالها)
+    $raw = ko_resolve(trim($raw));   // «1L»→بطل · «3...»→الثالث الرسمي · «W77»→الفائز
     if ($raw === '') return t('tbd');
 
     // placeholder للأدوار الإقصائية: W73 = الفائز من المباراة 73
@@ -176,7 +230,7 @@ function team_name(string $raw): string {
  * team_flag() — يرجّع رمز ISO للعلم، أو '' إذا كان placeholder.
  */
 function team_flag(string $raw): string {
-    $raw = ko_resolve_pos(trim($raw));   // «1L» → علم بطل المجموعة L (بعد اكتمالها)
+    $raw = ko_resolve(trim($raw));   // «1L»/«3...»/«W77» → علم المنتخب الفعلي
     $map = teams_map();
     return $map[$raw][1] ?? '';
 }
