@@ -120,6 +120,110 @@ class MatchTweets
         return $r + ['text' => $text];
     }
 
+    // ───────────────────── المباراة القادمة للفائز (الأدوار الإقصائيّة) ─────────────────────
+
+    /** ترجمة اسم الدور للعربيّة. */
+    private static function roundArName(string $r): string
+    {
+        $map = ['Round of 32' => 'دور الـ32', 'Round of 16' => 'دور الـ16',
+                'Quarter-final' => 'ربع النهائي', 'Semi-final' => 'نصف النهائي',
+                'Third place' => 'تحديد المركز الثالث', 'Final' => 'النهائي'];
+        foreach ($map as $en => $ar) { if (stripos($r, $en) !== false) return $ar; }
+        return $r;
+    }
+
+    /**
+     * nextMatchFor() — يجد مباراة الدور التالي للفائز من مباراة إقصائيّة منتهية.
+     * يبحث عن «W{index}» أو عن اسم الفائز نفسه في بقيّة المباريات (يصمد سواء حلّت
+     * openfootball الخانة أم بقيت نائبة). يعيد ['next','winner','opp'] أو null (نهائيّ).
+     */
+    public static function nextMatchFor(array $m): ?array
+    {
+        $idx = (int)($m['_index'] ?? -1);
+        $ft  = $m['score']['ft'] ?? null;
+        if ($idx < 0 || !is_array($ft) || !isset($ft[0], $ft[1])) return null;
+        $a = (int)$ft[0]; $b = (int)$ft[1]; $winner = null;
+        if ($a > $b)     $winner = (string)($m['team1'] ?? '');
+        elseif ($b > $a) $winner = (string)($m['team2'] ?? '');
+        else {
+            $p = $m['score']['p'] ?? null;   // ركلات الترجيح تحسم
+            if (is_array($p) && isset($p[0], $p[1])) {
+                $winner = ((int)$p[0] >= (int)$p[1]) ? (string)($m['team1'] ?? '') : (string)($m['team2'] ?? '');
+            }
+        }
+        if ($winner === null || $winner === '') return null;
+
+        $token = 'W' . $idx;
+        foreach (DataService::allMatches() as $nm) {
+            // المباراة التالية في دور إقصائيّ لاحق (فهرس أكبر) — لا مباريات المجموعات السابقة
+            if ((int)($nm['_index'] ?? -1) <= $idx) continue;
+            if (!preg_match('/Round of|Quarter|Semi|Final/i', (string)($nm['round'] ?? ''))) continue;
+            $t1 = trim((string)($nm['team1'] ?? '')); $t2 = trim((string)($nm['team2'] ?? ''));
+            $hit1 = (strcasecmp($t1, $token) === 0 || $t1 === $winner);
+            $hit2 = (strcasecmp($t2, $token) === 0 || $t2 === $winner);
+            if ($hit1 || $hit2) return ['next' => $nm, 'winner' => $winner, 'opp' => $hit1 ? $t2 : $t1];
+        }
+        return null;   // النهائي أو لا مباراة تالية
+    }
+
+    /** مباريات إقصائيّة منتهية لم تُنشَر لها تغريدة «الفائز القادمة» بعد (نافذة طزاجة). */
+    public static function pendingNext(int $now = 0): array
+    {
+        $now = $now ?: time();
+        $out = [];
+        foreach (DataService::allMatches() as $m) {
+            if (($m['_status'] ?? '') !== 'finished') continue;
+            if (!isset($m['score']['ft']) || !is_array($m['score']['ft'])) continue;
+            if (!preg_match('/Round of|Quarter|Semi|Final/i', (string)($m['round'] ?? ''))) continue;
+            $ts = DataService::matchTimestamp($m);
+            if ($ts !== null && ($now - $ts) > self::POST_MAX_AGE_SEC) continue;
+            $idx = (int)$m['_index'];
+            if (self::wasSent($idx, 'next', 'bi')) continue;
+            $nx = self::nextMatchFor($m);
+            if ($nx === null) continue;
+            $out[] = ['match' => $m, 'next' => $nx, 'ts' => $ts ?? 0];
+        }
+        usort($out, fn($x, $y) => ($y['ts']) <=> ($x['ts']));
+        return $out;
+    }
+
+    /** نصّ تغريدة «تأهّل الفائز ومباراته القادمة» — ثنائيّة اللغة. */
+    public static function buildNext(array $m, array $nx): string
+    {
+        $win = (string)$nx['winner']; $oppRaw = (string)$nx['opp']; $next = $nx['next'];
+        $wf = self::flagEmoji($win);
+        $wa = self::nameInLang($win, 'ar'); $we = self::nameInLang($win, 'en');
+        $oppKnown = function_exists('is_real_team') && is_real_team($oppRaw);   // الخصم محسوم؟
+        $oa = $oppKnown ? self::nameInLang($oppRaw, 'ar') : 'يُحدَّد لاحقاً';
+        $oe = $oppKnown ? self::nameInLang($oppRaw, 'en') : 'TBD';
+        $of = $oppKnown ? self::flagEmoji($oppRaw) : '';
+        $roundAr = self::roundArName((string)($next['round'] ?? ''));
+        $roundEn = (string)($next['round'] ?? '');
+        $ts = DataService::matchTimestamp($next);
+        $hm = $ts ? date('H:i', $ts) : '';
+        $url  = self::link('match.php?id=' . (int)($next['_index'] ?? 0) . '&lang=ar');
+        $tags = class_exists('Hashtags') ? Hashtags::forMatch($next)
+              : (defined('X_HASHTAGS') ? X_HASHTAGS : '#FIFAWorldCup2026');
+
+        $arBlock = "🎉 {$wf} {$wa} يتأهّل!\n🔜 المباراة القادمة" . ($roundAr !== '' ? " · {$roundAr}" : '')
+                 . ":\n{$wf} {$wa} ضدّ " . trim("{$oa} {$of}") . ($hm !== '' ? "\n🕐 {$hm}" : '');
+        $enBlock = "🎉 {$we} advance!\n🔜 Next" . ($roundEn !== '' ? " · {$roundEn}" : '') . ": {$we} vs {$oe}";
+        $msg = $arBlock . "\n\n" . $enBlock . "\n" . $url . "\n" . $tags;
+        return self::fitWithin($msg, 280, $url, $tags);
+    }
+
+    /** ينشر تغريدة «الفائز القادمة» (مع بطاقة المباراة التالية) ويسجّلها. */
+    public static function sendNext(array $m, array $nx): array
+    {
+        $text = self::buildNext($m, $nx);
+        $img  = class_exists('TweetCardImage')
+              ? TweetCardImage::generate([$nx['next']], ['title' => 'المباراة القادمة', 'subtitle' => 'كأس العالم 2026'])
+              : null;
+        $r = XPublisher::tweet($text, $img);
+        if (!empty($r['ok'])) self::markSent((int)$m['_index'], 'next', 'bi', (string)$r['id']);
+        return $r + ['text' => $text];
+    }
+
     // ───────────────────── استطلاع «من سيفوز؟» (للمباريات الكبرى) ─────────────────────
 
     /** مباراة كبيرة = أحد الفريقين ضمن أفضل 24 في تصنيف FIFA. */

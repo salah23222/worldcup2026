@@ -365,6 +365,20 @@ if (!$skipMatches && ($drain || !$nonPrioDone)) {
     }
 }
 
+// ═══ المباراة القادمة للفائز — بعد كل مباراة إقصائيّة: «تأهّل الفائز، ومباراته التالية ضدّ كذا» ═══
+if (!$skipMatches && ($drain || !$nonPrioDone)) {
+    $nexts = MatchTweets::pendingNext();
+    $log('[next] candidates=' . count($nexts));
+    foreach ($nexts as $job) {
+        if (!$drain && $nonPrioDone) break;
+        if ($sent >= $capPerRun) { $log('[next] cap reached, stop.'); break; }
+        $m = $job['match'];
+        $label = '#' . (int)$m['_index'] . ' ' . ($m['team1'] ?? '') . '-' . ($m['team2'] ?? '') . ' [next]';
+        if ($dry) { $log('[next] would tweet ' . $label); $log('---'); $log(MatchTweets::buildNext($m, $job['next'])); $log('---'); continue; }
+        $send('next', $label, fn() => MatchTweets::sendNext($m, $job['next']));
+    }
+}
+
 // ═══ بطاقة «المتأهّلون إلى دور الـ32» — النشر التلقائي معطّل بطلب صاحب الموقع (اكتمل التأهّل) ═══
 //    المُشغّل اليدوي ?token=...&r32 يبقى متاحاً عند الحاجة فقط (لا ينشر تلقائياً).
 $log('[r32] auto disabled (qualification complete).');
