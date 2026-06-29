@@ -365,11 +365,9 @@ if (!$skipMatches && ($drain || !$nonPrioDone)) {
     }
 }
 
-// ═══ بطاقة «المتأهّلون إلى دور الـ32» — تلقائياً عند تأهّل منتخب جديد (تغريدة واحدة لكل تشغيل) ═══
-if (!$skipMatches && ($drain || !$nonPrioDone)) {
-    $r = $r32Tweet(false, false);
-    if (!empty($r['ok'])) { $log('[r32] OK auto id=' . (string)$r['id'] . ' (cnt=' . (string)($r['count'] ?? '?') . ')'); $sent++; $nonPrioDone = true; }
-}
+// ═══ بطاقة «المتأهّلون إلى دور الـ32» — النشر التلقائي معطّل بطلب صاحب الموقع (اكتمل التأهّل) ═══
+//    المُشغّل اليدوي ?token=...&r32 يبقى متاحاً عند الحاجة فقط (لا ينشر تلقائياً).
+$log('[r32] auto disabled (qualification complete).');
 
 // ═══ استطلاع «من سيفوز؟» للمباريات الكبرى القادمة (تفاعل عالٍ) — واحد لكل run ═══
 if (!$skipMatches && ($drain || !$nonPrioDone)) {
