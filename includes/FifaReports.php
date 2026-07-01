@@ -21,6 +21,8 @@ if (!defined('WC2026')) { exit('Access denied'); }
 class FifaReports
 {
     private const HUB_URL    = 'https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/match-report-hub.php';
+    // 🆕 لوحة الأدوار الإقصائيّة — أنشأتها FIFA منفصلة عن المجموعات (تقارير M73 فما فوق)
+    private const HUB_URL_KO  = 'https://www.fifatrainingcentre.com/en/fifa-world-cup-2026/match-report-hub-knockout-stage.php';
     private const MEDIA_BASE = 'https://www.fifatrainingcentre.com';
     private const LIST_TTL   = 21600;   // 6 ساعات
 
@@ -133,21 +135,26 @@ class FifaReports
         $fail = $cacheFile . '.fail';
         if (is_file($fail) && (time() - filemtime($fail) < 1800)) return $stored;
 
-        $html = self::httpGet(self::HUB_URL);
-        if ($html === '' || !preg_match_all('/href="([^"]*PMSR-M(\d+)[^"]*\.pdf)"/i', $html, $mm, PREG_SET_ORDER)) {
+        // 🆕 اكشط اللوحتين: دور المجموعات + دور الإقصائيّات (لوحة منفصلة)
+        $out = $stored;   // القائمة تكبر فقط — أبقِ ما سبق
+        $reached = false; $found = false;
+        foreach ([self::HUB_URL, self::HUB_URL_KO] as $hub) {
+            $html = self::httpGet($hub);
+            if ($html === '') continue;
+            $reached = true;
+            if (!preg_match_all('/href="([^"]*PMSR-M(\d+)[^"]*\.pdf)"/i', $html, $mm, PREG_SET_ORDER)) continue;
+            foreach ($mm as $row) {
+                $path = trim($row[1]);
+                $n    = (int)$row[2];
+                if ($n <= 0 || $path === '') continue;
+                if (stripos($path, 'http') !== 0) $path = self::MEDIA_BASE . '/' . ltrim($path, '/');
+                $out[(string)$n] = str_replace(' ', '%20', $path);   // ترميز المسافات
+                $found = true;
+            }
+        }
+        if (!$reached || !$found) {
             @touch($fail);
             return $stored;
-        }
-
-        $out = $stored;   // القائمة تكبر فقط — أبقِ ما سبق
-        foreach ($mm as $row) {
-            $path = trim($row[1]);
-            $n    = (int)$row[2];
-            if ($n <= 0 || $path === '') continue;
-            if (stripos($path, 'http') !== 0) {
-                $path = self::MEDIA_BASE . '/' . ltrim($path, '/');
-            }
-            $out[(string)$n] = str_replace(' ', '%20', $path);   // ترميز المسافات
         }
         ksort($out, SORT_NUMERIC);
 
