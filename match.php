@@ -146,6 +146,9 @@ seo_sportsevent($m);
           <?php if (isset($m['score']['ht'])): ?>
             <p class="md-ht">(<?= (int)$m['score']['ht'][0] ?> : <?= (int)$m['score']['ht'][1] ?>)</p>
           <?php endif; ?>
+          <?php if (isset($m['score']['et']) && !isset($m['score']['p'])): ?>
+            <p class="md-aet"><?= e($L('بعد الوقت الإضافي','After extra time')) ?><?php if (isset($m['score']['reg'])): ?> · <?= (int)$m['score']['reg'][0] ?> : <?= (int)$m['score']['reg'][1] ?> <?= e($L('في الزمن الأصلي','in normal time')) ?><?php endif; ?></p>
+          <?php endif; ?>
           <?php if (isset($m['score']['p'])): ?>
             <p class="md-pens"><?= e($L('ركلات الترجيح','Penalties')) ?>: <?= (int)$m['score']['p'][0] ?> : <?= (int)$m['score']['p'][1] ?></p>
           <?php endif; ?>

@@ -568,7 +568,7 @@ img { display: block; max-width: 100%; }
   font-weight: 700; display: flex; gap: 10px; align-items: center;
 }
 .md-score span { color: var(--text-faint); }
-.md-ht, .md-pens { font-size: .8rem; color: var(--text-dim); text-align: center; }
+.md-ht, .md-pens, .md-aet { font-size: .8rem; color: var(--text-dim); text-align: center; }
 .md-time strong { font-family: var(--font-display); font-size: 1.7rem; color: var(--accent-2); }
 
 .md-info {
@@ -2381,6 +2381,7 @@ button.sponsor-empty:hover { border-color: var(--accent-2); color: var(--text); 
 .match-detail.md2 .md-score-sep { color: #ffc233; font-size: 42px; }
 .match-detail.md2 .md-ht { color: #9fb3d1; font-size: 14px; margin: 8px 0 0; }
 .match-detail.md2 .md-pens { color: #ffc233; font-size: 13px; margin: 6px 0 0; }
+.match-detail.md2 .md-aet { color: #9fb3d1; font-size: 13px; margin: 6px 0 0; font-weight: 600; }
 .match-detail.md2 .md-time { font-size: 32px; font-weight: 800; color: #eef4ff; }
 .match-detail.md2 .md-time-date { color: #9fb3d1; font-size: 14px; margin: 6px 0 0; }
 .match-detail.md2 .md-aipick { color: #00d563; font-size: 13px; margin-top: 10px; }
