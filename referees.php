@@ -43,6 +43,116 @@ tpl('header');
   <p class="muted"><?= e($L['intro']) ?></p>
 </div>
 
+<?php
+// ===== قسم إحصائيات الحكّام: من أدار مباريات + أرقامه الحقيقيّة (ESPN) =====
+$statRows = [];
+foreach ($referees as $idx => $r) {
+    if (($r['role'] ?? 'referee') !== 'referee') continue;   // الحكّام الرئيسيون فقط
+    $nm = trim((string)($r['name'] ?? ''));
+    if ($nm === '') continue;
+    $st = Referees::statsFor($nm);
+    if (!$st || (int)($st['matches'] ?? 0) < 1) continue;
+    $mt = (int)$st['matches'];
+    $yl = (int)($st['yellow'] ?? 0);
+    $rd = (int)($st['red'] ?? 0);
+    $fl = (int)($st['fouls'] ?? 0);
+    $statRows[] = [
+        'idx'     => $idx,
+        'name'    => $nm,
+        'flag'    => strtolower(trim((string)($r['flag'] ?? ''))),
+        'matches' => $mt,
+        'yellow'  => $yl,
+        'red'     => $rd,
+        'cards'   => $yl + $rd,
+        'fouls'   => $fl,
+        'pens'    => (int)($st['pens'] ?? 0),
+        'fpm'     => $mt ? round($fl / $mt, 1) : 0,
+        'avg'     => $mt ? round(($yl + $rd) / $mt, 1) : 0,
+    ];
+}
+usort($statRows, fn($a, $b) => [$b['matches'], $b['fouls']] <=> [$a['matches'], $a['fouls']]);
+
+$strictOf = function (float $avg) use ($lang): array {
+    if ($avg < 2) return [$lang === 'ar' ? 'هادئ'      : 'Lenient',     '#36c08f'];
+    if ($avg < 4) return [$lang === 'ar' ? 'متوازن'    : 'Balanced',    '#f7e09a'];
+    if ($avg < 6) return [$lang === 'ar' ? 'صارم'      : 'Strict',      '#f59e0b'];
+    return              [$lang === 'ar' ? 'صارم جداً'  : 'Very strict', '#ef4444'];
+};
+?>
+
+<?php if ($statRows): ?>
+<section class="ref-section">
+  <h2 class="day-title">📊 <?= e($lang === 'ar' ? 'إحصائيات الحكّام' : 'Referee statistics') ?>
+    <span class="set-count">(<?= count($statRows) ?>)</span>
+  </h2>
+  <p class="muted" style="font-size:.8rem;margin:-4px 0 12px">
+    <?= e($lang === 'ar'
+        ? 'أرقام حقيقيّة من مباريات البطولة (المصدر: ESPN) — اضغط عنوان أي عمود للترتيب، أو اسم الحكم لصفحته الكاملة.'
+        : 'Real figures from tournament matches (source: ESPN) — click any column to sort, or a name for full stats.') ?>
+  </p>
+  <div class="ref-stats-scroll">
+    <table class="ref-stats-tbl" id="refStatsTbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th class="rst-name"><?= e($lang === 'ar' ? 'الحكم' : 'Referee') ?></th>
+          <th data-k><?= e($lang === 'ar' ? 'مباريات' : 'Matches') ?></th>
+          <th data-k>🟨 · 🟥</th>
+          <th data-k>🚫 <?= e($lang === 'ar' ? 'أخطاء' : 'Fouls') ?></th>
+          <th data-k><?= e($lang === 'ar' ? 'خطأ/مباراة' : 'Fouls/m') ?></th>
+          <th data-k>⚽ <?= e($lang === 'ar' ? 'جزاء' : 'Pens') ?></th>
+          <th data-k><?= e($lang === 'ar' ? 'الصرامة' : 'Strictness') ?></th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($statRows as $i => $s):
+          [$sLabel, $sColor] = $strictOf((float)$s['avg']);
+        ?>
+        <tr>
+          <td class="rst-rank"><?= $i + 1 ?></td>
+          <td class="rst-name">
+            <a href="<?= e(url('referee.php', ['i' => $s['idx']])) ?>">
+              <?php if ($s['flag'] !== ''): ?><img src="https://flagcdn.com/w20/<?= e($s['flag']) ?>.png" alt="" loading="lazy" width="20" height="15"> <?php endif; ?>
+              <?= e($s['name']) ?>
+            </a>
+          </td>
+          <td data-v="<?= $s['matches'] ?>"><?= $s['matches'] ?></td>
+          <td data-v="<?= $s['cards'] ?>"><span class="rst-y"><?= $s['yellow'] ?></span> · <span class="rst-r"><?= $s['red'] ?></span></td>
+          <td data-v="<?= $s['fouls'] ?>"><?= $s['fouls'] ?></td>
+          <td data-v="<?= $s['fpm'] ?>"><?= e((string)$s['fpm']) ?></td>
+          <td data-v="<?= $s['pens'] ?>"><?= $s['pens'] ?></td>
+          <td data-v="<?= $s['avg'] ?>"><span class="rst-dot" style="background:<?= $sColor ?>"></span><?= e($sLabel) ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<script>
+(function(){
+  var tbl = document.getElementById('refStatsTbl');
+  if (!tbl) return;
+  var body = tbl.tBodies[0];
+  tbl.querySelectorAll('th[data-k]').forEach(function(th){
+    var desc = true;
+    th.addEventListener('click', function(){
+      var idx  = Array.prototype.indexOf.call(th.parentNode.children, th);
+      var rows = Array.prototype.slice.call(body.rows);
+      rows.sort(function(a, b){
+        var va = parseFloat(a.cells[idx].getAttribute('data-v')) || 0;
+        var vb = parseFloat(b.cells[idx].getAttribute('data-v')) || 0;
+        return desc ? vb - va : va - vb;
+      });
+      desc = !desc;
+      rows.forEach(function(r, i){ r.cells[0].textContent = i + 1; body.appendChild(r); });
+    });
+  });
+})();
+</script>
+<?php endif; ?>
+
+<h2 class="day-title" style="margin-top:26px">📋 <?= e($lang === 'ar' ? 'القائمة الكاملة' : 'Full list') ?></h2>
+
 <?php if (!$referees): ?>
   <p class="empty-note"><?= e($L['empty']) ?></p>
 <?php else: ?>
