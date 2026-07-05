@@ -44,6 +44,39 @@ tpl('header');
 </div>
 
 <?php
+// ===== إحصائيات شاملة بالمجموع (كل مباريات البطولة المنتهية — ESPN) =====
+$agg = ['matches'=>0,'yellow'=>0,'red'=>0,'fouls'=>0,'offsides'=>0,'goals'=>0,'pens'=>0];
+$aggRefs = 0;
+foreach (Referees::tournamentStats() as $tr) {
+    if ((int)($tr['matches'] ?? 0) < 1) continue;
+    $aggRefs++;
+    foreach (['matches','yellow','red','fouls','offsides','goals','pens'] as $k) {
+        $agg[$k] += (int)($tr[$k] ?? 0);
+    }
+}
+$aggCards = $agg['yellow'] + $agg['red'];
+$aggCpm   = $agg['matches'] ? round($aggCards   / $agg['matches'], 1) : 0;
+$aggFpm   = $agg['matches'] ? round($agg['fouls'] / $agg['matches'], 1) : 0;
+?>
+<?php if ($agg['matches'] > 0): ?>
+<section class="ref-section">
+  <h2 class="day-title">🌍 <?= e($lang === 'ar' ? 'إحصائيات شاملة — بالمجموع' : 'Overall totals') ?></h2>
+  <div class="ref-stats-grid">
+    <div class="ref-stat"><div class="ref-stat-v"><?= $agg['matches'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'مباريات أُديرت' : 'Matches') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v"><?= $aggRefs ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'حكّام أداروا' : 'Referees') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v" style="color:#f7e09a">🟨 <?= $agg['yellow'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات صفراء' : 'Yellow' ) ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v" style="color:#ef4444">🟥 <?= $agg['red'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات حمراء' : 'Red') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v">🚫 <?= $agg['fouls'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'إجمالي الأخطاء' : 'Fouls') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v">🚩 <?= $agg['offsides'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'حالات تسلّل' : 'Offsides') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v">🥅 <?= $agg['goals'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'الأهداف' : 'Goals') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v">⚽ <?= $agg['pens'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'ركلات جزاء' : 'Penalties') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v"><?= e((string)$aggCpm) ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقة/مباراة' : 'Cards/match') ?></div></div>
+    <div class="ref-stat"><div class="ref-stat-v"><?= e((string)$aggFpm) ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'خطأ/مباراة' : 'Fouls/match') ?></div></div>
+  </div>
+</section>
+<?php endif; ?>
+
+<?php
 // ===== قسم إحصائيات الحكّام: من أدار مباريات + أرقامه الحقيقيّة (ESPN) =====
 $statRows = [];
 foreach ($referees as $idx => $r) {
