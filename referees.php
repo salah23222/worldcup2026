@@ -57,6 +57,28 @@ foreach (Referees::tournamentStats() as $tr) {
 $aggCards = $agg['yellow'] + $agg['red'];
 $aggCpm   = $agg['matches'] ? round($aggCards   / $agg['matches'], 1) : 0;
 $aggFpm   = $agg['matches'] ? round($agg['fouls'] / $agg['matches'], 1) : 0;
+
+// كل بطاقات البطولة (مباراة · دقيقة · لاعب · حكم · نوع) — للوحة التفاصيل عند النقر
+$allCards = [];
+foreach (DataService::allMatches() as $mm) {
+    if (($mm['_status'] ?? '') !== 'finished') continue;
+    $t1 = trim((string)($mm['team1'] ?? ''));
+    $t2 = trim((string)($mm['team2'] ?? ''));
+    $refN = trim((string)(($mm['officials']['main']['name'] ?? '') ?: ($mm['referee'] ?? '')));
+    foreach ((array)($mm['cards'] ?? []) as $c) {
+        $isT1 = (int)($c['team'] ?? 1) === 1;
+        $allCards[] = [
+            'idx'    => (int)($mm['_index'] ?? -1),
+            'match'  => team_name($t1) . ' × ' . team_name($t2),
+            'minute' => isset($c['minute']) ? (int)$c['minute'] : null,
+            'player' => (string)($c['name'] ?? ''),
+            'teamEn' => $isT1 ? $t1 : $t2,
+            'ref'    => $refN,
+            'type'   => (($c['type'] ?? '') === 'red') ? 'red' : 'yellow',
+        ];
+    }
+}
+usort($allCards, fn($a, $b) => [$a['idx'], (int)$a['minute']] <=> [$b['idx'], (int)$b['minute']]);
 ?>
 <?php if ($agg['matches'] > 0): ?>
 <section class="ref-section">
@@ -64,8 +86,8 @@ $aggFpm   = $agg['matches'] ? round($agg['fouls'] / $agg['matches'], 1) : 0;
   <div class="ref-stats-grid">
     <div class="ref-stat"><div class="ref-stat-v"><?= $agg['matches'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'مباريات أُديرت' : 'Matches') ?></div></div>
     <div class="ref-stat"><div class="ref-stat-v"><?= $aggRefs ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'حكّام أداروا' : 'Referees') ?></div></div>
-    <div class="ref-stat"><div class="ref-stat-v" style="color:#f7e09a">🟨 <?= $agg['yellow'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات صفراء' : 'Yellow' ) ?></div></div>
-    <div class="ref-stat"><div class="ref-stat-v" style="color:#ef4444">🟥 <?= $agg['red'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات حمراء' : 'Red') ?></div></div>
+    <button type="button" class="ref-stat ref-stat-click" data-cards="yellow"><div class="ref-stat-v" style="color:#f7e09a">🟨 <?= $agg['yellow'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات صفراء' : 'Yellow') ?> <span class="ref-stat-hint">👁</span></div></button>
+    <button type="button" class="ref-stat ref-stat-click" data-cards="red"><div class="ref-stat-v" style="color:#ef4444">🟥 <?= $agg['red'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'بطاقات حمراء' : 'Red') ?> <span class="ref-stat-hint">👁</span></div></button>
     <div class="ref-stat"><div class="ref-stat-v">🚫 <?= $agg['fouls'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'إجمالي الأخطاء' : 'Fouls') ?></div></div>
     <div class="ref-stat"><div class="ref-stat-v">🚩 <?= $agg['offsides'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'حالات تسلّل' : 'Offsides') ?></div></div>
     <div class="ref-stat"><div class="ref-stat-v">🥅 <?= $agg['goals'] ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'الأهداف' : 'Goals') ?></div></div>
@@ -74,6 +96,70 @@ $aggFpm   = $agg['matches'] ? round($agg['fouls'] / $agg['matches'], 1) : 0;
     <div class="ref-stat"><div class="ref-stat-v"><?= e((string)$aggFpm) ?></div><div class="ref-stat-k"><?= e($lang === 'ar' ? 'خطأ/مباراة' : 'Fouls/match') ?></div></div>
   </div>
 </section>
+
+<?php if ($allCards): ?>
+<section class="ref-section" id="cardsPanel" hidden>
+  <h2 class="day-title" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+    <span id="cardsPanelTitle"></span>
+    <button type="button" class="cards-close" aria-label="<?= e($lang === 'ar' ? 'إغلاق' : 'Close') ?>">✕</button>
+  </h2>
+  <div class="ref-stats-scroll" style="max-height:62vh">
+    <table class="ref-log-tbl">
+      <thead>
+        <tr>
+          <th class="rst-name"><?= e($lang === 'ar' ? 'المباراة' : 'Match') ?></th>
+          <th><?= e($lang === 'ar' ? 'الدقيقة' : 'Min') ?></th>
+          <th class="rst-name"><?= e($lang === 'ar' ? 'اللاعب' : 'Player') ?></th>
+          <th class="rst-name"><?= e($lang === 'ar' ? 'الحكم' : 'Referee') ?></th>
+          <th><?= e($lang === 'ar' ? 'النوع' : 'Type') ?></th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($allCards as $c):
+          $fl = function_exists('flag_url') ? flag_url($c['teamEn'], 'w20') : '';
+        ?>
+        <tr data-type="<?= $c['type'] ?>">
+          <td class="rst-name"><a href="<?= e(url('match.php', ['id' => $c['idx']])) ?>"><?= e($c['match']) ?></a></td>
+          <td class="rst-rank"><?= $c['minute'] !== null ? e($c['minute'] . "'") : '—' ?></td>
+          <td class="rst-name">
+            <?php if ($fl !== ''): ?><img src="<?= e($fl) ?>" alt="" loading="lazy" width="18" height="13"> <?php endif; ?>
+            <?= e($c['player']) ?>
+          </td>
+          <td class="rst-name"><?= e($c['ref']) ?></td>
+          <td><?= $c['type'] === 'red' ? '🟥' : '🟨' ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</section>
+<script>
+(function(){
+  var panel = document.getElementById('cardsPanel');
+  if (!panel) return;
+  var titleEl = document.getElementById('cardsPanelTitle');
+  var rows    = panel.querySelectorAll('tbody tr');
+  var LBL = { yellow: '🟨 <?= e($lang === 'ar' ? 'كل البطاقات الصفراء' : 'All yellow cards') ?>',
+              red:    '🟥 <?= e($lang === 'ar' ? 'كل البطاقات الحمراء' : 'All red cards') ?>' };
+  function show(type){
+    var n = 0;
+    rows.forEach(function(r){
+      var ok = r.getAttribute('data-type') === type;
+      r.style.display = ok ? '' : 'none';
+      if (ok) n++;
+    });
+    titleEl.textContent = LBL[type] + ' (' + n + ')';
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.querySelectorAll('.ref-stat-click').forEach(function(b){
+    b.addEventListener('click', function(){ show(b.getAttribute('data-cards')); });
+  });
+  var close = panel.querySelector('.cards-close');
+  if (close) close.addEventListener('click', function(){ panel.hidden = true; });
+})();
+</script>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php
@@ -189,6 +275,10 @@ $strictOf = function (float $avg) use ($lang): array {
 })();
 </script>
 <?php endif; ?>
+
+<?php render_share(canonical_url(), $lang === 'ar'
+    ? '🧑‍⚖️ إحصائيات حكّام كأس العالم 2026 — البطاقات والأخطاء والتسلّل والصرامة لكل حكم'
+    : '🧑‍⚖️ FIFA World Cup 2026 referee stats — cards, fouls, offsides & strictness per referee'); ?>
 
 <h2 class="day-title" style="margin-top:26px">📋 <?= e($lang === 'ar' ? 'القائمة الكاملة' : 'Full list') ?></h2>
 
