@@ -63,3 +63,58 @@ foreach (['fifa-photos.json', 'fifa-metrics.json', 'fifa-motm.json'] as $single)
         echo "$single — write failed\n";
     }
 }
+
+// ===== النشر الذاتي الكامل للكود (عند ?code=1 أو CLI) =====
+// يسحب أرشيف الريبو من GitHub ويكتب الملفّات المتغيّرة فقط فوق جذر الموقع.
+// أمان صارم: لا يحذف أبداً · لا يلمس config.local.php ولا data/ (غير موجودَين في
+// الأرشيف أصلاً) · يرفض تجاوز المسار (..) · يكتب ذرّياً (tmp ثمّ rename).
+if ((PHP_SAPI === 'cli') || (($_GET['code'] ?? '') === '1')) {
+    echo deploy_pull_code() . "\n";
+}
+
+function deploy_pull_code(): string
+{
+    if (!class_exists('ZipArchive')) return 'code — ZipArchive غير متوفّر على الخادم، تخطّي';
+
+    $zipUrl = 'https://codeload.github.com/salah23222/worldcup2026/zip/refs/heads/main';
+    $bytes  = http_get($zipUrl, ['timeout' => 90, 'ua' => 'wcup2026-deploy', 'redirects' => true]);
+    if ($bytes === null || strlen($bytes) < 2000) return 'code — فشل تنزيل الأرشيف من GitHub';
+
+    $tmpZip = tempnam(sys_get_temp_dir(), 'wcz');
+    if ($tmpZip === false || @file_put_contents($tmpZip, $bytes) === false) return 'code — تعذّر حفظ الأرشيف مؤقّتاً';
+
+    $za = new ZipArchive();
+    if ($za->open($tmpZip) !== true) { @unlink($tmpZip); return 'code — تعذّر فتح الأرشيف'; }
+
+    $root      = dirname(__DIR__);   // جذر الموقع (public_html)
+    $PROTECT   = ['config.local.php', 'includes/config.local.php'];      // لا تُلمَس أبداً
+    $SKIP_TOP  = ['data', '.git', '.github', '.gitignore', 'README.md']; // لا تُنشَر
+    $updated = 0; $same = 0; $skipped = 0;
+
+    for ($i = 0; $i < $za->numFiles; $i++) {
+        $entry = (string)$za->getNameIndex($i);
+        if ($entry === '' || substr($entry, -1) === '/') continue;          // مدخل مجلّد
+        $rel = preg_replace('#^[^/]+/#', '', $entry);                        // انزع مجلّد الجذر
+        if ($rel === '' || strpos($rel, '..') !== false) { $skipped++; continue; }   // أمان المسار
+        $top = explode('/', $rel)[0];
+        if (in_array($top, $SKIP_TOP, true) || in_array($rel, $PROTECT, true)) { $skipped++; continue; }
+
+        $content = $za->getFromIndex($i);
+        if ($content === false) { $skipped++; continue; }
+
+        $target = $root . '/' . $rel;
+        clearstatcache(true, $target);
+        if (is_file($target) && md5($content) === (string)@md5_file($target)) { $same++; continue; }
+
+        $tdir = dirname($target);
+        if (!is_dir($tdir)) @mkdir($tdir, 0755, true);
+        if (@file_put_contents($target . '.tmp', $content) !== false && @rename($target . '.tmp', $target)) {
+            $updated++;
+        } else {
+            $skipped++;
+        }
+    }
+    $za->close();
+    @unlink($tmpZip);
+    return "code — حُدّث: $updated ملفّ · بلا تغيير: $same · تُخطّي: $skipped";
+}
