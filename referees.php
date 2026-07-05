@@ -120,13 +120,13 @@ usort($allCards, fn($a, $b) => [$a['idx'], (int)$a['minute']] <=> [$b['idx'], (i
         ?>
         <tr data-type="<?= $c['type'] ?>">
           <td class="rst-name"><a href="<?= e(url('match.php', ['id' => $c['idx']])) ?>"><?= e($c['match']) ?></a></td>
-          <td class="rst-rank"><?= $c['minute'] !== null ? e($c['minute'] . "'") : '—' ?></td>
-          <td class="rst-name">
+          <td class="rst-rank" data-label="<?= e($lang === 'ar' ? 'الدقيقة' : 'Min') ?>"><?= $c['minute'] !== null ? e($c['minute'] . "'") : '—' ?></td>
+          <td class="rst-name" data-label="<?= e($lang === 'ar' ? 'اللاعب' : 'Player') ?>">
             <?php if ($fl !== ''): ?><img src="<?= e($fl) ?>" alt="" loading="lazy" width="18" height="13"> <?php endif; ?>
             <?= e($c['player']) ?>
           </td>
-          <td class="rst-name"><?= e($c['ref']) ?></td>
-          <td><?= $c['type'] === 'red' ? '🟥' : '🟨' ?></td>
+          <td class="rst-name" data-label="<?= e($lang === 'ar' ? 'الحكم' : 'Referee') ?>"><?= e($c['ref']) ?></td>
+          <td data-label="<?= e($lang === 'ar' ? 'النوع' : 'Type') ?>"><?= $c['type'] === 'red' ? '🟥' : '🟨' ?></td>
         </tr>
         <?php endforeach; ?>
       </tbody>
@@ -228,7 +228,11 @@ $strictOf = function (float $avg) use ($lang): array {
         </tr>
       </thead>
       <tbody>
-        <?php foreach ($statRows as $i => $s):
+        <?php
+          $cl = $lang === 'ar'
+              ? ['m'=>'مباريات','c'=>'بطاقات','f'=>'أخطاء','fpm'=>'خطأ/مباراة','off'=>'تسلّل','g'=>'أهداف','p'=>'جزاء','s'=>'الصرامة']
+              : ['m'=>'Matches','c'=>'Cards','f'=>'Fouls','fpm'=>'Fouls/m','off'=>'Offside','g'=>'Goals','p'=>'Pens','s'=>'Strictness'];
+        foreach ($statRows as $i => $s):
           [$sLabel, $sColor] = $strictOf((float)$s['avg']);
         ?>
         <tr>
@@ -239,14 +243,14 @@ $strictOf = function (float $avg) use ($lang): array {
               <?= e($s['name']) ?>
             </a>
           </td>
-          <td data-v="<?= $s['matches'] ?>"><?= $s['matches'] ?></td>
-          <td data-v="<?= $s['cards'] ?>"><span class="rst-y"><?= $s['yellow'] ?></span> · <span class="rst-r"><?= $s['red'] ?></span></td>
-          <td data-v="<?= $s['fouls'] ?>"><?= $s['fouls'] ?></td>
-          <td data-v="<?= $s['fpm'] ?>"><?= e((string)$s['fpm']) ?></td>
-          <td data-v="<?= $s['offsides'] ?>"><?= $s['offsides'] ?></td>
-          <td data-v="<?= $s['goals'] ?>"><?= $s['goals'] ?></td>
-          <td data-v="<?= $s['pens'] ?>"><?= $s['pens'] ?></td>
-          <td data-v="<?= $s['avg'] ?>"><span class="rst-dot" style="background:<?= $sColor ?>"></span><?= e($sLabel) ?></td>
+          <td data-label="<?= e($cl['m']) ?>"   data-v="<?= $s['matches'] ?>"><?= $s['matches'] ?></td>
+          <td data-label="🟨 · 🟥"              data-v="<?= $s['cards'] ?>"><span class="rst-y"><?= $s['yellow'] ?></span> · <span class="rst-r"><?= $s['red'] ?></span></td>
+          <td data-label="🚫 <?= e($cl['f']) ?>" data-v="<?= $s['fouls'] ?>"><?= $s['fouls'] ?></td>
+          <td data-label="<?= e($cl['fpm']) ?>"  data-v="<?= $s['fpm'] ?>"><?= e((string)$s['fpm']) ?></td>
+          <td data-label="🚩 <?= e($cl['off']) ?>" data-v="<?= $s['offsides'] ?>"><?= $s['offsides'] ?></td>
+          <td data-label="⚽ <?= e($cl['g']) ?>" data-v="<?= $s['goals'] ?>"><?= $s['goals'] ?></td>
+          <td data-label="<?= e($cl['p']) ?>"    data-v="<?= $s['pens'] ?>"><?= $s['pens'] ?></td>
+          <td data-label="<?= e($cl['s']) ?>"    data-v="<?= $s['avg'] ?>"><span class="rst-dot" style="background:<?= $sColor ?>"></span><?= e($sLabel) ?></td>
         </tr>
         <?php endforeach; ?>
       </tbody>

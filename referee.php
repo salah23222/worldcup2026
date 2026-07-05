@@ -193,13 +193,13 @@ usort($cardLog, fn($a, $b) => [$a['idx'], (int)$a['minute']] <=> [$b['idx'], (in
         ?>
         <tr>
           <td class="rst-name"><a href="<?= e(url('match.php', ['id' => $c['idx']])) ?>"><?= e($c['match']) ?></a></td>
-          <td class="rst-rank"><?= $c['minute'] !== null ? e($c['minute'] . "'") : '—' ?></td>
-          <td class="rst-name">
+          <td class="rst-rank" data-label="<?= e($lang === 'ar' ? 'الدقيقة' : 'Min') ?>"><?= $c['minute'] !== null ? e($c['minute'] . "'") : '—' ?></td>
+          <td class="rst-name" data-label="<?= e($lang === 'ar' ? 'اللاعب' : 'Player') ?>">
             <?php if ($fl !== ''): ?><img src="<?= e($fl) ?>" alt="" loading="lazy" width="18" height="13"> <?php endif; ?>
             <?= e($c['player']) ?>
           </td>
-          <td><?= $c['type'] === 'red' ? '🟥' : '🟨' ?></td>
-          <td class="rst-name ref-log-reason"><?= $c['reason'] !== '' ? e($c['reason']) : '<span class="muted">—</span>' ?></td>
+          <td data-label="<?= e($lang === 'ar' ? 'النوع' : 'Type') ?>"><?= $c['type'] === 'red' ? '🟥' : '🟨' ?></td>
+          <td class="rst-name ref-log-reason" data-label="<?= e($lang === 'ar' ? 'السبب' : 'Reason') ?>"><?= $c['reason'] !== '' ? e($c['reason']) : '<span class="muted">—</span>' ?></td>
         </tr>
         <?php endforeach; ?>
       </tbody>

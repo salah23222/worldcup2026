@@ -847,6 +847,31 @@ img { display: block; max-width: 100%; }
 .ref-stat-hint { font-size: .7rem; opacity: .55; }
 .cards-close { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: .95rem; line-height: 1; flex: 0 0 auto; }
 .cards-close:hover { border-color: var(--accent); color: var(--text); }
+
+/* ---- جداول الحكّام على الجوال: صفوف → بطاقات مكدّسة (بلا تمرير أفقي) ---- */
+@media (max-width: 640px) {
+  .ref-stats-scroll { border: 0; }
+  .ref-stats-tbl, .ref-log-tbl { min-width: 0; font-size: .9rem; }
+  .ref-stats-tbl thead, .ref-log-tbl thead { display: none; }
+  .ref-stats-tbl tbody tr, .ref-log-tbl tbody tr {
+    display: block; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 4px 14px; margin-bottom: 12px;
+  }
+  .ref-stats-tbl tbody tr:hover, .ref-log-tbl tbody tr:hover { background: var(--surface-2); }
+  .ref-stats-tbl tbody td, .ref-log-tbl tbody td {
+    display: flex; justify-content: space-between; align-items: center; gap: 14px;
+    padding: 8px 2px; border-bottom: 1px solid var(--border); white-space: normal; text-align: start;
+  }
+  .ref-stats-tbl tbody tr td:last-child, .ref-log-tbl tbody tr td:last-child { border-bottom: 0; }
+  .ref-stats-tbl td[data-label]::before, .ref-log-tbl td[data-label]::before {
+    content: attr(data-label); color: var(--text-dim); font-weight: 700; font-size: .82rem; flex: 0 0 auto;
+  }
+  .ref-stats-tbl td.rst-name:not([data-label]), .ref-log-tbl td.rst-name:not([data-label]) {
+    justify-content: flex-start; border-bottom: 2px solid var(--border);
+    padding: 6px 2px 10px; font-size: 1rem; font-weight: 700;
+  }
+  .ref-stats-tbl td.rst-rank { display: none; }
+}
 .ref-fpm {
   font-size: .62rem; font-weight: 800; color: var(--text-dim);
   background: var(--surface-2); border-radius: 20px; padding: 2px 8px; white-space: nowrap;
