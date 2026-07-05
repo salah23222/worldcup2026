@@ -33,13 +33,6 @@ foreach ($referees as $idx => $r) {
     $groups[$role][] = $r;
 }
 
-// خريطة عدد المباريات لكل حكم (مسح واحد للبيانات بدل استدعاء متكرّر)
-$officiated = [];
-foreach (DataService::allMatches() as $m) {
-    $rn = trim((string)($m['referee'] ?? ''));
-    if ($rn !== '') $officiated[$rn] = ($officiated[$rn] ?? 0) + 1;
-}
-
 $page_title = $L['title'];
 $page_desc  = $L['intro'];
 tpl('header');
@@ -67,7 +60,9 @@ tpl('header');
                    ? ($r['country_ar'] ?? $r['country_en'] ?? '')
                    : ($r['country_en'] ?? $r['country_ar'] ?? '');
           $flag = strtolower(trim((string)($r['flag'] ?? '')));
-          $n    = $officiated[$name] ?? 0;
+          // مطابقة ذكيّة (sameRef): أسماء القائمة «SURNAME Given» تختلف عن حقل
+          // المباراة «Given Surname» → المطابقة الحرفيّة كانت تُخفي معظم الحكّام.
+          $n    = Referees::matchesOfficiated($name);
           $href = url('referee.php', ['i' => (int)($r['_index'] ?? 0)]);
           // فاولات/مباراة الحقيقيّة (من إحصائيات ESPN) — تظهر عند توفّرها
           $rst  = Referees::statsFor($name);
