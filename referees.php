@@ -163,8 +163,29 @@ usort($allCards, fn($a, $b) => [$a['idx'], (int)$a['minute']] <=> [$b['idx'], (i
 <?php endif; ?>
 
 <?php
+// ===== القارّات (الاتحادات) — لتصنيف الحكّام حسب القارّة =====
+$CONTINENTS = [
+    'eur'  => ['ar' => 'أوروبا',           'en' => 'Europe',      'color' => '#3b82f6'],
+    'sam'  => ['ar' => 'أمريكا الجنوبية',  'en' => 'S. America',  'color' => '#14b8a6'],
+    'nam'  => ['ar' => 'أمريكا الشمالية',  'en' => 'N. America',  'color' => '#a855f7'],
+    'afr'  => ['ar' => 'أفريقيا',           'en' => 'Africa',      'color' => '#22c55e'],
+    'asia' => ['ar' => 'آسيا',              'en' => 'Asia',        'color' => '#f59e0b'],
+    'oce'  => ['ar' => 'أوقيانوسيا',        'en' => 'Oceania',     'color' => '#ec4899'],
+];
+// كود الدولة (ISO) → القارّة/الاتحاد (أستراليا في AFC = آسيا كرويّاً)
+$CONT_OF = [
+    'ch'=>'eur','de'=>'eur','es'=>'eur','fr'=>'eur','gb-eng'=>'eur','it'=>'eur','nl'=>'eur',
+    'no'=>'eur','pl'=>'eur','pt'=>'eur','ro'=>'eur','se'=>'eur','si'=>'eur',
+    'ar'=>'sam','br'=>'sam','cl'=>'sam','co'=>'sam','pe'=>'sam','py'=>'sam','uy'=>'sam','ve'=>'sam',
+    'ca'=>'nam','cr'=>'nam','hn'=>'nam','jm'=>'nam','mx'=>'nam','sv'=>'nam','us'=>'nam',
+    'dz'=>'afr','eg'=>'afr','ga'=>'afr','ma'=>'afr','mr'=>'afr','so'=>'afr','za'=>'afr',
+    'ae'=>'asia','au'=>'asia','cn'=>'asia','jo'=>'asia','jp'=>'asia','qa'=>'asia','sa'=>'asia','uz'=>'asia',
+    'nz'=>'oce',
+];
+
 // ===== قسم إحصائيات الحكّام: من أدار مباريات + أرقامه الحقيقيّة (ESPN) =====
 $statRows = [];
+$contCounts = [];   // عدد الحكّام الذين أداروا مباريات لكل قارّة
 foreach ($referees as $idx => $r) {
     if (($r['role'] ?? 'referee') !== 'referee') continue;   // الحكّام الرئيسيون فقط
     $nm = trim((string)($r['name'] ?? ''));
@@ -175,10 +196,14 @@ foreach ($referees as $idx => $r) {
     $yl = (int)($st['yellow'] ?? 0);
     $rd = (int)($st['red'] ?? 0);
     $fl = (int)($st['fouls'] ?? 0);
+    $fg = strtolower(trim((string)($r['flag'] ?? '')));
+    $cont = $CONT_OF[$fg] ?? '';
+    if ($cont !== '') $contCounts[$cont] = ($contCounts[$cont] ?? 0) + 1;
     $statRows[] = [
         'idx'     => $idx,
         'name'    => $nm,
-        'flag'    => strtolower(trim((string)($r['flag'] ?? ''))),
+        'flag'    => $fg,
+        'cont'    => $cont,
         'matches' => $mt,
         'yellow'  => $yl,
         'red'     => $rd,
@@ -192,6 +217,8 @@ foreach ($referees as $idx => $r) {
     ];
 }
 usort($statRows, fn($a, $b) => [$b['matches'], $b['fouls']] <=> [$a['matches'], $a['fouls']]);
+arsort($contCounts);   // الأكثر أوّلاً
+$contTotal = array_sum($contCounts);
 
 $strictOf = function (float $avg) use ($lang): array {
     if ($avg < 2) return [$lang === 'ar' ? 'هادئ'      : 'Lenient',     '#36c08f'];
@@ -211,6 +238,18 @@ $strictOf = function (float $avg) use ($lang): array {
         ? 'أرقام حقيقيّة من مباريات البطولة (المصدر: ESPN) — اضغط عنوان أي عمود للترتيب، أو اسم الحكم لصفحته الكاملة.'
         : 'Real figures from tournament matches (source: ESPN) — click any column to sort, or a name for full stats.') ?>
   </p>
+
+  <?php if ($contCounts): ?>
+  <div class="ref-cont-filter" id="contFilter">
+    <button type="button" class="rcf-btn active" data-cont="all"><?= e($lang === 'ar' ? 'كل القارّات' : 'All') ?> (<?= count($statRows) ?>)</button>
+    <?php foreach ($contCounts as $ck => $cn): $C = $CONTINENTS[$ck]; ?>
+      <button type="button" class="rcf-btn" data-cont="<?= e($ck) ?>">
+        <span class="rcf-dot" style="background:<?= $C['color'] ?>"></span><?= e($C[$lang === 'ar' ? 'ar' : 'en']) ?> (<?= (int)$cn ?>)
+      </button>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+
   <div class="ref-stats-scroll">
     <table class="ref-stats-tbl" id="refStatsTbl">
       <thead>
@@ -235,7 +274,7 @@ $strictOf = function (float $avg) use ($lang): array {
         foreach ($statRows as $i => $s):
           [$sLabel, $sColor] = $strictOf((float)$s['avg']);
         ?>
-        <tr>
+        <tr data-cont="<?= e($s['cont']) ?>">
           <td class="rst-rank"><?= $i + 1 ?></td>
           <td class="rst-name">
             <a href="<?= e(url('referee.php', ['i' => $s['idx']])) ?>">
@@ -276,8 +315,62 @@ $strictOf = function (float $avg) use ($lang): array {
       rows.forEach(function(r, i){ r.cells[0].textContent = i + 1; body.appendChild(r); });
     });
   });
+  // فلتر القارّات
+  var filter = document.getElementById('contFilter');
+  if (filter) {
+    filter.querySelectorAll('.rcf-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var c = btn.getAttribute('data-cont');
+        filter.querySelectorAll('.rcf-btn').forEach(function(b){ b.classList.toggle('active', b === btn); });
+        Array.prototype.forEach.call(body.rows, function(r){
+          r.style.display = (c === 'all' || r.getAttribute('data-cont') === c) ? '' : 'none';
+        });
+      });
+    });
+  }
 })();
 </script>
+
+<?php
+// ===== رسم الدونت: توزيع الحكّام حسب القارّة (رقم + نسبة) =====
+if ($contTotal > 0):
+  $cum = 0; $segs = '';
+  foreach ($contCounts as $ck => $cn) {
+      $p     = $cn / $contTotal * 100;
+      $segs .= sprintf(
+          '<circle cx="21" cy="21" r="15.915" fill="transparent" stroke="%s" stroke-width="5.5" stroke-dasharray="%.3f %.3f" stroke-dashoffset="%.3f"><title>%s: %d (%d%%)</title></circle>',
+          $CONTINENTS[$ck]['color'], $p, 100 - $p, 25 - $cum,
+          e($CONTINENTS[$ck][$lang === 'ar' ? 'ar' : 'en']), $cn, (int)round($p)
+      );
+      $cum += $p;
+  }
+?>
+<section class="ref-section">
+  <h2 class="day-title">🌍 <?= e($lang === 'ar' ? 'توزيع الحكّام حسب القارّة' : 'Referees by continent') ?></h2>
+  <div class="ref-donut-wrap">
+    <svg class="ref-donut" viewBox="0 0 42 42" role="img" aria-label="<?= e($lang === 'ar' ? 'توزيع الحكّام حسب القارّة' : 'Referees by continent') ?>">
+      <circle cx="21" cy="21" r="15.915" fill="transparent" stroke="var(--surface-2)" stroke-width="5.5"></circle>
+      <?= $segs ?>
+      <text x="21" y="20.5" text-anchor="middle" class="rd-num"><?= (int)$contTotal ?></text>
+      <text x="21" y="25.5" text-anchor="middle" class="rd-lbl"><?= e($lang === 'ar' ? 'حكماً' : 'refs') ?></text>
+    </svg>
+    <ul class="ref-donut-legend">
+      <?php foreach ($contCounts as $ck => $cn): $C = $CONTINENTS[$ck]; $p = (int)round($cn / $contTotal * 100); ?>
+      <li>
+        <span class="rdl-dot" style="background:<?= $C['color'] ?>"></span>
+        <span class="rdl-name"><?= e($C[$lang === 'ar' ? 'ar' : 'en']) ?></span>
+        <span class="rdl-val"><strong><?= (int)$cn ?></strong> · <?= $p ?>%</span>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+  <p class="muted" style="font-size:.78rem;margin-top:10px">
+    <?= e($lang === 'ar'
+        ? 'عدد الحكّام الذين أداروا مباريات في كأس العالم 2026 موزّعين حسب قارّة (اتحاد) كل حكم.'
+        : 'Referees who officiated FIFA World Cup 2026 matches, grouped by each referee\'s continent (confederation).') ?>
+  </p>
+</section>
+<?php endif; ?>
 <?php endif; ?>
 
 <?php render_share(canonical_url(), $lang === 'ar'

@@ -842,6 +842,25 @@ img { display: block; max-width: 100%; }
 .ref-log-tbl td.rst-name a:hover { color: var(--accent); text-decoration: underline; }
 .ref-log-tbl tbody tr:hover { background: var(--surface-2); }
 .ref-log-tbl td.ref-log-reason { white-space: normal; color: var(--text-dim); }
+/* فلتر القارّات */
+.ref-cont-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.rcf-btn { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: .8rem; font-weight: 700;
+  color: var(--text-dim); background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px;
+  padding: 6px 13px; cursor: pointer; transition: border-color .15s, color .15s; }
+.rcf-btn:hover { border-color: var(--accent); }
+.rcf-btn.active { color: var(--text); border-color: var(--accent); }
+.rcf-dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+/* دونت توزيع القارّات */
+.ref-donut-wrap { display: flex; align-items: center; gap: 26px; flex-wrap: wrap; }
+.ref-donut { width: 168px; height: 168px; flex: 0 0 auto; }
+.ref-donut .rd-num { font-size: 8px; font-weight: 900; fill: var(--text); }
+.ref-donut .rd-lbl { font-size: 3.1px; font-weight: 700; fill: var(--text-dim); }
+.ref-donut-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; flex: 1 1 210px; }
+.ref-donut-legend li { display: flex; align-items: center; gap: 10px; font-size: .92rem; }
+.rdl-dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+.rdl-name { color: var(--text); }
+.rdl-val { margin-inline-start: auto; color: var(--text-dim); font-size: .86rem; }
+.rdl-val strong { color: var(--text); font-size: .95rem; }
 .ref-stat-click { font: inherit; color: inherit; cursor: pointer; transition: border-color .15s, transform .15s; }
 .ref-stat-click:hover { border-color: var(--accent); transform: translateY(-2px); }
 .ref-stat-hint { font-size: .7rem; opacity: .55; }
