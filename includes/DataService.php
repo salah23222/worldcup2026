@@ -254,17 +254,40 @@ class DataService
         if (self::$matchesMemo !== null) {
             return self::$matchesMemo;
         }
-        // حصانة الأداء: بناء allMatches يدمج LiveService لكل 104 مباراة، وقد يستشفي
-        // من الشبكة (في cron). لحماية الخادم من إعادة الحساب على كل طلب ويب (كان
-        // سبب 408)، نخزّن الناتج الكامل في ملف ونعيد استخدامه ≤45 ثانية على الويب.
-        // cron (CLI) يحسب دائماً طازجاً (ليستشفي) ويحدّث الكاش → فيقرأ الويب نتيجته.
+        // حصانة الأداء (تمنع سقوط الخادم): بناء allMatches ثقيل (دمج LiveService لكل
+        // 104 مباراة). نخزّن الناتج ملفّاً ونعيد استخدامه ≤45s على الويب. وعند برود
+        // الكاش تحت ضغط، «قفل» يضمن أنّ طلباً واحداً فقط يعيد الحساب بينما تُقدَّم
+        // البقيّة النسخة القديمة فوراً — فلا تتكدّس العمّال ولا يتجاوز الحساب حدّ موارده.
+        // cron (CLI) يحسب دائماً طازجاً (ليستشفي شبكياً) ويحدّث الكاش → فيقرأه الويب.
         $cacheFile = rtrim(CACHE_DIR, '/') . '/allmatches.cache';
-        if (PHP_SAPI !== 'cli' && is_file($cacheFile)
-            && (time() - (int)@filemtime($cacheFile)) < 45) {
-            $raw    = @file_get_contents($cacheFile);
-            $cached = ($raw !== false && $raw !== '') ? @unserialize($raw) : false;
-            if (is_array($cached) && $cached) {
-                return self::$matchesMemo = $cached;
+        $lockFp = null; $haveLock = false;
+        $readCache = static function () use ($cacheFile) {
+            $raw = @file_get_contents($cacheFile);
+            $c = ($raw !== false && $raw !== '') ? @unserialize($raw) : false;
+            return (is_array($c) && $c) ? $c : null;
+        };
+        if (PHP_SAPI !== 'cli') {
+            if (is_file($cacheFile) && (time() - (int)@filemtime($cacheFile)) < 45) {
+                $c = $readCache();
+                if ($c !== null) return self::$matchesMemo = $c;
+            }
+            $lockFp   = @fopen($cacheFile . '.lock', 'c');
+            $haveLock = $lockFp ? @flock($lockFp, LOCK_EX | LOCK_NB) : false;
+            if (!$haveLock) {
+                // طلب آخر يعيد الحساب الآن → قدّم القديم فوراً (لا حساب = لا سقوط)
+                $c = $readCache();
+                if ($c !== null) { if ($lockFp) @fclose($lockFp); return self::$matchesMemo = $c; }
+                // لا كاش إطلاقاً → انتظر ظهوره من الطلب الحاسب (≤10s)، أو تسلّم القفل
+                // إن تعثّر الحاسب — بدل أن يحسب الجميع معاً (يمنع تكدّس العمّال).
+                for ($w = 0; $w < 100 && !$haveLock; $w++) {
+                    usleep(100000);
+                    clearstatcache(true, $cacheFile);
+                    $c = $readCache();
+                    if ($c !== null) { if ($lockFp) @fclose($lockFp); return self::$matchesMemo = $c; }
+                    if ($lockFp && @flock($lockFp, LOCK_EX | LOCK_NB)) { $haveLock = true; break; }
+                }
+                if (!$haveLock && $lockFp) { @fclose($lockFp); $lockFp = null; }
+                // (إن حصلنا القفل الآن نحسب أدناه؛ وإلّا حساب أخير نادر بلا قفل)
             }
         }
         $data = self::load();
@@ -310,6 +333,7 @@ class DataService
                 @unlink($tmp);
             }
         }
+        if ($haveLock && $lockFp) { @flock($lockFp, LOCK_UN); @fclose($lockFp); }
         return $out;
     }
 
