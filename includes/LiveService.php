@@ -807,8 +807,13 @@ class LiveService
         }
         if (!$needScore && !$needStats && !$needCards && !$needGoals) return $m;
 
-        // (ب) جلب ذاتي من ESPN بمعرّف مؤرّخ
+        // (ب) جلب ذاتي من ESPN بمعرّف مؤرّخ.
+        // ⚠️ أداء: هذا استدعاء شبكي (~0.7s/مباراة). على طلبات الويب يتراكم لعشرات
+        // المباريات المنتهية (~13s/طلب) فيُرهق عمّال الخادم ويسبّب 408. لذلك نقصر
+        // الاستشفاء الشبكي على cron (CLI) فقط؛ الزائر يكتفي بالأرشيف المحلّي السريع.
+        // (cron/tweet.php · digest · api-check ... تستدعي allMatches فتملأ الأرشيف.)
         if (!class_exists('EspnLive')) return $m;
+        if (PHP_SAPI !== 'cli') return $m;
         $t1 = trim((string)($m['team1'] ?? ''));
         $t2 = trim((string)($m['team2'] ?? ''));
         if ($t1 === '' || $t2 === '') return $m;
