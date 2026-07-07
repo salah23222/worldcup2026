@@ -254,6 +254,19 @@ class DataService
         if (self::$matchesMemo !== null) {
             return self::$matchesMemo;
         }
+        // حصانة الأداء: بناء allMatches يدمج LiveService لكل 104 مباراة، وقد يستشفي
+        // من الشبكة (في cron). لحماية الخادم من إعادة الحساب على كل طلب ويب (كان
+        // سبب 408)، نخزّن الناتج الكامل في ملف ونعيد استخدامه ≤45 ثانية على الويب.
+        // cron (CLI) يحسب دائماً طازجاً (ليستشفي) ويحدّث الكاش → فيقرأ الويب نتيجته.
+        $cacheFile = rtrim(CACHE_DIR, '/') . '/allmatches.cache';
+        if (PHP_SAPI !== 'cli' && is_file($cacheFile)
+            && (time() - (int)@filemtime($cacheFile)) < 45) {
+            $raw    = @file_get_contents($cacheFile);
+            $cached = ($raw !== false && $raw !== '') ? @unserialize($raw) : false;
+            if (is_array($cached) && $cached) {
+                return self::$matchesMemo = $cached;
+            }
+        }
         $data = self::load();
         $demo = self::demoResults();      // نتائج تجريبية اختيارية (للتجربة فقط)
         $out  = [];
@@ -288,6 +301,15 @@ class DataService
             $i++;
         }
         self::$matchesMemo = $out;
+        // اكتب الكاش ذرّياً (tmp ثمّ rename) ليقرأه الويب سريعاً في الطلبات التالية.
+        if ($out) {
+            $tmp = $cacheFile . '.' . getmypid() . '.tmp';
+            if (@file_put_contents($tmp, serialize($out)) !== false) {
+                @rename($tmp, $cacheFile);
+            } else {
+                @unlink($tmp);
+            }
+        }
         return $out;
     }
 
