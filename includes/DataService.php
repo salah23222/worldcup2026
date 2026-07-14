@@ -263,7 +263,9 @@ class DataService
         $lockFp = null; $haveLock = false;
         $readCache = static function () use ($cacheFile) {
             $raw = @file_get_contents($cacheFile);
-            $c = ($raw !== false && $raw !== '') ? @unserialize($raw) : false;
+            // Cache holds only scalar match arrays; forbid object instantiation
+            // so a poisoned cache can never trigger object injection.
+            $c = ($raw !== false && $raw !== '') ? @unserialize($raw, ['allowed_classes' => false]) : false;
             return (is_array($c) && $c) ? $c : null;
         };
         if (PHP_SAPI !== 'cli') {
