@@ -93,25 +93,17 @@ foreach (DataService::allMatches() as $mm) {
         foreach ((array)$side as $g) { if (!empty($g['penalty'])) $pn++; }
     }
     $refN = trim((string)(($mm['officials']['main']['name'] ?? '') ?: ($mm['referee'] ?? '')));
-    // هويّة موحّدة للحكم: فهرس السجلّ إن تطابق، وإلا الاسم مُطبَّعاً. بدونها
-    // تُحتسب التهجئات المختلفة لنفس الحكم («Wilton Sampaio» / «WILTON SAMPAIO»)
-    // كحكّام منفصلين فتتضخّم أعداد البطاقات ودائرة القارّات.
-    $refKey = '';
-    if ($refN !== '') {
-        $rix    = Referees::indexOf($refN);
-        $refKey = ($rix !== null) ? ('#' . $rix) : mb_strtolower($refN, 'UTF-8');
-    }
 
     $agg['matches']++; $agg['yellow']+=$yl; $agg['red']+=$rd; $agg['fouls']+=$fo;
     $agg['offsides']+=$os; $agg['goals']+=$go; $agg['pens']+=$pn;
-    if ($refKey !== '') $refSets['__all'][$refKey] = true;
+    if ($refN !== '') $refSets['__all'][$refN] = true;
 
     $ck = $contOfMatch($mm);
     if ($ck !== '') {
         if (!isset($contAgg[$ck])) $contAgg[$ck] = ['matches'=>0,'yellow'=>0,'red'=>0,'fouls'=>0,'offsides'=>0,'goals'=>0,'pens'=>0];
         $contAgg[$ck]['matches']++; $contAgg[$ck]['yellow']+=$yl; $contAgg[$ck]['red']+=$rd; $contAgg[$ck]['fouls']+=$fo;
         $contAgg[$ck]['offsides']+=$os; $contAgg[$ck]['goals']+=$go; $contAgg[$ck]['pens']+=$pn;
-        if ($refKey !== '') $refSets[$ck][$refKey] = true;
+        if ($refN !== '') $refSets[$ck][$refN] = true;
     }
 }
 $agg['refs'] = count($refSets['__all']);
@@ -266,12 +258,10 @@ usort($allCards, fn($a, $b) => [$a['idx'], (int)$a['minute']] <=> [$b['idx'], (i
 // (القارّات $CONTINENTS/$CONT_OF/$contAgg مُعرّفة أعلاه — نُعيد استخدامها هنا)
 $statRows = [];
 foreach ($referees as $idx => $r) {
+    if (($r['role'] ?? 'referee') !== 'referee') continue;   // الحكّام الرئيسيون فقط
     $nm = trim((string)($r['name'] ?? ''));
     if ($nm === '') continue;
     $st = Referees::statsFor($nm);
-    // المعيار = من أدار مباراة فعلاً (لا تصنيف السجلّ). بعض من صُنّفوا
-    // «مساعداً» أداروا مباراة كحكم ساحة؛ استبعادهم كان يجعل الجدول أقلّ من
-    // البطاقات العلوية التي تحتسب كل مباراة لها حكم رئيسي.
     if (!$st || (int)($st['matches'] ?? 0) < 1) continue;
     $mt = (int)$st['matches'];
     $yl = (int)($st['yellow'] ?? 0);

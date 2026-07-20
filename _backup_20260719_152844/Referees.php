@@ -45,56 +45,13 @@ class Referees
         return $all[$i] ?? null;
     }
 
-    /**
-     * طيّ الحروف اللاتينية المنقوطة إلى ASCII حتى يتطابق «João» مع «Joao»
-     * و«Vinčić» مع «Vincic» و«Iván» مع «Ivan».
-     *
-     * بدون هذا كان preg_replace('/[^a-z\s]/') — بلا مُعدِّل /u — يستبدل كل
-     * بايت غير إنجليزي بمسافة، فيتفتّت الاسم إلى شظايا: «joão» ← «jo  o»
-     * ثم يُحذف ما طوله < 3 أحرف، فيضيع رمز الاسم وتفشل المطابقة مع السجلّ.
-     */
-    private static function foldAccents(string $s): string
-    {
-        static $map = [
-            'à'=>'a','á'=>'a','â'=>'a','ã'=>'a','ä'=>'a','å'=>'a','ā'=>'a','ă'=>'a','ą'=>'a',
-            'è'=>'e','é'=>'e','ê'=>'e','ë'=>'e','ē'=>'e','ĕ'=>'e','ė'=>'e','ę'=>'e','ě'=>'e',
-            'ì'=>'i','í'=>'i','î'=>'i','ï'=>'i','ī'=>'i','į'=>'i','ı'=>'i',
-            'ò'=>'o','ó'=>'o','ô'=>'o','õ'=>'o','ö'=>'o','ø'=>'o','ō'=>'o','ő'=>'o',
-            'ù'=>'u','ú'=>'u','û'=>'u','ü'=>'u','ū'=>'u','ů'=>'u','ű'=>'u','ų'=>'u',
-            'ç'=>'c','ć'=>'c','č'=>'c','ĉ'=>'c','ċ'=>'c',
-            'ñ'=>'n','ń'=>'n','ň'=>'n','ņ'=>'n',
-            'š'=>'s','ś'=>'s','ş'=>'s','ș'=>'s','ŝ'=>'s',
-            'ž'=>'z','ź'=>'z','ż'=>'z',
-            'ý'=>'y','ÿ'=>'y','ŷ'=>'y',
-            'ğ'=>'g','ĝ'=>'g','ġ'=>'g',
-            'ř'=>'r','ŕ'=>'r','ť'=>'t','ț'=>'t','ţ'=>'t','ď'=>'d','đ'=>'d','ð'=>'d',
-            'ł'=>'l','ĺ'=>'l','ľ'=>'l','ķ'=>'k','ĥ'=>'h','ŵ'=>'w',
-            'æ'=>'ae','œ'=>'oe','ß'=>'ss','þ'=>'th',
-        ];
-        return strtr($s, $map);
-    }
-
-    /**
-     * مرادفات أسماء معروفة: تَرِد في بيانات المباريات بصيغة تختلف جذرياً عن
-     * السجلّ الرسمي فلا يكفي تقاطع الرموز. المفتاح = الاسم بعد التطبيع.
-     * (مثال: الحكم المصري أمين عمر محمد يَرِد «Amin Omar» و«MOHAMED Amin».)
-     */
-    private const NAME_ALIASES = [
-        'amin omar' => 'mohamed amin omar',
-    ];
-
     /** tokens لاتينية صغيرة (≥3 أحرف) — للمطابقة عبر اختلاف صيَغ الأسماء. */
     private static function nameTokens(string $name): array
     {
         $name = mb_strtolower($name, 'UTF-8');
-        $name = self::foldAccents($name);
         $name = preg_replace('/[^a-z\s]/', ' ', $name);
-        $name = trim(preg_replace('/\s+/', ' ', (string)$name));
-        if ($name !== '' && isset(self::NAME_ALIASES[$name])) {
-            $name = self::NAME_ALIASES[$name];
-        }
-        $toks = $name === '' ? [] : preg_split('/\s+/', $name);
-        return array_values(array_filter($toks ?: [], fn($t) => strlen($t) >= 3));
+        $toks = preg_split('/\s+/', trim((string)$name)) ?: [];
+        return array_values(array_filter($toks, fn($t) => strlen($t) >= 3));
     }
 
     /**
